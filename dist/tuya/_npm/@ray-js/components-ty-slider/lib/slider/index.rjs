@@ -1,0 +1,12 @@
+// node_modules/@ray-js/components-ty-slider/lib/slider/index.rjs
+var slider_default = Render({
+  emit(eventName, val) {
+    if (this.instance.eventChannel) {
+      this.instance.eventChannel.emit(eventName, val);
+    }
+  }
+});
+export {
+  slider_default as default
+};
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAic291cmNlcyI6IFsiLi4vLi4vLi4vLi4vLi4vLi4vLi4vLi4vbm9kZV9tb2R1bGVzL0ByYXktanMvY29tcG9uZW50cy10eS1zbGlkZXIvbGliL3NsaWRlci9pbmRleC5yanMiXSwKICAic291cmNlc0NvbnRlbnQiOiBbImV4cG9ydCBkZWZhdWx0IFJlbmRlcih7XG4gIGVtaXQoZXZlbnROYW1lLCB2YWwpe1xuICAgIGlmKHRoaXMuaW5zdGFuY2UuZXZlbnRDaGFubmVsKSB7XG4gICAgICB0aGlzLmluc3RhbmNlLmV2ZW50Q2hhbm5lbC5lbWl0KGV2ZW50TmFtZSwgdmFsKTtcbiAgICB9XG4gIH1cbn0pOyJdLAogICJtYXBwaW5ncyI6ICI7QUFBQSxJQUFPLGlCQUFRLE9BQU87QUFBQSxFQUNwQixLQUFLLFdBQVcsS0FBSTtBQUNsQixRQUFHLEtBQUssU0FBUyxjQUFjO0FBQzdCLFdBQUssU0FBUyxhQUFhLEtBQUssV0FBVyxHQUFHO0FBQUEsSUFDaEQ7QUFBQSxFQUNGO0FBQ0YsQ0FBQzsiLAogICJuYW1lcyI6IFtdCn0K
