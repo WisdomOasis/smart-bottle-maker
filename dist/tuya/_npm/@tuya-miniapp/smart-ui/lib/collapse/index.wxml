@@ -1,3 +1,0 @@
-<view class="custom-class smart-collapse {{ border ? 'smart-hairline--top-bottom' : '' }}">
-  <slot />
-</view>

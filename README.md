@@ -12,6 +12,13 @@ Before using this template, you need to have a basic understanding of the Ray fr
 - [Create a project and import the project code in the IDE](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#3)
 - For more details, please refer to the [Travel two-wheeled vehicle template tutorial](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#0)
 
+### Development commands
+
+- Install: `npm install` (or `yarn install`)
+- Start (Tuya target): `npm run start` (runs `ray start --target tuya`)
+- Build (Tuya target): `npm run build` (runs `ray build --target tuya`)
+- Lint: `npm run lint`
+
 ## 3. Capability dependency
 
 - App version

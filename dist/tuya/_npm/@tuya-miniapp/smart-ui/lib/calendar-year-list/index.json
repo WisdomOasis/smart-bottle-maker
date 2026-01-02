@@ -1,7 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "smart-row": "../row/index",
-    "smart-col": "../col/index"
-  }
-}

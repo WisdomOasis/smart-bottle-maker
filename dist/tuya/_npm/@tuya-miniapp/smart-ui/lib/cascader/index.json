@@ -1,8 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "smart-icon": "../icon/index",
-    "smart-tab":  "../tab/index",
-    "smart-tabs": "../tabs/index"
-  }
-}

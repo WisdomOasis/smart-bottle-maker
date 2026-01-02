@@ -1,8 +1,0 @@
-{
-  "component": true,
-  "usingComponents": {
-    "smart-popup": "../popup/index",
-    "smart-cell": "../cell/index",
-    "smart-icon": "../icon/index"
-  }
-}

@@ -1,3 +1,0 @@
-<view class="smart-sidebar custom-class">
-  <slot />
-</view>

@@ -10,6 +10,5 @@ node_modules/
 # Build outputs
 dist/
 
-# Project assets generated/temporary
-src/res/
-src/assets/
+# Generated asset bundles (keep source assets tracked)
+# add specific generated paths here if needed
