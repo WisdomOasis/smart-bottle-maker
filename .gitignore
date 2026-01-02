@@ -1,0 +1,15 @@
+# OS files
+.DS_Store
+
+# IDE
+.vscode/
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Project assets generated/temporary
+src/res/
+src/assets/
