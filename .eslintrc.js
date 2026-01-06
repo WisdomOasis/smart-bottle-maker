@@ -2,10 +2,20 @@ module.exports = {
   root: true,
   env: {
     es2020: true,
+    browser: true,
     node: true,
   },
+  parser: "@typescript-eslint/parser",
   parserOptions: {
-    sourceType: 'module',
+    ecmaVersion: 2020,
+    sourceType: "module",
   },
-  ignorePatterns: ['dist/', 'node_modules/'],
+  extends: ["eslint-config-tuya-panel"],
+  ignorePatterns: [
+    "dist/",
+    "node_modules/",
+    "typings/",
+    "src/@types/",
+    "**/*.d.ts",
+  ],
 };
