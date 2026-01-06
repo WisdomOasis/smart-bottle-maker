@@ -1,14 +1,14 @@
-import { Routes } from '@ray-js/types';
+import { Routes } from "@ray-js/types";
 
 export const routes: Routes = [
   {
-    route: '/',
-    path: '/pages/home/index',
-    name: 'Home',
+    route: "/",
+    path: "/pages/onboarding/index",
+    name: "Onboarding",
   },
   {
-    route: '/more',
-    path: '/pages/more/index',
-    name: 'More',
+    route: "/home",
+    path: "/pages/home/index",
+    name: "Home",
   },
 ];
