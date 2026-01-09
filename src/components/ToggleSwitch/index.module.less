@@ -1,0 +1,42 @@
+.switch {
+  width: 80rpx;
+  height: 48rpx;
+  border-radius: 100rpx;
+  background: #316a92;
+  opacity: 0.3;
+  display: flex;
+  align-items: center;
+  padding: 4rpx;
+  box-sizing: border-box;
+  transition: background 160ms ease;
+}
+
+.switchOn {
+  background: linear-gradient(180deg, #9dd6ff 0%, #59b9ff 100%);
+  opacity: 1;
+}
+
+.switchGreen {
+  background: #7e591e;
+}
+
+.switchOnGreen {
+  background: linear-gradient(180deg, #baeBA5 0%, #94cb7d 100%);
+  opacity: 1;
+}
+
+.switchDisabled {
+  opacity: 0.1;
+}
+
+.thumb {
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #ffffff 40%, #bbe2ff 100%);
+  transition: transform 160ms ease;
+}
+
+.thumbOn {
+  transform: translateX(36rpx);
+}
