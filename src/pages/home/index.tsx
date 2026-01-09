@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { View, Text, Image } from "@ray-js/ray";
+import { View, Text, Image, router } from "@ray-js/ray";
 import { useDevice, useProps, useActions } from "@ray-js/panel-sdk";
 import Res from "@/res";
-import { getSelectedPet } from "@/utils/petSelection";
+import { getSelectedPet, clearSelectedPet } from "@/utils/petSelection";
 import dpCodes from "@/constant/dpCodes";
 import PowerSwitch from "@/components/PowerSwitch";
 import MistModal from "@/components/MistModal";
@@ -374,6 +374,11 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleRechoosePet = () => {
+    clearSelectedPet();
+    router.push("/onboarding");
+  };
+
   return (
     <View className={styles.container}>
       <View className={styles.navbar}>
@@ -381,6 +386,9 @@ const HomePage: React.FC = () => {
         <View className={styles.navActions}>
           <Image src={Res.icNotification} className={styles.navIcon} />
           <Image src={Res.icSettings} className={styles.navIcon} />
+          <Text className={styles.navLink} onClick={handleRechoosePet}>
+            ペット変更
+          </Text>
         </View>
       </View>
 

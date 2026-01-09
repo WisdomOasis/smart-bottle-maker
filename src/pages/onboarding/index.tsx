@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { View, Text, Image, router } from "@ray-js/ray";
 import Res from "@/res";
 import PetIcon from "@/components/PetIcon";
-import { setSelectedPet as setSelectedPetGlobal } from "@/utils/petSelection";
+import {
+  setSelectedPet as setSelectedPetGlobal,
+  getSelectedPet,
+} from "@/utils/petSelection";
 import styles from "./index.module.less";
 
 interface PetOption {
@@ -22,6 +25,14 @@ const petOptions: PetOption[] = [
 
 const OnboardingPage: React.FC = () => {
   const [selectedPet, setSelectedPetState] = useState<string>(petOptions[0].id);
+
+  useEffect(() => {
+    const saved = getSelectedPet();
+    if (saved) {
+      setSelectedPetState(saved);
+      router.replace("/home");
+    }
+  }, []);
 
   const handleStart = () => {
     setSelectedPetGlobal(selectedPet);
