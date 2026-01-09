@@ -52,7 +52,7 @@
   line-height: 1;
   letter-spacing: 0;
   text-align: center;
-  color: var(--color-text-main);
+  color: #1f1902;
   display: block;
 }
 
@@ -69,7 +69,7 @@
   line-height: 1;
   letter-spacing: 0;
   text-align: center;
-  color: var(--color-text-sub);
+  color: rgba(31, 25, 2, 0.5);
   display: block;
 }
 
@@ -80,13 +80,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-bottom: 88rpx;
 }
 
 .heroImage {
   width: 232px;
   height: 248px;
   object-fit: contain;
-  filter: drop-shadow(0 14rpx 22rpx rgba(0, 0, 0, 0.16));
+  display: block;
+  position: relative;
+  z-index: 2;
+}
+
+.heroImageWrap {
+  width: 232px;
+  height: 248px;
+  border-radius: 120px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
+.heroImageWrap::after {
+  content: '';
+  position: absolute;
+  width: 232px;
+  height: 248px;
+  bottom: -10rpx;
+  right: -10rpx;
+  background: radial-gradient(120% 120% at 70% 70%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 70%);
+  filter: blur(22rpx);
+  border-radius: 120px;
+  z-index: 0;
 }
 
 .heroPetIcon {
@@ -94,18 +121,19 @@
   width: 72px;
   height: 72px;
   transform: translateY(45rpx);
+  z-index: 3;
 }
 
 .divider {
   width: 100%;
   height: 0;
   border-bottom: 1px dashed rgba(31, 25, 2, 0.3);
-  margin: 88rpx 0 48rpx 0;
+  margin-bottom: 48rpx;
 }
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 10rpx;
   margin-bottom: 48rpx;
 }
@@ -153,14 +181,51 @@
 
 .actionBadge {
   flex: 1;
-  padding: 16rpx;
-  border-radius: 20rpx;
-  background: var(--color-chip-bg);
-  color: var(--color-primary-dark);
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32rpx;
+  padding: 10rpx 0 0;
 }
 
 .disabled {
   opacity: 0.4;
   pointer-events: none;
+}
+
+.actionIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 28px;
+  padding: 20px;
+  background: linear-gradient(151.69deg, #fff9ec 27.73%, #fff5e0 49.68%, #fffaf2 86.26%);
+  border: 1px solid;
+  border-image-source: linear-gradient(332.03deg, rgba(255, 255, 255, 0) 70.6%, rgba(255, 255, 255, 0.7) 85.38%);
+  box-shadow: 16px 16px 16px 0px #a57d3f14;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.actionIconActive {
+  background: linear-gradient(151.69deg, #f2f9ff 27.73%, #dff0ff 49.68%, #f8fcff 86.26%);
+}
+
+.actionBadgeExpanded .actionIcon {
+  background: #ffffff;
+}
+
+.actionIconImg {
+  width: 24px;
+  height: 24px;
+}
+
+.actionLabel {
+  font-family: "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 1;
+  text-align: center;
+  color: #1f1902;
 }

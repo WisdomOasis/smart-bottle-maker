@@ -29,6 +29,13 @@ import icPowerOn from "./ic_power_on.svg";
 import icPowerOnActive from "./ic_power_on_active.svg";
 import icPowerOff from "./ic_power_off.svg";
 import icPowerOffActive from "./ic_power_off_active.svg";
+import icArrowDown from "./ic_arrow_down.svg";
+import icMist from "./ic_mist.svg";
+import icMistActive from "./ic_mist_active.svg";
+import icFan from "./ic_fan.svg";
+import icFanActive from "./ic_fan_active.svg";
+import icCooling from "./ic_cooling.svg";
+import icCoolingActive from "./ic_cooling_active.svg";
 import temperatureBalance from "./temperature_balance.png";
 import temperatureHigh from "./temperature_high.png";
 import temperatureLow from "./temperature_low.png";
@@ -65,6 +72,13 @@ export default {
   icPowerOnActive,
   icPowerOff,
   icPowerOffActive,
+  icArrowDown,
+  icMist,
+  icMistActive,
+  icFan,
+  icFanActive,
+  icCooling,
+  icCoolingActive,
   temperatureBalance,
   temperatureHigh,
   temperatureLow,

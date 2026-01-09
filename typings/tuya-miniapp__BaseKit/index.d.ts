@@ -166,6 +166,23 @@ declare namespace ty {
   }): void
 
   
+  export function getTempDirectory(params?: {
+    complete?: () => void
+    success?: (params: {
+      
+      tempDirectory: string
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
   export function startGyroscope(params?: {
     
     interval?: GyroscopeInterval
@@ -1153,6 +1170,22 @@ declare namespace ty {
     }) => void
   ): void
 
+  export enum WidgetVersionType {
+    
+    release = "release",
+
+    
+    preview = "preview",
+  }
+
+  export enum WidgetPosition {
+    
+    bottom = "bottom",
+
+    
+    top = "top",
+  }
+
   export type Profile = {
     
     redirectStart: number
@@ -1467,6 +1500,34 @@ declare namespace ty {
     shortLink?: string
   }
 
+  export type MiniWidgetDeploysBean = {
+    
+    dialogId: string
+    
+    appId: string
+    
+    pagePath?: string
+    
+    deviceId?: string
+    
+    groupId?: string
+    
+    style?: string
+    
+    versionType?: WidgetVersionType
+    
+    version?: string
+    
+    position?: WidgetPosition
+    
+    autoDismiss?: boolean
+  }
+
+  export type MiniWidgetDialogBean = {
+    
+    dialogId: string
+  }
+
   export type DeviceMotionBean = {
     
     interval?: DeviceMotionInterval
@@ -1514,6 +1575,11 @@ declare namespace ty {
   export type SaveFileSyncCallback = {
     
     savedFilePath: string
+  }
+
+  export type TempDirectoryResponse = {
+    
+    tempDirectory: string
   }
 
   export type FileStatsResponse = {
@@ -2048,6 +2114,69 @@ declare namespace ty {
       }
     }) => void
   }): CreateInnerAudioContextTask
+
+  
+  interface MiniWidgetDialogTask {
+    
+    dismissMiniWidget(params: {
+      complete?: () => void
+      success?: (params: null) => void
+      fail?: (params: {
+        errorMsg: string
+        errorCode: string | number
+        innerError: {
+          errorCode: string | number
+          errorMsg: string
+        }
+      }) => void
+    }): void
+
+    
+    onWidgetDismiss(
+      listener: (params: {
+        
+        dialogId: string
+      }) => void
+    ): void
+
+    
+    offWidgetDismiss(
+      listener: (params: {
+        
+        dialogId: string
+      }) => void
+    ): void
+  }
+  export function openMiniWidget(params: {
+    
+    appId: string
+    
+    pagePath?: string
+    
+    deviceId?: string
+    
+    groupId?: string
+    
+    style?: string
+    
+    versionType?: WidgetVersionType
+    
+    version?: string
+    
+    position?: WidgetPosition
+    
+    autoDismiss?: boolean
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): MiniWidgetDialogTask
 
   
   interface DownloadFileTask {
