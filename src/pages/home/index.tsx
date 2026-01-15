@@ -3,7 +3,7 @@ import clsx from "clsx";
 import { View, Text, Image, router } from "@ray-js/ray";
 import { useDevice, useProps, useActions } from "@ray-js/panel-sdk";
 import Res from "@/res";
-import { getSelectedPet, clearSelectedPet } from "@/utils/petSelection";
+import { getSelectedPet } from "@/utils/petSelection";
 import dpCodes from "@/constant/dpCodes";
 import PowerSwitch from "@/components/PowerSwitch";
 import MistModal from "@/components/MistModal";
@@ -86,6 +86,10 @@ const HomePage: React.FC = () => {
   const [lastLightKey, setLastLightKey] = useState<LightKey>("blue");
   const isPowerOn = powerLocal;
   const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
+  const formatMetric = (val: number) => {
+    const s = val.toFixed(1);
+    return s.endsWith(".0") ? s.slice(0, -2) : s;
+  };
 
   useEffect(() => {
     setActiveModal(null);
@@ -105,8 +109,7 @@ const HomePage: React.FC = () => {
     const getNumber = (code: string, fallback: number) => {
       const raw = (dpState as Record<string, any>)?.[code];
       if (typeof raw !== "number") return fallback;
-      const scale = (dpSchema as any)?.[code]?.property?.scale || 0;
-      return raw / 10 ** scale;
+      return raw / 10;
     };
 
     const temperature = getNumber("temp_current", fallbackStatus.temperature);
@@ -118,11 +121,6 @@ const HomePage: React.FC = () => {
       connection: devInfo?.isOnline ? "online" : fallbackStatus.connection,
     };
   }, [devInfo?.isOnline, dpSchema, dpState]);
-
-  const activeTabConfig = useMemo(
-    () => tabs.find((tab) => tab.key === activeTab) || tabs[0],
-    [activeTab]
-  );
 
   const climateActions = [
     {
@@ -149,9 +147,9 @@ const HomePage: React.FC = () => {
   ];
 
   const temperatureIcon =
-    status.temperature >= 20 && status.temperature <= 26
+    status.temperature >= 18 && status.temperature <= 22
       ? Res.temperatureBalance
-      : status.temperature > 26
+      : status.temperature > 27
       ? Res.temperatureHigh
       : Res.temperatureLow;
 
@@ -375,8 +373,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleRechoosePet = () => {
-    clearSelectedPet();
-    router.push("/onboarding");
+    router.push("/");
   };
 
   return (
@@ -384,24 +381,24 @@ const HomePage: React.FC = () => {
       <View className={styles.navbar}>
         <Image src={Res.airbuggyLogo} className={styles.logo} />
         <View className={styles.navActions}>
-          <Image src={Res.icNotification} className={styles.navIcon} />
-          <Image src={Res.icSettings} className={styles.navIcon} />
           <Text className={styles.navLink} onClick={handleRechoosePet}>
             ペット変更
           </Text>
+          {/* <Image src={Res.icNotification} className={styles.navIcon} />
+          <Image src={Res.icSettings} className={styles.navIcon} /> */}
         </View>
       </View>
 
       <View className={styles.statusStrip}>
         <View className={styles.statusBlock}>
           <Text className={styles.statusValue}>
-            {status.temperature.toFixed(0)}°C
+            {formatMetric(status.temperature)}°C
           </Text>
           <Text className={styles.statusLabel}>気温</Text>
         </View>
         <View className={styles.statusBlock}>
           <Text className={styles.statusValue}>
-            {status.humidity.toFixed(0)}%
+            {formatMetric(status.humidity)}%
           </Text>
           <Text className={styles.statusLabel}>湿度</Text>
         </View>

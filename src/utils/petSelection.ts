@@ -1,4 +1,4 @@
-import { getStorageSync, setStorageSync, removeStorageSync } from "@ray-js/ray";
+import { getStorageSync, setStorageSync } from "@ray-js/ray";
 
 const STORAGE_KEY = "selectedPetId";
 let selectedPetId: string | null = null;
@@ -24,13 +24,4 @@ export const getSelectedPet = (): string | null => {
     return null;
   }
   return null;
-};
-
-export const clearSelectedPet = (): void => {
-  selectedPetId = null;
-  try {
-    removeStorageSync?.({ key: STORAGE_KEY });
-  } catch (e) {
-    // ignore
-  }
 };

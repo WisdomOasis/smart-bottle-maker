@@ -6,18 +6,15 @@
   "description": "",
   "miniprogramRoot": "./dist/tuya",
   "dependencies": {
-    "BaseKit": "3.0.6",
+    "MiniKit": "3.0.7",
     "DeviceKit": "4.6.1",
-    "BizKit": "4.2.0",
-    "HomeKit": "3.0.2",
-    "TYKit": "2.3.4",
-    "MiniKit": "3.0.7"
+    "BaseKit": "3.0.6"
   },
   "baseversion": "2.29.12",
   "projectname": "SmartFan",
   "devMode": "ray",
   "compileType": "miniprogram",
   "compilerOptions": {
-    "watchMode": "production"
+    "watchMode": "development"
   }
 }
