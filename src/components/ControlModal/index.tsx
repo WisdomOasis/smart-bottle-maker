@@ -6,10 +6,14 @@ import styles from "./index.module.less";
 
 interface Props {
   title: string;
-  enabled: boolean;
-  onToggleEnabled: (next: boolean) => void;
+  // eslint-disable-next-line react/require-default-props
+  enabled?: boolean;
+  // eslint-disable-next-line react/require-default-props
+  onToggleEnabled?: (next: boolean) => void;
   onClose: () => void;
   children: React.ReactNode;
+  // eslint-disable-next-line react/require-default-props
+  hideToggle?: boolean;
 }
 
 const ControlModal: React.FC<Props> = ({
@@ -18,12 +22,17 @@ const ControlModal: React.FC<Props> = ({
   onToggleEnabled,
   onClose,
   children,
+  hideToggle = true,
 }) => {
+  const isOn = Boolean(enabled);
+
   return (
     <View className={styles.container}>
       <View className={styles.header}>
         <Text className={styles.title}>{title}</Text>
-        <ToggleSwitch checked={enabled} onToggle={onToggleEnabled} />
+        {!hideToggle && onToggleEnabled && (
+          <ToggleSwitch checked={isOn} onToggle={onToggleEnabled} />
+        )}
       </View>
       <View className={styles.content}>{children}</View>
       <View className={styles.closeRow} onClick={onClose}>

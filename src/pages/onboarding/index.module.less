@@ -7,6 +7,11 @@
   box-sizing: border-box;
 }
 
+.splash {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #f7f4ec 0%, #fcf6e9 60%);
+}
+
 .navbar {
   display: flex;
   align-items: center;
@@ -136,6 +141,12 @@
   border-radius: 100px;
   border: 1px solid transparent;
   box-shadow: 0 10rpx 20rpx rgba(0, 0, 0, 0.06);
+  transition: opacity 160ms ease;
+}
+
+.startButtonDisabled {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .startText {

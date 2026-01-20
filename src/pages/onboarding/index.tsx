@@ -1,11 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, router } from "@ray-js/ray";
+import { View, Text, Image, router, getStorage, setStorage } from "@ray-js/ray";
 import Res from "@/res";
 import PetIcon from "@/components/PetIcon";
-import {
-  setSelectedPet as setSelectedPetGlobal,
-  getSelectedPet,
-} from "@/utils/petSelection";
 import styles from "./index.module.less";
 
 interface PetOption {
@@ -24,18 +20,26 @@ const petOptions: PetOption[] = [
 ];
 
 const OnboardingPage: React.FC = () => {
-  const [selectedPet, setSelectedPetState] = useState<string>(petOptions[0].id);
+  const [selectedPet, setSelectedPetState] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = getSelectedPet();
-    if (saved) {
-      setSelectedPetState(saved);
-      router.replace("/home");
-    }
+    getStorage({
+      key: "selectedPetId",
+      success: (res) => {
+        if (res.data) {
+          setSelectedPetState(res.data);
+          router.replace("/home");
+        }
+      },
+    });
   }, []);
 
-  const handleStart = () => {
-    setSelectedPetGlobal(selectedPet);
+  const handleStart = async () => {
+    if (!selectedPet) return;
+    setStorage({
+      key: "selectedPetId",
+      data: selectedPet,
+    });
     router.replace("/home");
   };
 
@@ -72,7 +76,13 @@ const OnboardingPage: React.FC = () => {
       </View>
 
       <View className={styles.footer}>
-        <View className={styles.startButton} onClick={handleStart}>
+        <View
+          className={`${styles.startButton} ${
+            !selectedPet ? styles.startButtonDisabled : ""
+          }`}
+          onClick={handleStart}
+          aria-disabled={!selectedPet}
+        >
           <Text className={styles.startText}>開始</Text>
           <Image src={Res.startIcon} className={styles.startIcon} />
         </View>

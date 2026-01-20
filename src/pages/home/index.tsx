@@ -1,9 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { View, Text, Image, router } from "@ray-js/ray";
+import { View, Text, Image, router, getStorage } from "@ray-js/ray";
 import { useDevice, useProps, useActions } from "@ray-js/panel-sdk";
 import Res from "@/res";
-import { getSelectedPet } from "@/utils/petSelection";
 import dpCodes from "@/constant/dpCodes";
 import PowerSwitch from "@/components/PowerSwitch";
 import MistModal from "@/components/MistModal";
@@ -73,17 +72,14 @@ const HomePage: React.FC = () => {
   const [activeModal, setActiveModal] = useState<
     "mist" | "fan" | "cooling" | null
   >(null);
-  const [mistMode, setMistMode] = useState<"single" | "double">("single");
-  const [mistEnabled, setMistEnabled] = useState<boolean>(false);
-  const [fanEnabled, setFanEnabled] = useState<boolean>(false);
-  const [fanLevel, setFanLevel] = useState<number>(1);
-  const [coolingEnabled, setCoolingEnabled] = useState<boolean>(false);
-  const [coolingMode, setCoolingMode] = useState<1 | 2>(1);
-  const [o3Enabled, setO3Enabled] = useState<boolean>(false);
-  const [o3Mode, setO3Mode] = useState<"1" | "4">("1");
+  const [mistMode, setMistMode] = useState<"off" | "single" | "double">("off");
+  const [fanLevel, setFanLevel] = useState<number>(0);
+  const [coolingMode, setCoolingMode] = useState<0 | 1 | 2>(0);
+  const [o3Mode, setO3Mode] = useState<"0" | "1" | "4">("0");
   const [lightVal, setLightVal] = useState<number | undefined>(undefined);
   const [lightEnabled, setLightEnabled] = useState<boolean>(false);
   const [lastLightKey, setLastLightKey] = useState<LightKey>("blue");
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const isPowerOn = powerLocal;
   const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
   const formatMetric = (val: number) => {
@@ -96,13 +92,20 @@ const HomePage: React.FC = () => {
   }, [activeTab]);
 
   useEffect(() => {
+    getStorage({
+      key: "selectedPetId",
+      success: (res) => {
+        if (res.data) {
+          setSelectedPetId(res.data);
+        }
+      },
+    });
+  }, []);
+
+  useEffect(() => {
     const val = (dpState as Record<string, any>)?.[dpCodes.power];
     if (val === undefined || val === null) return;
-    if (val === 0 || val === false) {
-      setPowerLocal(false);
-    } else {
-      setPowerLocal(Boolean(val));
-    }
+    setPowerLocal(Boolean(val));
   }, [dpState?.[dpCodes.power]]);
 
   const status = useMemo<EnvironmentStatus>(() => {
@@ -154,8 +157,7 @@ const HomePage: React.FC = () => {
       : Res.temperatureLow;
 
   const petStrokeIcon = useMemo(() => {
-    const petId = getSelectedPet();
-    switch (petId) {
+    switch (selectedPetId) {
       case "cat":
         return Res.petCatWhite;
       case "squirrel":
@@ -171,7 +173,7 @@ const HomePage: React.FC = () => {
       default:
         return Res.petDogWhite;
     }
-  }, []);
+  }, [selectedPetId]);
 
   const setDp = (code: string, val: any) => {
     const fn = (actions as any)?.[code]?.set;
@@ -187,37 +189,22 @@ const HomePage: React.FC = () => {
       case "climate": {
         if (action === "噴霧") {
           setActiveModal("mist");
-          setMistEnabled((dpState?.[dpCodes.mist] ?? 0) > 0);
           const mistVal = dpState?.[dpCodes.mist] ?? 0;
-          setMistMode(mistVal === 2 ? "double" : "single");
+          setMistMode(
+            mistVal <= 0 ? "off" : mistVal === 2 ? "double" : "single"
+          );
           return;
         }
         if (action === "吹く") {
           setActiveModal("fan");
           const fanVal = dpState?.[dpCodes.fan] ?? 0;
-          setFanEnabled(fanVal > 0);
-          setFanLevel(fanVal > 0 ? Math.min(5, Math.max(1, fanVal)) : 1);
+          setFanLevel(Math.min(5, Math.max(0, fanVal)));
           return;
         }
         if (action === "冷房") {
           setActiveModal("cooling");
           const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
-          setCoolingEnabled(coolingVal > 0);
           setCoolingMode(coolingVal === 2 ? 2 : 1);
-        }
-        break;
-      }
-      case "disinfection": {
-        const hasPet = !!dpState?.[dpCodes.pir];
-        if (hasPet) {
-          console.log("存在检测中，暂不启动消毒");
-          break;
-        }
-        if (action === "迅速消毒") {
-          setDp(dpCodes.o3, 1);
-        }
-        if (action === "徹底消毒") {
-          setDp(dpCodes.o3, 4);
         }
         break;
       }
@@ -252,28 +239,12 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleMistModeChange = (mode: "single" | "double") => {
+  const handleMistModeChange = (mode: "off" | "single" | "double") => {
     setMistMode(mode);
-    setDp(dpCodes.mist, mode === "single" ? 1 : 2);
-  };
-
-  const toggleMistEnabled = () => {
-    const next = !mistEnabled;
-    setMistEnabled(next);
-    if (!next) {
+    if (mode === "off") {
       setDp(dpCodes.mist, 0);
     } else {
-      setDp(dpCodes.mist, mistMode === "single" ? 1 : 2);
-    }
-  };
-
-  const toggleFanEnabled = () => {
-    const next = !fanEnabled;
-    setFanEnabled(next);
-    if (!next) {
-      setDp(dpCodes.fan, 0);
-    } else {
-      setDp(dpCodes.fan, fanLevel);
+      setDp(dpCodes.mist, mode === "single" ? 1 : 2);
     }
   };
 
@@ -282,17 +253,7 @@ const HomePage: React.FC = () => {
     setDp(dpCodes.fan, val);
   };
 
-  const toggleCoolingEnabled = () => {
-    const next = !coolingEnabled;
-    setCoolingEnabled(next);
-    if (!next) {
-      setDp(dpCodes.cooling, 0);
-    } else {
-      setDp(dpCodes.cooling, coolingMode);
-    }
-  };
-
-  const handleCoolingChange = (mode: 1 | 2) => {
+  const handleCoolingChange = (mode: 0 | 1 | 2) => {
     setCoolingMode(mode);
     setDp(dpCodes.cooling, mode);
   };
@@ -301,25 +262,25 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const mistVal = dpState?.[dpCodes.mist];
     if (typeof mistVal === "number") {
-      setMistEnabled(mistVal > 0);
-      setMistMode(mistVal === 2 ? "double" : "single");
+      if (mistVal <= 0) {
+        setMistMode("off");
+      } else {
+        setMistMode(mistVal === 2 ? "double" : "single");
+      }
     }
     const fanVal = dpState?.[dpCodes.fan];
     if (typeof fanVal === "number") {
-      setFanEnabled(fanVal > 0);
-      setFanLevel(fanVal > 0 ? Math.min(5, Math.max(1, fanVal)) : 1);
+      setFanLevel(Math.min(5, Math.max(0, fanVal)));
     }
     const coolingVal = dpState?.[dpCodes.cooling];
     if (typeof coolingVal === "number") {
-      setCoolingEnabled(coolingVal > 0);
-      setCoolingMode(coolingVal === 2 ? 2 : coolingVal === 1 ? 1 : coolingMode);
+      setCoolingMode(coolingVal === 2 ? 2 : coolingVal === 1 ? 1 : 0);
     }
     const o3Val = dpState?.[dpCodes.o3];
     if (typeof o3Val === "number") {
       if (o3Val <= 0) {
-        setO3Enabled(false);
+        setO3Mode("0");
       } else {
-        setO3Enabled(true);
         setO3Mode(o3Val === 4 ? "4" : "1");
       }
     }
@@ -340,16 +301,9 @@ const HomePage: React.FC = () => {
     dpState?.[dpCodes.light],
   ]);
 
-  const handleO3Toggle = () => {
-    if (!isPowerOn || isPetPresent) return;
-    const next = !o3Enabled;
-    setO3Enabled(next);
-    setDp(dpCodes.o3, next ? Number(o3Mode) : 0);
-  };
-
-  const handleO3ModeChange = (mode: "1" | "4") => {
+  const handleO3ModeChange = (mode: "0" | "1" | "4") => {
     setO3Mode(mode);
-    if (o3Enabled && isPowerOn && !isPetPresent) {
+    if (isPowerOn && !isPetPresent) {
       setDp(dpCodes.o3, Number(mode));
     }
   };
@@ -372,7 +326,7 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleRechoosePet = () => {
+  const handleRechoosePet = async () => {
     router.push("/");
   };
 
@@ -441,36 +395,28 @@ const HomePage: React.FC = () => {
 
       <MistModal
         visible={activeTab === "climate" && activeModal === "mist"}
-        enabled={mistEnabled}
         mode={mistMode}
-        onToggleEnabled={toggleMistEnabled}
         onChangeMode={(key) => handleMistModeChange(key)}
         onClose={() => setActiveModal(null)}
       />
       <FanModal
         visible={activeTab === "climate" && activeModal === "fan"}
-        enabled={fanEnabled}
         value={fanLevel}
-        onToggleEnabled={toggleFanEnabled}
         onChange={handleFanChange}
         onClose={() => setActiveModal(null)}
       />
       <CoolingModal
         visible={activeTab === "climate" && activeModal === "cooling"}
-        enabled={coolingEnabled}
         mode={coolingMode}
-        onToggleEnabled={toggleCoolingEnabled}
         onChangeMode={handleCoolingChange}
         onClose={() => setActiveModal(null)}
       />
 
       {activeTab === "disinfection" ? (
         <DisinfectionCard
-          enabled={o3Enabled}
           mode={o3Mode}
           isPowerOn={isPowerOn}
           isPetPresent={isPetPresent}
-          onToggle={handleO3Toggle}
           onChangeMode={handleO3ModeChange}
         />
       ) : activeTab === "light" ? (
@@ -518,7 +464,7 @@ const HomePage: React.FC = () => {
           isOn={isPowerOn}
           onToggle={(next) => {
             setPowerLocal(next);
-            setDp(dpCodes.power, next ? 1 : 0);
+            setDp(dpCodes.power, next);
           }}
         />
       </View>

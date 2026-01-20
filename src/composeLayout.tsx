@@ -1,11 +1,13 @@
-import React, { Component } from 'react';
-import { Provider } from 'react-redux';
-import { getSystemInfoSync } from '@ray-js/ray';
-import { devices, dpKit } from './devices';
-import { updateThemeType } from './redux/modules/themeSlice';
-import { initializeSystemInfo } from './redux/modules/systemInfoSlice';
-import store from './redux';
-import './styles/index.less';
+import React, { Component } from "react";
+import { Provider } from "react-redux";
+import { getSystemInfoSync } from "@ray-js/ray";
+import { devices, dpKit } from "./devices";
+import { updateThemeType } from "./redux/modules/themeSlice";
+import { initializeSystemInfo } from "./redux/modules/systemInfoSlice";
+import store from "./redux";
+import "./styles/index.less";
+// eslint-disable-next-line import/order
+import { DevInfo } from "@ray-js/panel-sdk";
 
 interface Props {
   devInfo: DevInfo;
@@ -21,9 +23,9 @@ const composeLayout = (SubComp: React.ComponentType<any>) => {
   const { dispatch } = store;
   return class PanelComponent extends Component<Props, State> {
     async onLaunch(object: any) {
-      console.log('=== App onLaunch', object);
+      console.log("=== App onLaunch", object);
       devices.common.init();
-      devices.common.onInitialized(device => dpKit.init(device));
+      devices.common.onInitialized((device) => dpKit.init(device));
       const systemInfo = getSystemInfoSync();
       const { theme } = systemInfo;
 
@@ -36,6 +38,7 @@ const composeLayout = (SubComp: React.ComponentType<any>) => {
 
       return (
         <Provider store={store}>
+          {/* eslint-disable-next-line @typescript-eslint/ban-ts-comment */}
           {/* @ts-ignore */}
           <SubComp extraInfo={extraInfo} {...this.props} />
         </Provider>

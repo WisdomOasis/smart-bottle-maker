@@ -4,36 +4,28 @@ import StepSlider from "@/components/StepSlider";
 
 interface Props {
   visible: boolean;
-  enabled: boolean;
   value: number;
-  onToggleEnabled: (next: boolean) => void;
   onChange: (val: number) => void;
   onClose: () => void;
 }
 
-const FanModal: React.FC<Props> = ({
-  visible,
-  enabled,
-  value,
-  onToggleEnabled,
-  onChange,
-  onClose,
-}) => {
+const FanModal: React.FC<Props> = ({ visible, value, onChange, onClose }) => {
   if (!visible) return null;
 
   return (
     <ControlModal
       title="風量設定"
-      enabled={enabled}
-      onToggleEnabled={onToggleEnabled}
+      enabled={value > 0}
+      onToggleEnabled={(next) => onChange(next ? Math.max(1, value || 1) : 0)}
       onClose={onClose}
+      hideToggle
     >
       <StepSlider
-        min={1}
+        min={0}
         max={5}
         value={value}
         onChange={onChange}
-        disabled={!enabled}
+        disabled={false}
       />
     </ControlModal>
   );

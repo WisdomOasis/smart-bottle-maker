@@ -24,33 +24,36 @@ const StepSlider: React.FC<Props> = ({
   const [trackSize, setTrackSize] = useState({ width: 0, height: 0 });
   const steps = Array.from({ length: max - min + 1 }, (_, i) => min + i);
   const stepCount = steps.length;
-  const stepIndex = Math.min(Math.max(value - min, 0), stepCount - 1);
-  const ratio = Math.max((stepIndex + 1) / stepCount, 0); // fill length steps
+  const clampedValue = Math.min(Math.max(value, min), max);
+  const idx = Math.min(Math.max(clampedValue - min, 0), stepCount - 1);
   const padding = 4;
-
-  const calcStepFromPos = (clientX: number, rect?: DOMRect) => {
-    const width = rect?.width || trackSize.width || 279;
-    const left = rect?.left || 0;
-    const ratio = Math.min(Math.max((clientX - left) / width, 0), 1);
-    const idx = Math.min(
-      stepCount - 1,
-      Math.max(0, Math.floor(ratio * stepCount))
-    );
-    return steps[idx];
-  };
-
-  const handleInteract = (e: any) => {
-    if (disabled) return;
-    const clientX =
-      e?.origin?.touches?.[0]?.clientX ??
-      e?.origin?.changedTouches?.[0]?.clientX ??
-      e?.origin?.clientX;
-    if (typeof clientX !== "number") return;
-    const rect = trackRef.current?.getBoundingClientRect?.();
-    const rootLeft = 16 + 24;
-    const step = calcStepFromPos(clientX - rootLeft, rect);
-    onChange(step);
-  };
+  const displayText = clampedValue === 0 ? "OFF" : String(clampedValue);
+  const baseWidth = trackSize.width || 280;
+  const baseHeight = trackSize.height || 60;
+  const innerWidth = Math.max(baseWidth - padding * 2, 0);
+  const innerHeight = Math.max(baseHeight - padding * 2, 0);
+  const thumbHeightPx = 44;
+  const thumbWidthPx = 44;
+  const ratio = stepCount > 1 ? idx / (stepCount - 1) : 0;
+  const gapThumb = 4;
+  const dotStart = padding + gapThumb + thumbWidthPx / 2;
+  const dotEnd = padding + innerWidth - gapThumb - thumbWidthPx / 2;
+  const thumbCenter = dotStart + (dotEnd - dotStart) * ratio;
+  const fillWidthPx = Math.max(
+    thumbWidthPx + gapThumb * 2,
+    Math.min(
+      innerWidth,
+      thumbCenter -
+        thumbWidthPx / 2 -
+        gapThumb -
+        padding +
+        thumbWidthPx +
+        gapThumb * 2
+    )
+  );
+  const fillHeightPx = innerHeight;
+  const thumbTopPx = Math.max((baseHeight - thumbHeightPx) / 2, 0);
+  const thumbLeftPx = thumbCenter - thumbWidthPx / 2;
 
   useEffect(() => {
     const updateSize = () => {
@@ -69,16 +72,6 @@ const StepSlider: React.FC<Props> = ({
     return undefined;
   }, [value, min, max]);
 
-  const baseWidth = trackSize.width || 279;
-  const baseHeight = trackSize.height || 60;
-  const innerWidth = Math.max(baseWidth - padding * 2, 0);
-  const innerHeight = Math.max(baseHeight - padding * 2, 0);
-  const fillWidthPx = innerWidth * ratio;
-  const fillHeightPx = innerHeight;
-  const thumbHeightPx = 44;
-  const thumbLeftPx = padding + fillWidthPx - 4;
-  const thumbTopPx = Math.max((baseHeight - thumbHeightPx) / 2, 0);
-
   return (
     <View className={styles.stepSliderWrapper}>
       <View
@@ -87,13 +80,13 @@ const StepSlider: React.FC<Props> = ({
       >
         <View className={styles.dots} style={{ zIndex: disabled ? 0 : 1 }}>
           {steps.map((step, idx) => {
-            const leftPercent =
-              (stepCount === 0 ? 0.5 : (2 * idx + 1) / (stepCount * 2)) * 100;
+            const posRatio = stepCount > 1 ? idx / (stepCount - 1) : 0;
+            const leftPx = dotStart + (dotEnd - dotStart) * posRatio;
             return (
               <View
                 key={step}
                 className={styles.dot}
-                style={{ left: `${leftPercent}%` }}
+                style={{ left: `${leftPx}px` }}
               />
             );
           })}
@@ -114,19 +107,17 @@ const StepSlider: React.FC<Props> = ({
             top: `${thumbTopPx}px`,
           }}
         >
-          <Text className={styles.thumbText}>{value}</Text>
+          <Text className={styles.thumbText}>{displayText}</Text>
         </View>
       </View>
 
       <View className={styles.nativeSliderWrapper}>
         <Slider
           step={1}
-          min={1}
-          max={stepCount}
+          min={min}
+          max={max}
           value={value}
           disabled={disabled}
-          activeColor="#59b9ff"
-          blockColor="#f2f9ff"
           onChange={(e: any) => {
             if (disabled) return;
             const next = Number(e?.value ?? value);

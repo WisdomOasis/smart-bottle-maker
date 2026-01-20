@@ -1,24 +1,20 @@
 import React from "react";
 import { View } from "@ray-js/ray";
-import ControlModal from "@/components/ControlModal";
 import SegmentedRadio from "@/components/SegmentedRadio";
+import ControlModal from "@/components/ControlModal";
 
-type MistMode = "single" | "double";
+type MistMode = "off" | "single" | "double";
 
 interface Props {
   visible: boolean;
-  enabled: boolean;
   mode: MistMode;
-  onToggleEnabled: (next: boolean) => void;
   onChangeMode: (mode: MistMode) => void;
   onClose: () => void;
 }
 
 const MistModal: React.FC<Props> = ({
   visible,
-  enabled,
   mode,
-  onToggleEnabled,
   onChangeMode,
   onClose,
 }) => {
@@ -27,21 +23,20 @@ const MistModal: React.FC<Props> = ({
   return (
     <ControlModal
       title="噴霧量設定"
-      enabled={enabled}
-      onToggleEnabled={onToggleEnabled}
+      enabled={mode !== "off"}
+      onToggleEnabled={(next) => onChangeMode(next ? "single" : "off")}
       onClose={onClose}
     >
-      <View>
-        <SegmentedRadio
-          options={[
-            { key: "single", label: "ノズル1" },
-            { key: "double", label: "ノズル2" },
-          ]}
-          value={mode}
-          onChange={(key) => onChangeMode(key as MistMode)}
-          disabled={!enabled}
-        />
-      </View>
+      <SegmentedRadio
+        options={[
+          { key: "off", label: "閉じる" },
+          { key: "single", label: "ノズル1" },
+          { key: "double", label: "ノズル2" },
+        ]}
+        value={mode}
+        onChange={(key) => onChangeMode(key as MistMode)}
+        disabled={false}
+      />
     </ControlModal>
   );
 };

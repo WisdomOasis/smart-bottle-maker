@@ -173,13 +173,13 @@ export const defaultSchema = [
   {
     attr: 0,
     canTrigger: true,
-    code: "power",
+    code: "power_switch",
     defaultRecommend: true,
     editPermission: true,
     executable: true,
     extContent: "",
     iconname: "icon-power",
-    id: 112,
+    id: 110,
     mode: "rw",
     name: "电源",
     property: {

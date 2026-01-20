@@ -18,6 +18,8 @@ interface Props {
   disabled?: boolean;
   // eslint-disable-next-line react/require-default-props
   tone?: "blue" | "green";
+  // eslint-disable-next-line react/require-default-props
+  showIndicator?: boolean;
 }
 
 const SegmentedRadio: React.FC<Props> = ({
@@ -27,6 +29,7 @@ const SegmentedRadio: React.FC<Props> = ({
   className,
   disabled = false,
   tone = "blue",
+  showIndicator,
 }) => {
   return (
     <View
@@ -55,22 +58,26 @@ const SegmentedRadio: React.FC<Props> = ({
               onChange(option.key);
             }}
           >
-            <View
-              className={clsx(
-                styles.optionIndicator,
-                active && styles.optionIndicatorActive,
-                active && tone === "green" && styles.optionIndicatorActiveGreen
-              )}
-            >
-              {active && (
-                <View
-                  className={clsx(
-                    styles.optionCheck,
-                    tone === "green" && styles.optionCheckGreen
-                  )}
-                />
-              )}
-            </View>
+            {showIndicator && (
+              <View
+                className={clsx(
+                  styles.optionIndicator,
+                  active && styles.optionIndicatorActive,
+                  active &&
+                    tone === "green" &&
+                    styles.optionIndicatorActiveGreen
+                )}
+              >
+                {active && (
+                  <View
+                    className={clsx(
+                      styles.optionCheck,
+                      tone === "green" && styles.optionCheckGreen
+                    )}
+                  />
+                )}
+              </View>
+            )}
             <Text
               className={clsx(
                 styles.optionLabel,

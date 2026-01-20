@@ -3,7 +3,7 @@
   "type": "panel-app",
   "ownerType": "tuya-official",
   "i18n": false,
-  "description": "",
+  "description": "宠物充气车配件",
   "miniprogramRoot": "./dist/tuya",
   "dependencies": {
     "MiniKit": "3.0.7",

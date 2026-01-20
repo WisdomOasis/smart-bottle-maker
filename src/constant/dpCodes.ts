@@ -8,5 +8,5 @@ export default {
   light: "light", // 灯光 RGB (0-16777215)
   pir: "pir", // 红外感应
   o3: "o3", // 臭氧 (0-7)
-  power: "power", // 总电源
+  power: "power_switch", // 总电源
 };

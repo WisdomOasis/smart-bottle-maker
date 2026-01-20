@@ -2,22 +2,18 @@ import React from "react";
 import ControlModal from "@/components/ControlModal";
 import SegmentedRadio from "@/components/SegmentedRadio";
 
-type CoolingMode = 1 | 2;
+type CoolingMode = 0 | 1 | 2;
 
 interface Props {
   visible: boolean;
-  enabled: boolean;
   mode: CoolingMode;
-  onToggleEnabled: (next: boolean) => void;
   onChangeMode: (mode: CoolingMode) => void;
   onClose: () => void;
 }
 
 const CoolingModal: React.FC<Props> = ({
   visible,
-  enabled,
   mode,
-  onToggleEnabled,
   onChangeMode,
   onClose,
 }) => {
@@ -26,18 +22,19 @@ const CoolingModal: React.FC<Props> = ({
   return (
     <ControlModal
       title="冷房モード"
-      enabled={enabled}
-      onToggleEnabled={onToggleEnabled}
+      enabled={mode !== 0}
+      onToggleEnabled={(next) => onChangeMode(next ? 1 : 0)}
       onClose={onClose}
     >
       <SegmentedRadio
         options={[
+          { key: "0", label: "閉じる" },
           { key: "1", label: "断続" },
           { key: "2", label: "持続" },
         ]}
         value={String(mode)}
         onChange={(key) => onChangeMode(Number(key) as CoolingMode)}
-        disabled={!enabled}
+        disabled={false}
       />
     </ControlModal>
   );
