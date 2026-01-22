@@ -38,11 +38,13 @@ const DisinfectionCard: React.FC<Props> = ({
   const running = isRunning ?? (mode === "1" || mode === "2");
   const paused = isPaused ?? (running && isPetPresent);
   const disabled = !isPowerOn;
+  const hasRemaining =
+    remainingMinutes !== null && remainingMinutes !== undefined;
 
   const statusLabel = running
     ? paused
       ? "停止"
-      : remainingMinutes
+      : hasRemaining
       ? `残り${remainingMinutes}分`
       : undefined
     : undefined;

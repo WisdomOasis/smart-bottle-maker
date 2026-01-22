@@ -307,8 +307,12 @@ const HomePage: React.FC = () => {
       }
     }
     const o3TimeVal = dpState?.[dpCodes.o3Time];
-    if (typeof o3TimeVal === "number") {
-      setO3RemainingMinutes(o3TimeVal);
+    if (o3TimeVal !== undefined && o3TimeVal !== null) {
+      const parsed =
+        typeof o3TimeVal === "number" ? o3TimeVal : Number(o3TimeVal);
+      if (!Number.isNaN(parsed)) {
+        setO3RemainingMinutes(parsed);
+      }
     }
     const lightState = dpState?.[dpCodes.light];
     if (typeof lightState === "number") {
