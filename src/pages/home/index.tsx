@@ -7,7 +7,7 @@ import dpCodes from "@/constant/dpCodes";
 import PowerSwitch from "@/components/PowerSwitch";
 import MistModal from "@/components/MistModal";
 import FanModal from "@/components/FanModal";
-import CoolingModal from "@/components/CoolingModal";
+// import CoolingModal from "@/components/CoolingModal";
 import DisinfectionCard from "@/components/DisinfectionCard";
 import LightCard, { LIGHT_MAP, LightKey } from "@/components/LightCard";
 import styles from "./index.module.less";
@@ -264,10 +264,19 @@ const HomePage: React.FC = () => {
     setDp(dpCodes.fan, val);
   };
 
-  const handleCoolingChange = (mode: 0 | 1 | 2) => {
-    setCoolingMode(mode);
-    setDp(dpCodes.cooling, mode);
-  };
+  // const handleCoolingChange = (mode: 0 | 1 | 2) => {
+  //   setCoolingMode(mode);
+  //   setDp(dpCodes.cooling, mode);
+  // };
+
+  const rawO3Status = dpState?.[dpCodes.o3Status];
+  const o3Status =
+    typeof rawO3Status === "number"
+      ? rawO3Status
+      : rawO3Status != null
+      ? Number(rawO3Status)
+      : undefined;
+  const o3RecoveryPhase = o3Status === 5;
 
   // sync UI with dp updates
   useEffect(() => {
@@ -463,6 +472,9 @@ const HomePage: React.FC = () => {
           isRunning={isO3Running}
           isPaused={isO3Paused}
           remainingMinutes={o3Remaining ?? undefined}
+          statusLabelOverride={
+            o3RecoveryPhase ? "緊急停止後の回復フェーズ" : undefined
+          }
           isPowerOn={isPowerOn}
           isPetPresent={isPetPresent}
           onChangeMode={handleO3ModeChange}

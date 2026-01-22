@@ -17,6 +17,9 @@ interface Props {
   // 是否偵測到人/寵物而暫停
   // eslint-disable-next-line react/require-default-props
   isPaused?: boolean;
+  // 狀態標籤覆寫，例如「緊急停止後の回復フェーズ」
+  // eslint-disable-next-line react/require-default-props
+  statusLabelOverride?: string;
   // eslint-disable-next-line react/require-default-props
   className?: string;
 }
@@ -29,6 +32,7 @@ const DisinfectionCard: React.FC<Props> = ({
   remainingMinutes,
   isRunning,
   isPaused,
+  statusLabelOverride,
   className,
 }) => {
   const running = isRunning ?? (mode === "1" || mode === "2");
@@ -42,6 +46,7 @@ const DisinfectionCard: React.FC<Props> = ({
       ? `残り${remainingMinutes}分`
       : undefined
     : undefined;
+  const mergedStatusLabel = statusLabelOverride ?? statusLabel;
 
   const noteText = !running
     ? "人や動物を検知したため、消毒機能を停止します。"
@@ -71,14 +76,14 @@ const DisinfectionCard: React.FC<Props> = ({
     <View className={clsx(styles.card, disabled && styles.disabled, className)}>
       <View className={styles.header}>
         <Text className={styles.title}>オゾン消毒</Text>
-        {statusLabel && (
+        {mergedStatusLabel && (
           <Text
             className={clsx(
               styles.statusLabel,
               paused && styles.statusLabelPaused
             )}
           >
-            {statusLabel}
+            {mergedStatusLabel}
           </Text>
         )}
       </View>
