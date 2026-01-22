@@ -7,9 +7,16 @@ interface Props {
   value: number;
   onChange: (val: number) => void;
   onClose: () => void;
+  isPowerOn: boolean;
 }
 
-const FanModal: React.FC<Props> = ({ visible, value, onChange, onClose }) => {
+const FanModal: React.FC<Props> = ({
+  visible,
+  value,
+  onChange,
+  onClose,
+  isPowerOn,
+}) => {
   if (!visible) return null;
 
   return (
@@ -25,7 +32,7 @@ const FanModal: React.FC<Props> = ({ visible, value, onChange, onClose }) => {
         max={5}
         value={value}
         onChange={onChange}
-        disabled={false}
+        disabled={!isPowerOn}
       />
     </ControlModal>
   );

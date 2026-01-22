@@ -452,18 +452,21 @@ const HomePage: React.FC = () => {
         mode={mistMode}
         onChangeMode={(key) => handleMistModeChange(key)}
         onClose={() => setActiveModal(null)}
+        isPowerOn={isPowerOn}
       />
       <FanModal
         visible={activeTab === "climate" && activeModal === "fan"}
         value={fanLevel}
         onChange={handleFanChange}
         onClose={() => setActiveModal(null)}
+        isPowerOn={isPowerOn}
       />
       {/* <CoolingModal
         visible={activeTab === "climate" && activeModal === "cooling"}
         mode={coolingMode}
         onChangeMode={handleCoolingChange}
         onClose={() => setActiveModal(null)}
+        isPowerOn={isPowerOn}
       /> */}
 
       {activeTab === "disinfection" ? (

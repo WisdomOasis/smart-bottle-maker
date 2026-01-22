@@ -9,6 +9,7 @@ interface Props {
   mode: CoolingMode;
   onChangeMode: (mode: CoolingMode) => void;
   onClose: () => void;
+  isPowerOn: boolean;
 }
 
 const CoolingModal: React.FC<Props> = ({
@@ -16,6 +17,7 @@ const CoolingModal: React.FC<Props> = ({
   mode,
   onChangeMode,
   onClose,
+  isPowerOn,
 }) => {
   if (!visible) return null;
 
@@ -34,7 +36,7 @@ const CoolingModal: React.FC<Props> = ({
         ]}
         value={String(mode)}
         onChange={(key) => onChangeMode(Number(key) as CoolingMode)}
-        disabled={false}
+        disabled={!isPowerOn}
       />
     </ControlModal>
   );

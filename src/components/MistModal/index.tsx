@@ -1,5 +1,4 @@
 import React from "react";
-import { View } from "@ray-js/ray";
 import SegmentedRadio from "@/components/SegmentedRadio";
 import ControlModal from "@/components/ControlModal";
 
@@ -10,6 +9,7 @@ interface Props {
   mode: MistMode;
   onChangeMode: (mode: MistMode) => void;
   onClose: () => void;
+  isPowerOn: boolean;
 }
 
 const MistModal: React.FC<Props> = ({
@@ -17,6 +17,7 @@ const MistModal: React.FC<Props> = ({
   mode,
   onChangeMode,
   onClose,
+  isPowerOn,
 }) => {
   if (!visible) return null;
 
@@ -24,7 +25,10 @@ const MistModal: React.FC<Props> = ({
     <ControlModal
       title="噴霧量設定"
       enabled={mode !== "off"}
-      onToggleEnabled={(next) => onChangeMode(next ? "single" : "off")}
+      onToggleEnabled={(next) => {
+        if (!isPowerOn) return;
+        onChangeMode(next ? "single" : "off");
+      }}
       onClose={onClose}
     >
       <SegmentedRadio
@@ -35,7 +39,7 @@ const MistModal: React.FC<Props> = ({
         ]}
         value={mode}
         onChange={(key) => onChangeMode(key as MistMode)}
-        disabled={false}
+        disabled={!isPowerOn}
       />
     </ControlModal>
   );
