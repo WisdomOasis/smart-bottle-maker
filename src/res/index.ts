@@ -36,6 +36,7 @@ import icFan from "./ic_fan.svg";
 import icFanActive from "./ic_fan_active.svg";
 import icCooling from "./ic_cooling.svg";
 import icCoolingActive from "./ic_cooling_active.svg";
+import icInfoRed from "./ic_info_red.svg";
 import temperatureBalance from "./temperature_balance.png";
 import temperatureHigh from "./temperature_high.png";
 import temperatureLow from "./temperature_low.png";
@@ -79,6 +80,7 @@ export default {
   icFanActive,
   icCooling,
   icCoolingActive,
+  icInfoRed,
   temperatureBalance,
   temperatureHigh,
   temperatureLow,

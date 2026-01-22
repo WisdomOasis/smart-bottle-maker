@@ -75,13 +75,25 @@ const HomePage: React.FC = () => {
   const [mistMode, setMistMode] = useState<"off" | "single" | "double">("off");
   const [fanLevel, setFanLevel] = useState<number>(0);
   const [coolingMode, setCoolingMode] = useState<0 | 1 | 2>(0);
-  const [o3Mode, setO3Mode] = useState<"0" | "1" | "4">("0");
+  const [o3Mode, setO3Mode] = useState<"0" | "1" | "2">("0");
+  const [o3RemainingMinutes, setO3RemainingMinutes] = useState<number | null>(
+    null
+  );
   const [lightVal, setLightVal] = useState<number | undefined>(undefined);
   const [lightEnabled, setLightEnabled] = useState<boolean>(false);
   const [lastLightKey, setLastLightKey] = useState<LightKey>("blue");
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const isPowerOn = powerLocal;
   const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
+  const isO3Running = o3Mode === "1" || o3Mode === "2";
+  const o3Remaining = isO3Running
+    ? Math.max(0, o3RemainingMinutes ?? (o3Mode === "1" ? 10 : 40))
+    : null;
+  const isO3Paused = isO3Running && isPetPresent;
+  const showO3Toast = isO3Running && activeTab !== "disinfection";
+  const o3ToastText = isPetPresent
+    ? "人・動物検知、消毒停止。解除後、再開。"
+    : "消毒中、人・動物は遠ざけてください。";
   const formatMetric = (val: number) => {
     const s = val.toFixed(1);
     return s.endsWith(".0") ? s.slice(0, -2) : s;
@@ -140,13 +152,13 @@ const HomePage: React.FC = () => {
       iconActive: Res.icFanActive,
       active: (dpState?.[dpCodes.fan] ?? 0) > 0,
     },
-    {
-      label: "冷房",
-      key: "cooling",
-      icon: Res.icCooling,
-      iconActive: Res.icCoolingActive,
-      active: (dpState?.[dpCodes.cooling] ?? 0) > 0,
-    },
+    // {
+    //   label: "冷房",
+    //   key: "cooling",
+    //   icon: Res.icCooling,
+    //   iconActive: Res.icCoolingActive,
+    //   active: (dpState?.[dpCodes.cooling] ?? 0) > 0,
+    // },
   ];
 
   const temperatureIcon =
@@ -199,13 +211,12 @@ const HomePage: React.FC = () => {
           setActiveModal("fan");
           const fanVal = dpState?.[dpCodes.fan] ?? 0;
           setFanLevel(Math.min(5, Math.max(0, fanVal)));
-          return;
         }
-        if (action === "冷房") {
-          setActiveModal("cooling");
-          const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
-          setCoolingMode(coolingVal === 2 ? 2 : 1);
-        }
+        // if (action === "冷房") {
+        //   setActiveModal("cooling");
+        //   const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
+        //   setCoolingMode(coolingVal === 2 ? 2 : 1);
+        // }
         break;
       }
       case "light": {
@@ -280,9 +291,15 @@ const HomePage: React.FC = () => {
     if (typeof o3Val === "number") {
       if (o3Val <= 0) {
         setO3Mode("0");
+      } else if (o3Val === 2) {
+        setO3Mode("2");
       } else {
-        setO3Mode(o3Val === 4 ? "4" : "1");
+        setO3Mode("1");
       }
+    }
+    const o3TimeVal = dpState?.[dpCodes.o3Time];
+    if (typeof o3TimeVal === "number") {
+      setO3RemainingMinutes(o3TimeVal);
     }
     const lightState = dpState?.[dpCodes.light];
     if (typeof lightState === "number") {
@@ -298,13 +315,21 @@ const HomePage: React.FC = () => {
     dpState?.[dpCodes.fan],
     dpState?.[dpCodes.mist],
     dpState?.[dpCodes.o3],
+    dpState?.[dpCodes.o3Time],
     dpState?.[dpCodes.light],
   ]);
 
-  const handleO3ModeChange = (mode: "0" | "1" | "4") => {
+  const handleO3ModeChange = (mode: "0" | "1" | "2") => {
+    if (!isPowerOn) return;
+    // 消毒進行中只能關閉，不能切換到另一模式
+    if (isO3Running && mode !== o3Mode && mode !== "0") return;
     setO3Mode(mode);
-    if (isPowerOn && !isPetPresent) {
-      setDp(dpCodes.o3, Number(mode));
+    if (mode === "1") setO3RemainingMinutes(10);
+    if (mode === "2") setO3RemainingMinutes(40);
+    if (mode === "0") setO3RemainingMinutes(null);
+    setDp(dpCodes.o3, Number(mode));
+    if (mode !== "0") {
+      setDp(dpCodes.o3Time, mode === "1" ? 10 : 40);
     }
   };
 
@@ -329,6 +354,19 @@ const HomePage: React.FC = () => {
   const handleRechoosePet = async () => {
     router.push("/");
   };
+
+  // 本地每分鐘倒數，並在設備上報時校正（單位：分鐘）
+  useEffect(() => {
+    if (!isO3Running || o3RemainingMinutes === null) return;
+    const timer = setInterval(() => {
+      setO3RemainingMinutes((prev) => {
+        if (prev === null) return prev;
+        return Math.max(0, prev - 1);
+      });
+    }, 60 * 1000);
+    // eslint-disable-next-line consistent-return
+    return () => clearInterval(timer);
+  }, [isO3Running, o3RemainingMinutes]);
 
   return (
     <View className={styles.container}>
@@ -376,6 +414,13 @@ const HomePage: React.FC = () => {
         </View>
       )}
 
+      {showO3Toast && (
+        <View className={styles.o3Toast}>
+          <Image src={Res.icInfoRed} className={styles.o3ToastDot} />
+          <Text className={styles.o3ToastText}>{o3ToastText}</Text>
+        </View>
+      )}
+
       <View className={styles.divider} />
 
       <View className={styles.tabs}>
@@ -405,16 +450,19 @@ const HomePage: React.FC = () => {
         onChange={handleFanChange}
         onClose={() => setActiveModal(null)}
       />
-      <CoolingModal
+      {/* <CoolingModal
         visible={activeTab === "climate" && activeModal === "cooling"}
         mode={coolingMode}
         onChangeMode={handleCoolingChange}
         onClose={() => setActiveModal(null)}
-      />
+      /> */}
 
       {activeTab === "disinfection" ? (
         <DisinfectionCard
           mode={o3Mode}
+          isRunning={isO3Running}
+          isPaused={isO3Paused}
+          remainingMinutes={o3Remaining ?? undefined}
           isPowerOn={isPowerOn}
           isPetPresent={isPetPresent}
           onChangeMode={handleO3ModeChange}

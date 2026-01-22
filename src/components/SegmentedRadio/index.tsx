@@ -6,6 +6,7 @@ import styles from "./index.module.less";
 export interface SegmentedOption {
   key: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface Props {
@@ -45,16 +46,18 @@ const SegmentedRadio: React.FC<Props> = ({
     >
       {options.map((option) => {
         const active = option.key === value;
+        const optionDisabled = disabled || option.disabled;
         return (
           <View
             key={option.key}
             className={clsx(
               styles.option,
+              optionDisabled && styles.optionDisabled,
               active && styles.optionActive,
               active && tone === "green" && styles.optionActiveGreen
             )}
             onClick={() => {
-              if (disabled) return;
+              if (optionDisabled) return;
               onChange(option.key);
             }}
           >
