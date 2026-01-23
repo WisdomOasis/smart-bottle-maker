@@ -277,6 +277,12 @@ const HomePage: React.FC = () => {
       ? Number(rawO3Status)
       : undefined;
   const o3RecoveryPhase = o3Status === 5;
+  const o3StatusLabelOverride =
+    o3Status === 5
+      ? "緊急停止後の回復フェーズ"
+      : o3Status === 3
+      ? "強風で拡散中"
+      : undefined;
 
   // sync UI with dp updates
   useEffect(() => {
@@ -479,9 +485,7 @@ const HomePage: React.FC = () => {
           isRunning={isO3Running}
           isPaused={isO3Paused}
           remainingMinutes={o3Remaining ?? undefined}
-          statusLabelOverride={
-            o3RecoveryPhase ? "緊急停止後の回復フェーズ" : undefined
-          }
+          statusLabelOverride={o3StatusLabelOverride}
           isPowerOn={isPowerOn}
           isPetPresent={isPetPresent}
           onChangeMode={handleO3ModeChange}
