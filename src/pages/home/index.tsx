@@ -10,6 +10,8 @@ import FanModal from "@/components/FanModal";
 // import CoolingModal from "@/components/CoolingModal";
 import DisinfectionCard from "@/components/DisinfectionCard";
 import LightCard, { LIGHT_MAP, LightKey } from "@/components/LightCard";
+import Strings from "@/i18n";
+import type { I18nKey } from "@/i18n/strings";
 import styles from "./index.module.less";
 
 type TabKey = "climate" | "disinfection" | "light" | "scene";
@@ -27,33 +29,6 @@ interface EnvironmentStatus {
   connection: "online" | "offline";
 }
 
-const tabs: TabItem[] = [
-  {
-    key: "climate",
-    label: "温湿度管理",
-    actions: ["噴霧", "吹く", "冷房"],
-    placeholder: "",
-  },
-  {
-    key: "disinfection",
-    label: "速消毒",
-    actions: ["迅速消毒", "徹底消毒"],
-    placeholder: "",
-  },
-  {
-    key: "light",
-    label: "灯",
-    actions: ["赤色", "青色", "緑色"],
-    placeholder: "",
-  },
-  // {
-  //   key: "scene",
-  //   label: "シーン",
-  //   actions: ["自動", "急速冷却", "静音"],
-  //   placeholder: "",
-  // },
-];
-
 const fallbackStatus: EnvironmentStatus = {
   temperature: 22,
   humidity: 50,
@@ -61,6 +36,8 @@ const fallbackStatus: EnvironmentStatus = {
 };
 
 const HomePage: React.FC = () => {
+  const t = (key: I18nKey) => Strings.getLang(key);
+
   const { devInfo, dpSchema } = useDevice((state) => ({
     devInfo: state.devInfo,
     dpSchema: state.dpSchema,
@@ -92,8 +69,8 @@ const HomePage: React.FC = () => {
   const isO3Paused = isO3Running && isPetPresent;
   const showO3Toast = isO3Running && activeTab !== "disinfection";
   const o3ToastText = isPetPresent
-    ? "人・動物検知、消毒停止。解除後、再開。"
-    : "消毒中、人・動物は遠ざけてください。";
+    ? t("home_o3_toast_pause")
+    : t("home_o3_toast_running");
   const formatMetric = (val: number) => {
     const s = val.toFixed(1);
     return s.endsWith(".0") ? s.slice(0, -2) : s;
@@ -137,16 +114,43 @@ const HomePage: React.FC = () => {
     };
   }, [devInfo?.isOnline, dpSchema, dpState]);
 
+  const tabs: TabItem[] = [
+    {
+      key: "climate",
+      label: t("home_tab_climate"),
+      actions: ["mist", "fan", "cooling"],
+      placeholder: "",
+    },
+    {
+      key: "disinfection",
+      label: t("home_tab_disinfection"),
+      actions: ["disinfection_quick", "disinfection_deep"],
+      placeholder: "",
+    },
+    {
+      key: "light",
+      label: t("home_tab_light"),
+      actions: ["light_red", "light_blue", "light_green"],
+      placeholder: "",
+    },
+    // {
+    //   key: "scene",
+    //   label: "シーン",
+    //   actions: ["自動", "急速冷却", "静音"],
+    //   placeholder: "",
+    // },
+  ];
+
   const climateActions = [
     {
-      label: "噴霧",
+      label: t("home_action_mist"),
       key: "mist",
       icon: Res.icMist,
       iconActive: Res.icMistActive,
       active: (dpState?.[dpCodes.mist] ?? 0) > 0,
     },
     {
-      label: "吹く",
+      label: t("home_action_fan"),
       key: "fan",
       icon: Res.icFan,
       iconActive: Res.icFanActive,
@@ -194,12 +198,12 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleAction = (action: string) => {
+  const handleAction = (actionKey: string) => {
     if (!isPowerOn) return;
 
     switch (activeTab) {
       case "climate": {
-        if (action === "噴霧") {
+        if (actionKey === "mist") {
           setActiveModal("mist");
           const mistVal = dpState?.[dpCodes.mist] ?? 0;
           setMistMode(
@@ -207,7 +211,7 @@ const HomePage: React.FC = () => {
           );
           return;
         }
-        if (action === "吹く") {
+        if (actionKey === "fan") {
           setActiveModal("fan");
           const fanVal = dpState?.[dpCodes.fan] ?? 0;
           setFanLevel(Math.min(5, Math.max(0, fanVal)));
@@ -220,9 +224,9 @@ const HomePage: React.FC = () => {
         break;
       }
       case "light": {
-        if (action === "赤色") setDp(dpCodes.light, LIGHT_MAP.red);
-        if (action === "青色") setDp(dpCodes.light, LIGHT_MAP.blue);
-        if (action === "緑色") setDp(dpCodes.light, LIGHT_MAP.green);
+        if (actionKey === "light_red") setDp(dpCodes.light, LIGHT_MAP.red);
+        if (actionKey === "light_blue") setDp(dpCodes.light, LIGHT_MAP.blue);
+        if (actionKey === "light_green") setDp(dpCodes.light, LIGHT_MAP.green);
         break;
       }
       // case "scene": {
@@ -279,9 +283,9 @@ const HomePage: React.FC = () => {
   const o3RecoveryPhase = o3Status === 5;
   const o3StatusLabelOverride =
     o3Status === 5
-      ? "緊急停止後の回復フェーズ"
+      ? t("home_o3_status_recovery")
       : o3Status === 3
-      ? "強風で拡散中"
+      ? t("home_o3_status_diffuse")
       : undefined;
 
   // sync UI with dp updates
@@ -393,7 +397,7 @@ const HomePage: React.FC = () => {
         <Image src={Res.airbuggyLogo} className={styles.logo} />
         <View className={styles.navActions}>
           <Text className={styles.navLink} onClick={handleRechoosePet}>
-            ペット変更
+            {t("home_nav_change_pet")}
           </Text>
           {/* <Image src={Res.icNotification} className={styles.navIcon} />
           <Image src={Res.icSettings} className={styles.navIcon} /> */}
@@ -405,13 +409,17 @@ const HomePage: React.FC = () => {
           <Text className={styles.statusValue}>
             {formatMetric(status.temperature)}°C
           </Text>
-          <Text className={styles.statusLabel}>気温</Text>
+          <Text className={styles.statusLabel}>
+            {t("home_status_temperature")}
+          </Text>
         </View>
         <View className={styles.statusBlock}>
           <Text className={styles.statusValue}>
             {formatMetric(status.humidity)}%
           </Text>
-          <Text className={styles.statusLabel}>湿度</Text>
+          <Text className={styles.statusLabel}>
+            {t("home_status_humidity")}
+          </Text>
         </View>
         <View className={styles.statusBlock}>
           <Image
@@ -420,7 +428,7 @@ const HomePage: React.FC = () => {
             }
             className={styles.statusConnIcon}
           />
-          <Text className={styles.statusLabel}>デバイス検出</Text>
+          <Text className={styles.statusLabel}>{t("home_status_device")}</Text>
         </View>
       </View>
 
@@ -511,7 +519,7 @@ const HomePage: React.FC = () => {
                 activeModal === action.key && styles.actionBadgeExpanded,
                 !isPowerOn && styles.disabled
               )}
-              onClick={() => handleAction(action.label)}
+              onClick={() => handleAction(action.key)}
             >
               <View
                 className={clsx(

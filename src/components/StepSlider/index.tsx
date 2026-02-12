@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text } from "@ray-js/ray";
 import { Slider } from "@ray-js/components";
 import clsx from "clsx";
+import Strings from "@/i18n";
 import styles from "./index.module.less";
 
 interface Props {
@@ -27,7 +28,8 @@ const StepSlider: React.FC<Props> = ({
   const clampedValue = Math.min(Math.max(value, min), max);
   const idx = Math.min(Math.max(clampedValue - min, 0), stepCount - 1);
   const padding = 4;
-  const displayText = clampedValue === 0 ? "OFF" : String(clampedValue);
+  const displayText =
+    clampedValue === 0 ? Strings.getLang("common_off") : String(clampedValue);
   const baseWidth = trackSize.width || 280;
   const baseHeight = trackSize.height || 60;
   const innerWidth = Math.max(baseWidth - padding * 2, 0);

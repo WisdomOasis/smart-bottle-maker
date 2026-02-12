@@ -1,6 +1,7 @@
 import React from "react";
 import ControlModal from "@/components/ControlModal";
 import StepSlider from "@/components/StepSlider";
+import Strings from "@/i18n";
 
 interface Props {
   visible: boolean;
@@ -21,7 +22,7 @@ const FanModal: React.FC<Props> = ({
 
   return (
     <ControlModal
-      title="風量設定"
+      title={Strings.getLang("fan_title")}
       enabled={value > 0}
       onToggleEnabled={(next) => onChange(next ? Math.max(1, value || 1) : 0)}
       onClose={onClose}

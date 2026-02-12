@@ -1,6 +1,7 @@
 import React from "react";
 import SegmentedRadio from "@/components/SegmentedRadio";
 import ControlModal from "@/components/ControlModal";
+import Strings from "@/i18n";
 
 type MistMode = "off" | "single" | "double";
 
@@ -23,7 +24,7 @@ const MistModal: React.FC<Props> = ({
 
   return (
     <ControlModal
-      title="噴霧量設定"
+      title={Strings.getLang("mist_title")}
       enabled={mode !== "off"}
       onToggleEnabled={(next) => {
         if (!isPowerOn) return;
@@ -33,9 +34,9 @@ const MistModal: React.FC<Props> = ({
     >
       <SegmentedRadio
         options={[
-          { key: "off", label: "閉じる" },
-          { key: "single", label: "ノズル1" },
-          { key: "double", label: "ノズル2" },
+          { key: "off", label: Strings.getLang("common_close") },
+          { key: "single", label: Strings.getLang("mist_nozzle_1") },
+          { key: "double", label: Strings.getLang("mist_nozzle_2") },
         ]}
         value={mode}
         onChange={(key) => onChangeMode(key as MistMode)}

@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Image } from "@ray-js/ray";
 import ToggleSwitch from "@/components/ToggleSwitch";
 import Res from "@/res";
+import Strings from "@/i18n";
 import styles from "./index.module.less";
 
 interface Props {
@@ -36,7 +37,9 @@ const ControlModal: React.FC<Props> = ({
       </View>
       <View className={styles.content}>{children}</View>
       <View className={styles.closeRow} onClick={onClose}>
-        <Text className={styles.closeText}>ウィンドウを閉じる</Text>
+        <Text className={styles.closeText}>
+          {Strings.getLang("common_close_window")}
+        </Text>
         <Image src={Res.icArrowDown} className={styles.closeIcon} />
       </View>
     </View>

@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { View, Text } from "@ray-js/ray";
 import clsx from "clsx";
 import ToggleSwitch from "@/components/ToggleSwitch";
+import Strings from "@/i18n";
 import styles from "./index.module.less";
 
 type LightKey = "red" | "blue" | "green";
@@ -39,15 +40,15 @@ const LightCard: React.FC<Props> = ({
   }, [value]);
 
   const items: { key: LightKey; label: string }[] = [
-    { key: "red", label: "赤色" },
-    { key: "blue", label: "青色" },
-    { key: "green", label: "緑色" },
+    { key: "red", label: Strings.getLang("home_action_light_red") },
+    { key: "blue", label: Strings.getLang("home_action_light_blue") },
+    { key: "green", label: Strings.getLang("home_action_light_green") },
   ];
 
   return (
     <View className={clsx(styles.card, className)}>
       <View className={styles.header}>
-        <Text className={styles.title}>灯光</Text>
+        <Text className={styles.title}>{Strings.getLang("light_title")}</Text>
         <ToggleSwitch
           checked={enabled}
           onToggle={onToggle}

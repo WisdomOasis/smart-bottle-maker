@@ -1,6 +1,7 @@
 import React from "react";
 import ControlModal from "@/components/ControlModal";
 import SegmentedRadio from "@/components/SegmentedRadio";
+import Strings from "@/i18n";
 
 type CoolingMode = 0 | 1 | 2;
 
@@ -23,16 +24,16 @@ const CoolingModal: React.FC<Props> = ({
 
   return (
     <ControlModal
-      title="冷房モード"
+      title={Strings.getLang("cooling_title")}
       enabled={mode !== 0}
       onToggleEnabled={(next) => onChangeMode(next ? 1 : 0)}
       onClose={onClose}
     >
       <SegmentedRadio
         options={[
-          { key: "0", label: "閉じる" },
-          { key: "1", label: "断続" },
-          { key: "2", label: "持続" },
+          { key: "0", label: Strings.getLang("common_close") },
+          { key: "1", label: Strings.getLang("cooling_mode_intermittent") },
+          { key: "2", label: Strings.getLang("cooling_mode_continuous") },
         ]}
         value={String(mode)}
         onChange={(key) => onChangeMode(Number(key) as CoolingMode)}

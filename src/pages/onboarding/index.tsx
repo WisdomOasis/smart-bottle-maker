@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { View, Text, Image, router, getStorage, setStorage } from "@ray-js/ray";
 import Res from "@/res";
 import PetIcon from "@/components/PetIcon";
+import Strings from "@/i18n";
+import type { I18nKey } from "@/i18n/strings";
 import styles from "./index.module.less";
 
 interface PetOption {
@@ -9,18 +11,18 @@ interface PetOption {
   label: string;
 }
 
-const petOptions: PetOption[] = [
-  { id: "dog", label: "犬" },
-  { id: "cat", label: "猫" },
-  { id: "squirrel", label: "リス" },
-  { id: "hamster", label: "ハムスター" },
-  { id: "rabbit", label: "兎" },
-  { id: "bird", label: "鳥" },
-  { id: "other", label: "ほか" },
-];
-
 const OnboardingPage: React.FC = () => {
+  const t = (key: I18nKey) => Strings.getLang(key);
   const [selectedPet, setSelectedPetState] = useState<string | null>(null);
+  const petOptions: PetOption[] = [
+    { id: "dog", label: t("pet_dog") },
+    { id: "cat", label: t("pet_cat") },
+    { id: "squirrel", label: t("pet_squirrel") },
+    { id: "hamster", label: t("pet_hamster") },
+    { id: "rabbit", label: t("pet_rabbit") },
+    { id: "bird", label: t("pet_bird") },
+    { id: "other", label: t("pet_other") },
+  ];
 
   useEffect(() => {
     getStorage({
@@ -50,10 +52,8 @@ const OnboardingPage: React.FC = () => {
       </View>
 
       <View className={styles.header}>
-        <Text className={styles.step}>準備作業</Text>
-        <Text className={styles.description}>
-          開始する前に、まずペットの種類を教えてください。
-        </Text>
+        <Text className={styles.step}>{t("onboarding_step_title")}</Text>
+        <Text className={styles.description}>{t("onboarding_step_desc")}</Text>
       </View>
 
       <View className={styles.divider} />
@@ -83,7 +83,7 @@ const OnboardingPage: React.FC = () => {
           onClick={handleStart}
           aria-disabled={!selectedPet}
         >
-          <Text className={styles.startText}>開始</Text>
+          <Text className={styles.startText}>{t("onboarding_start")}</Text>
           <Image src={Res.startIcon} className={styles.startIcon} />
         </View>
       </View>

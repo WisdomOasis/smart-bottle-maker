@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text } from "@ray-js/ray";
 import clsx from "clsx";
 import SegmentedRadio from "@/components/SegmentedRadio";
+import Strings from "@/i18n";
 import styles from "./index.module.less";
 
 interface Props {
@@ -43,33 +44,33 @@ const DisinfectionCard: React.FC<Props> = ({
 
   const statusLabel = running
     ? paused
-      ? "停止"
+      ? Strings.getLang("disinfection_status_paused")
       : hasRemaining
-      ? `残り${remainingMinutes}分`
+      ? Strings.formatValue("disinfection_remaining_minutes", remainingMinutes)
       : undefined
     : undefined;
   const mergedStatusLabel = statusLabelOverride ?? statusLabel;
 
   const noteText = !running
-    ? "人や動物を検知したため、消毒機能を停止します。"
+    ? Strings.getLang("disinfection_note_stopped")
     : paused
-    ? "注意: 人・動物検知、消毒停止。解除後、再開。"
-    : "注意: 安全のため、消毒中は人やペットを設備から離してください。";
+    ? Strings.getLang("disinfection_note_paused")
+    : Strings.getLang("disinfection_note_running");
 
   const statusText = isPetPresent
-    ? "● 人や動物を検出しました。"
-    : "● 人やペットが検出されません。";
+    ? Strings.getLang("disinfection_detected")
+    : Strings.getLang("disinfection_not_detected");
 
   const options = [
-    { key: "0", label: "閉じる", disabled: false },
+    { key: "0", label: Strings.getLang("common_close"), disabled: false },
     {
       key: "1",
-      label: "迅速消毒",
+      label: Strings.getLang("home_action_disinfection_quick"),
       disabled: running && mode !== "1",
     },
     {
       key: "2",
-      label: "徹底消毒",
+      label: Strings.getLang("home_action_disinfection_deep"),
       disabled: running && mode !== "2",
     },
   ];
@@ -77,7 +78,9 @@ const DisinfectionCard: React.FC<Props> = ({
   return (
     <View className={clsx(styles.card, disabled && styles.disabled, className)}>
       <View className={styles.header}>
-        <Text className={styles.title}>オゾン消毒</Text>
+        <Text className={styles.title}>
+          {Strings.getLang("disinfection_title")}
+        </Text>
         {mergedStatusLabel && (
           <Text
             className={clsx(

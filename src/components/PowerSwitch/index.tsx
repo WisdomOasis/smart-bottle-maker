@@ -2,6 +2,7 @@ import React from "react";
 import { View, Text, Image } from "@ray-js/ray";
 import clsx from "clsx";
 import Res from "@/res";
+import Strings from "@/i18n";
 import styles from "./index.module.less";
 
 interface Props {
@@ -12,7 +13,9 @@ interface Props {
 const PowerSwitch: React.FC<Props> = ({ isOn, onToggle }) => {
   const leftActive = !isOn;
   const rightActive = isOn;
-  const hint = isOn ? "≪ 電源を切る" : "電源を入れる ≫";
+  const hint = isOn
+    ? Strings.getLang("power_hint_off")
+    : Strings.getLang("power_hint_on");
 
   return (
     <View className={styles.power}>
