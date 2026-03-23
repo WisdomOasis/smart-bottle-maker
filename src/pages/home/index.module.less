@@ -172,14 +172,18 @@
 
 .tabs {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10rpx;
   margin-bottom: 48rpx;
 }
 
 .tabItem {
   position: relative;
+  width: 100%;
   padding: 16rpx 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-family: 'Noto Sans JP', sans-serif;
   font-size: 16px;

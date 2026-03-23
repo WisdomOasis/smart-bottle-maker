@@ -3,22 +3,10 @@ import petDog from "./pet_dog.svg";
 import petDogActive from "./pet_dog_active.svg";
 import petCat from "./pet_cat.svg";
 import petCatActive from "./pet_cat_active.svg";
-import petSquirrel from "./pet_squirrel.svg";
-import petSquirrelActive from "./pet_squirrel_active.svg";
-import petHamster from "./pet_hamster.svg";
-import petHamsterActive from "./pet_hamster_active.svg";
-import petRabbit from "./pet_rabbit.svg";
-import petRabbitActive from "./pet_rabbit_active.svg";
-import petBird from "./pet_bird.svg";
-import petBirdActive from "./pet_bird_active.svg";
 import petOther from "./pet_other.svg";
 import petOtherActive from "./pet_other_active.svg";
 import petDogWhite from "./pet_dog_white.svg";
 import petCatWhite from "./pet_cat_white.svg";
-import petSquirrelWhite from "./pet_squirrel_white.svg";
-import petHamsterWhite from "./pet_hamster_white.svg";
-import petRabbitWhite from "./pet_rabbit_white.svg";
-import petBirdWhite from "./pet_bird_white.svg";
 import petOtherWhite from "./pet_other_white.svg";
 import startIcon from "./ic_arrow_right.svg";
 import icNotification from "./ic_notification.svg";
@@ -36,6 +24,8 @@ import icFan from "./ic_fan.svg";
 import icFanActive from "./ic_fan_active.svg";
 import icCooling from "./ic_cooling.svg";
 import icCoolingActive from "./ic_cooling_active.svg";
+import icAuto from "./ic_auto.svg";
+import icAutoActive from "./ic_auto_active.svg";
 import icInfoRed from "./ic_info_red.svg";
 import temperatureBalance from "./temperature_balance.png";
 import temperatureHigh from "./temperature_high.png";
@@ -47,22 +37,10 @@ export default {
   petDogActive,
   petCat,
   petCatActive,
-  petSquirrel,
-  petSquirrelActive,
-  petHamster,
-  petHamsterActive,
-  petRabbit,
-  petRabbitActive,
-  petBird,
-  petBirdActive,
   petOther,
   petOtherActive,
   petDogWhite,
   petCatWhite,
-  petSquirrelWhite,
-  petHamsterWhite,
-  petRabbitWhite,
-  petBirdWhite,
   petOtherWhite,
   startIcon,
   icNotification,
@@ -80,6 +58,8 @@ export default {
   icFanActive,
   icCooling,
   icCoolingActive,
+  icAuto,
+  icAutoActive,
   icInfoRed,
   temperatureBalance,
   temperatureHigh,

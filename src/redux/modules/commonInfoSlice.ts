@@ -1,13 +1,13 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 /**
  * Slice
  */
 const commonInfoSlice = createSlice({
-  name: 'commonInfo',
+  name: "commonInfo",
   initialState: {
     inService: true,
-    commodityUrl: '',
+    commodityUrl: "",
     isPidHadVAS: false,
   },
   reducers: {
@@ -27,8 +27,8 @@ export const { updateCommonInfo } = commonInfoSlice.actions;
  * Selectors
  */
 
-export const commonCheckInfo = state => state.commonInfo;
+export const commonCheckInfo = (state) => state.commonInfo;
 
-export const selectCommonInfoByKey = key => state => state.commonInfo[key];
+export const selectCommonInfoByKey = (key) => (state) => state.commonInfo[key];
 
 export default commonInfoSlice.reducer;

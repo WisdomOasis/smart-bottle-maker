@@ -1,4 +1,4 @@
-import { getLaunchOptionsSync } from '@ray-js/ray';
+import { getLaunchOptionsSync } from "@ray-js/ray";
 
 const launchOptions = getLaunchOptionsSync();
 

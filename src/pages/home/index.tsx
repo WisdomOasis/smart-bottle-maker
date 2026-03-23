@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
-import { View, Text, Image, router, getStorage } from "@ray-js/ray";
+import { View, Text, Image, router } from "@ray-js/ray";
 import { useDevice, useProps, useActions } from "@ray-js/panel-sdk";
 import Res from "@/res";
 import dpCodes from "@/constant/dpCodes";
@@ -35,12 +35,27 @@ const fallbackStatus: EnvironmentStatus = {
   connection: "online",
 };
 
+const PET_DP_TO_ID: Record<number, "dog" | "cat" | "other"> = {
+  0: "dog",
+  1: "cat",
+  2: "other",
+  3: "other",
+};
+
+const normalizePetDpValue = (value: unknown): number | null => {
+  if (typeof value === "number" && value in PET_DP_TO_ID) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed) && parsed in PET_DP_TO_ID) return parsed;
+  }
+  return null;
+};
+
 const HomePage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
-  const { devInfo, dpSchema } = useDevice((state) => ({
+  const { devInfo } = useDevice((state) => ({
     devInfo: state.devInfo,
-    dpSchema: state.dpSchema,
   }));
   const dpState = useProps();
   const actions = useActions();
@@ -59,12 +74,14 @@ const HomePage: React.FC = () => {
   const [lightVal, setLightVal] = useState<number | undefined>(undefined);
   const [lightEnabled, setLightEnabled] = useState<boolean>(false);
   const [lastLightKey, setLastLightKey] = useState<LightKey>("blue");
-  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [sceneEnabled, setSceneEnabled] = useState<boolean>(false);
+  const petDpValue = normalizePetDpValue(dpState?.[dpCodes.pet]);
+  const selectedPetId = petDpValue !== null ? PET_DP_TO_ID[petDpValue] : null;
   const isPowerOn = powerLocal;
   const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
   const isO3Running = o3Mode === "1" || o3Mode === "2";
   const o3Remaining = isO3Running
-    ? Math.max(0, o3RemainingMinutes ?? (o3Mode === "1" ? 10 : 40))
+    ? Math.max(0, o3RemainingMinutes ?? (o3Mode === "1" ? 10 : 30))
     : null;
   const isO3Paused = isO3Running && isPetPresent;
   const showO3Toast = isO3Running && activeTab !== "disinfection";
@@ -81,17 +98,6 @@ const HomePage: React.FC = () => {
   }, [activeTab]);
 
   useEffect(() => {
-    getStorage({
-      key: "selectedPetId",
-      success: (res) => {
-        if (res.data) {
-          setSelectedPetId(res.data);
-        }
-      },
-    });
-  }, []);
-
-  useEffect(() => {
     const val = (dpState as Record<string, any>)?.[dpCodes.power];
     if (val === undefined || val === null) return;
     setPowerLocal(Boolean(val));
@@ -101,18 +107,22 @@ const HomePage: React.FC = () => {
     const getNumber = (code: string, fallback: number) => {
       const raw = (dpState as Record<string, any>)?.[code];
       if (typeof raw !== "number") return fallback;
-      return raw / 10;
+      // Some devices report direct values (e.g. 22), others report x10 (e.g. 220).
+      return raw > 100 ? raw / 10 : raw;
     };
 
-    const temperature = getNumber("temp_current", fallbackStatus.temperature);
-    const humidity = getNumber("humidity_value", fallbackStatus.humidity);
+    const temperature = getNumber(
+      dpCodes.tempCurrent,
+      fallbackStatus.temperature
+    );
+    const humidity = getNumber(dpCodes.humidityValue, fallbackStatus.humidity);
 
     return {
       temperature,
       humidity,
       connection: devInfo?.isOnline ? "online" : fallbackStatus.connection,
     };
-  }, [devInfo?.isOnline, dpSchema, dpState]);
+  }, [devInfo?.isOnline, dpState]);
 
   const tabs: TabItem[] = [
     {
@@ -133,12 +143,12 @@ const HomePage: React.FC = () => {
       actions: ["light_red", "light_blue", "light_green"],
       placeholder: "",
     },
-    // {
-    //   key: "scene",
-    //   label: "シーン",
-    //   actions: ["自動", "急速冷却", "静音"],
-    //   placeholder: "",
-    // },
+    {
+      key: "scene",
+      label: t("home_tab_scene"),
+      actions: ["auto"],
+      placeholder: "",
+    },
   ];
 
   const climateActions = [
@@ -164,6 +174,15 @@ const HomePage: React.FC = () => {
     //   active: (dpState?.[dpCodes.cooling] ?? 0) > 0,
     // },
   ];
+  const sceneActions = [
+    {
+      label: t("scene_action_auto"),
+      key: "auto",
+      icon: Res.icAuto,
+      iconActive: Res.icAutoActive,
+      active: sceneEnabled,
+    },
+  ];
 
   const temperatureIcon =
     status.temperature >= 18 && status.temperature <= 22
@@ -176,18 +195,12 @@ const HomePage: React.FC = () => {
     switch (selectedPetId) {
       case "cat":
         return Res.petCatWhite;
-      case "squirrel":
-        return Res.petSquirrelWhite;
-      case "hamster":
-        return Res.petHamsterWhite;
-      case "rabbit":
-        return Res.petRabbitWhite;
-      case "bird":
-        return Res.petBirdWhite;
       case "other":
         return Res.petOtherWhite;
-      default:
+      case "dog":
         return Res.petDogWhite;
+      default:
+        return null;
     }
   }, [selectedPetId]);
 
@@ -229,26 +242,14 @@ const HomePage: React.FC = () => {
         if (actionKey === "light_green") setDp(dpCodes.light, LIGHT_MAP.green);
         break;
       }
-      // case "scene": {
-      //   if (action === "自動") {
-      //     // simple auto: adjust fan based on temperature/humidity
-      //     const autoFan =
-      //       status.temperature > 28 ? 5 : status.temperature > 26 ? 4 : 2;
-      //     const autoCooling = status.temperature > 26 ? 2 : 0;
-      //     setDp(dpCodes.fan, autoFan);
-      //     setDp(dpCodes.cooling, autoCooling);
-      //   }
-      //   if (action === "急速冷却") {
-      //     setDp(dpCodes.fan, 5);
-      //     setDp(dpCodes.cooling, 2);
-      //     setDp(dpCodes.mist, 2);
-      //   }
-      //   if (action === "静音") {
-      //     setDp(dpCodes.fan, 1);
-      //     setDp(dpCodes.cooling, 0);
-      //   }
-      //   break;
-      // }
+      case "scene": {
+        if (actionKey === "auto") {
+          const next = !sceneEnabled;
+          setSceneEnabled(next);
+          setDp(dpCodes.autoMode, next);
+        }
+        break;
+      }
       default:
         break;
     }
@@ -332,6 +333,10 @@ const HomePage: React.FC = () => {
       else if (lightState === LIGHT_MAP.green) setLastLightKey("green");
       else if (lightState === LIGHT_MAP.blue) setLastLightKey("blue");
     }
+    const autoModeVal = dpState?.[dpCodes.autoMode];
+    if (autoModeVal !== undefined && autoModeVal !== null) {
+      setSceneEnabled(Boolean(autoModeVal));
+    }
   }, [
     coolingMode,
     dpState?.[dpCodes.cooling],
@@ -340,6 +345,7 @@ const HomePage: React.FC = () => {
     dpState?.[dpCodes.o3],
     dpState?.[dpCodes.o3Time],
     dpState?.[dpCodes.light],
+    dpState?.[dpCodes.autoMode],
   ]);
 
   const handleO3ModeChange = (mode: "0" | "1" | "2") => {
@@ -348,11 +354,11 @@ const HomePage: React.FC = () => {
     if (isO3Running && mode !== o3Mode && mode !== "0") return;
     setO3Mode(mode);
     if (mode === "1") setO3RemainingMinutes(10);
-    if (mode === "2") setO3RemainingMinutes(40);
+    if (mode === "2") setO3RemainingMinutes(30);
     if (mode === "0") setO3RemainingMinutes(null);
     setDp(dpCodes.o3, Number(mode));
     if (mode !== "0") {
-      setDp(dpCodes.o3Time, mode === "1" ? 10 : 40);
+      setDp(dpCodes.o3Time, mode === "1" ? 10 : 30);
     }
   };
 
@@ -437,7 +443,9 @@ const HomePage: React.FC = () => {
           <View className={styles.heroImageWrap}>
             <Image src={temperatureIcon} className={styles.heroImage} />
           </View>
-          <Image src={petStrokeIcon} className={styles.heroPetIcon} />
+          {petStrokeIcon && (
+            <Image src={petStrokeIcon} className={styles.heroPetIcon} />
+          )}
         </View>
       )}
 
@@ -508,6 +516,33 @@ const HomePage: React.FC = () => {
             handleLightSelect(key);
           }}
         />
+      ) : activeTab === "scene" ? (
+        <View className={styles.actionsRow}>
+          {sceneActions.map((action) => (
+            <View
+              key={action.key}
+              className={clsx(
+                styles.actionBadge,
+                action.active && styles.actionBadgeActive,
+                !isPowerOn && styles.disabled
+              )}
+              onClick={() => handleAction(action.key)}
+            >
+              <View
+                className={clsx(
+                  styles.actionIcon,
+                  action.active && styles.actionIconActive
+                )}
+              >
+                <Image
+                  src={action.active ? action.iconActive : action.icon}
+                  className={styles.actionIconImg}
+                />
+              </View>
+              <Text className={styles.actionLabel}>{action.label}</Text>
+            </View>
+          ))}
+        </View>
       ) : (
         <View className={styles.actionsRow}>
           {climateActions.map((action) => (

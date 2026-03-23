@@ -1,12 +1,12 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { createLogger } from 'redux-logger';
-import { useDispatch } from 'react-redux';
+import { configureStore } from "@reduxjs/toolkit";
+import { createLogger } from "redux-logger";
+import { useDispatch } from "react-redux";
 
-import systemInfoReducer from './modules/systemInfoSlice';
-import themeReducer from './modules/themeSlice';
-import commonInfoReducer from './modules/commonInfoSlice';
+import systemInfoReducer from "./modules/systemInfoSlice";
+import themeReducer from "./modules/themeSlice";
+import commonInfoReducer from "./modules/commonInfoSlice";
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === "development";
 
 const logger = createLogger({
   predicate: () => isDev,
@@ -22,7 +22,8 @@ const store = configureStore({
     theme: themeReducer,
     commonInfo: commonInfoReducer,
   },
-  middleware: getDefaultMiddleware => getDefaultMiddleware().concat(middlewares),
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(middlewares),
 });
 
 export type ReduxState = ReturnType<typeof store.getState>;

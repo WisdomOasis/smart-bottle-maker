@@ -11,4 +11,6 @@ export default {
   o3Status: "o3_status", // 臭氧状态 (enum 0-5)
   o3Time: "o3_time", // 臭氧剩余时间（分钟）
   power: "power_switch", // 总电源
+  pet: "pet", // 宠物类型 (enum 0/1/3, legacy 2 maps to other)
+  autoMode: "auto_mode", // 自动模式
 };

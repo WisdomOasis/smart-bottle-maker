@@ -3,14 +3,14 @@
   "type": "panel-app",
   "ownerType": "tuya-official",
   "i18n": false,
-  "description": "测试",
+  "description": "宠物充气车配件",
   "miniprogramRoot": "./dist/tuya",
   "dependencies": {
     "MiniKit": "3.0.7",
     "DeviceKit": "4.6.1",
     "BaseKit": "3.0.6"
   },
-  "baseversion": "2.29.12",
+  "baseversion": "2.30.14",
   "projectname": "SmartFan",
   "devMode": "ray",
   "compileType": "miniprogram",

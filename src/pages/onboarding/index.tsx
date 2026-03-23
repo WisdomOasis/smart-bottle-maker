@@ -1,48 +1,93 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, Image, router, getStorage, setStorage } from "@ray-js/ray";
+import { View, Text, Image, router } from "@ray-js/ray";
+import { useActions, useProps } from "@ray-js/panel-sdk";
 import Res from "@/res";
 import PetIcon from "@/components/PetIcon";
+import dpCodes from "@/constant/dpCodes";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import styles from "./index.module.less";
 
 interface PetOption {
-  id: "dog" | "cat" | "squirrel" | "hamster" | "rabbit" | "bird" | "other";
+  id: "dog" | "cat" | "other";
   label: string;
 }
 
+const PET_TO_DP: Record<PetOption["id"], string> = {
+  dog: "0",
+  cat: "1",
+  other: "3",
+};
+
+const DP_TO_PET: Record<number, PetOption["id"]> = {
+  0: "dog",
+  1: "cat",
+  2: "other",
+  3: "other",
+};
+
+const normalizePetDpValue = (value: unknown): number | null => {
+  if (typeof value === "number" && value in DP_TO_PET) return value;
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (!Number.isNaN(parsed) && parsed in DP_TO_PET) return parsed;
+  }
+  return null;
+};
+
 const OnboardingPage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
-  const [selectedPet, setSelectedPetState] = useState<string | null>(null);
+  const [selectedPet, setSelectedPetState] = useState<PetOption["id"] | null>(
+    null
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingPet, setPendingPet] = useState<PetOption["id"] | null>(null);
+  const dpState = useProps();
+  const actions = useActions();
   const petOptions: PetOption[] = [
     { id: "dog", label: t("pet_dog") },
     { id: "cat", label: t("pet_cat") },
-    { id: "squirrel", label: t("pet_squirrel") },
-    { id: "hamster", label: t("pet_hamster") },
-    { id: "rabbit", label: t("pet_rabbit") },
-    { id: "bird", label: t("pet_bird") },
     { id: "other", label: t("pet_other") },
   ];
 
   useEffect(() => {
-    getStorage({
-      key: "selectedPetId",
-      success: (res) => {
-        if (res.data) {
-          setSelectedPetState(res.data);
-          router.replace("/home");
-        }
-      },
-    });
-  }, []);
+    const petDp = normalizePetDpValue(dpState?.[dpCodes.pet]);
+    if (petDp === null) return;
+    const petId = DP_TO_PET[petDp];
+
+    if (isSubmitting && pendingPet === petId) {
+      setIsSubmitting(false);
+      setPendingPet(null);
+      router.replace("/home");
+      return;
+    }
+
+    if (!isSubmitting) {
+      setSelectedPetState(petId);
+      router.replace("/home");
+    }
+  }, [dpState?.[dpCodes.pet], isSubmitting, pendingPet]);
 
   const handleStart = async () => {
-    if (!selectedPet) return;
-    setStorage({
-      key: "selectedPetId",
-      data: selectedPet,
-    });
-    router.replace("/home");
+    if (!selectedPet || isSubmitting) return;
+
+    const currentPetDp = normalizePetDpValue(dpState?.[dpCodes.pet]);
+    if (currentPetDp !== null && DP_TO_PET[currentPetDp] === selectedPet) {
+      router.replace("/home");
+      return;
+    }
+
+    const fn = (actions as any)?.[dpCodes.pet]?.set;
+    if (typeof fn !== "function") return;
+
+    setIsSubmitting(true);
+    setPendingPet(selectedPet);
+    try {
+      await fn(PET_TO_DP[selectedPet]);
+    } catch (err) {
+      setIsSubmitting(false);
+      setPendingPet(null);
+    }
   };
 
   return (
@@ -65,7 +110,10 @@ const OnboardingPage: React.FC = () => {
             className={`${styles.petCard} ${
               selectedPet === option.id ? styles.active : ""
             }`}
-            onClick={() => setSelectedPetState(option.id)}
+            onClick={() => {
+              if (isSubmitting) return;
+              setSelectedPetState(option.id);
+            }}
           >
             <View className={styles.petCardInner}>
               <PetIcon id={option.id} active={selectedPet === option.id} />
@@ -78,13 +126,17 @@ const OnboardingPage: React.FC = () => {
       <View className={styles.footer}>
         <View
           className={`${styles.startButton} ${
-            !selectedPet ? styles.startButtonDisabled : ""
+            !selectedPet || isSubmitting ? styles.startButtonDisabled : ""
           }`}
           onClick={handleStart}
-          aria-disabled={!selectedPet}
+          aria-disabled={!selectedPet || isSubmitting}
         >
           <Text className={styles.startText}>{t("onboarding_start")}</Text>
-          <Image src={Res.startIcon} className={styles.startIcon} />
+          {isSubmitting ? (
+            <View className={styles.loadingDot} />
+          ) : (
+            <Image src={Res.startIcon} className={styles.startIcon} />
+          )}
         </View>
       </View>
     </View>

@@ -2,14 +2,7 @@ import React from "react";
 import { Image } from "@ray-js/ray";
 import Res from "@/res";
 
-type PetId =
-  | "dog"
-  | "cat"
-  | "squirrel"
-  | "hamster"
-  | "rabbit"
-  | "bird"
-  | "other";
+type PetId = "dog" | "cat" | "other";
 
 interface Props {
   id: PetId;
@@ -17,15 +10,11 @@ interface Props {
   size?: string;
 }
 
-const sizeDefault = "33px";
+const sizeDefault = "60px";
 
 const iconMap: Record<PetId, { normal: string; active: string }> = {
   dog: { normal: Res.petDog, active: Res.petDogActive },
   cat: { normal: Res.petCat, active: Res.petCatActive },
-  squirrel: { normal: Res.petSquirrel, active: Res.petSquirrelActive },
-  hamster: { normal: Res.petHamster, active: Res.petHamsterActive },
-  rabbit: { normal: Res.petRabbit, active: Res.petRabbitActive },
-  bird: { normal: Res.petBird, active: Res.petBirdActive },
   other: { normal: Res.petOther, active: Res.petOtherActive },
 };
 

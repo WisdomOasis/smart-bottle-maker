@@ -61,14 +61,13 @@
   display: flex;
   flex-wrap: wrap;
   margin-top: 10rpx;
-  column-gap: 71rpx;
-  row-gap: 48rpx;
-  margin: 0 40rpx 0 40rpx;
+  column-gap: 40px;
+  row-gap: 80px;
 }
 
 .petCard {
-  flex: 0 0 calc((100% - 142rpx) / 3);
-  max-width: calc((100% - 142rpx) / 3);
+  flex: 0 0 calc((100% - 40px) / 2);
+  max-width: calc((100% - 40px) / 2);
   box-sizing: border-box;
   display: flex;
   justify-content: center;
@@ -81,13 +80,6 @@
   aspect-ratio: 1 / 1;
   padding: 20rpx;
   border-radius: 42%;
-  border: 1.25rpx solid transparent;
-  border-image: linear-gradient(
-      332.03deg,
-      rgba(255, 255, 255, 0) 70.6%,
-      rgba(255, 255, 255, 0.7) 85.38%
-    )
-    1;
   background: linear-gradient(151.69deg, #fff9ec 27.73%, #fff5e0 49.68%, #fffaf2 86.26%);
   box-shadow: 20rpx 20rpx 20rpx 0 #a57d3f14;
   display: flex;
@@ -99,13 +91,6 @@
 
 .active .petCardInner {
   background: linear-gradient(151.69deg, #f2feed 27.73%, #edf9e8 49.68%, #f8fff6 86.26%);
-  border: 1.25rpx solid transparent;
-  border-image: linear-gradient(
-      332.03deg,
-      rgba(255, 255, 255, 0) 70.6%,
-      rgba(255, 255, 255, 0.7) 85.38%
-    )
-    1;
 }
 
 .petLabel {
@@ -149,6 +134,16 @@
   pointer-events: none;
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .startText {
   font-family: 'Poppins', sans-serif;
   font-size: 40rpx;
@@ -162,4 +157,14 @@
 .startIcon {
   width: 24px;
   height: 24px;
+}
+
+.loadingDot {
+  width: 24px;
+  height: 24px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
 }

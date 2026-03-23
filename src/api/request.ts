@@ -1,9 +1,9 @@
-import { apiRequestByAtop } from '@ray-js/ray';
-import { utils } from '@ray-js/panel-sdk';
+import { apiRequestByAtop } from "@ray-js/ray";
+import { utils } from "@ray-js/panel-sdk";
 
-const errStyle = 'background: red; color: #fff;';
+const errStyle = "background: red; color: #fff;";
 
-export const api = (a: string, postData: Record<string, any>, v = '1.0') => {
+export const api = (a: string, postData: Record<string, any>, v = "1.0") => {
   return new Promise((resolve, reject) => {
     const params = {
       api: a,
@@ -12,12 +12,13 @@ export const api = (a: string, postData: Record<string, any>, v = '1.0') => {
     };
     apiRequestByAtop({
       ...params,
-      success: d => {
-        const data = typeof d === 'string' ? utils.parseJSON(d) : d;
+      success: (d) => {
+        const data = typeof d === "string" ? utils.parseJSON(d) : d;
         resolve(data);
       },
-      fail: err => {
-        const e = typeof err === 'string' ? (utils.parseJSON(err) as typeof err) : err;
+      fail: (err) => {
+        const e =
+          typeof err === "string" ? (utils.parseJSON(err) as typeof err) : err;
         console.log(`API Failed: %c${a}%o`, errStyle, e.errorMsg || e);
         reject();
       },
@@ -36,7 +37,9 @@ export const api = (a: string, postData: Record<string, any>, v = '1.0') => {
  * @returns areLastPage | 是否是最后一页
  */
 
-export const getTrackSegmentList = (deviceId: string): Promise<ITrackSegment> => {
+export const getTrackSegmentList = (
+  deviceId: string
+): Promise<ITrackSegment> => {
   return ty.getOutdoorsTracksSegments({
     deviceID: deviceId,
     startTime: 0,
@@ -52,18 +55,18 @@ export const getCServicesAbility = (devId: string): Promise<IAbility> => {
   return new Promise((resolve, reject) => {
     ty.outdoor.getValueAddedServicesAbility({
       deviceID: devId,
-      success: res => {
+      success: (res) => {
         const { result } = res;
         if (result && result?.abilityMap) {
           //  outdoor_data_cloud_store： 出行增值服务
           const { outdoor_data_cloud_store: serviceResult } = result.abilityMap;
-          console.log('serviceResult :>> ', serviceResult);
+          console.log("serviceResult :>> ", serviceResult);
           resolve(serviceResult);
         }
-        console.log('获取设备增值服务能力 :>> ', result);
+        console.log("获取设备增值服务能力 :>> ", result);
       },
-      fail: fail => {
-        console.log('获取设备增值服务能力失败 >> ', fail);
+      fail: (fail) => {
+        console.log("获取设备增值服务能力失败 >> ", fail);
         reject();
       },
     });
@@ -76,12 +79,12 @@ export const setCServicesPop = (devId: string) => {
     ty.outdoor.setValueAddedServicesPop({
       deviceID: devId,
       hadPopup: true,
-      success: result => {
+      success: (result) => {
         resolve(true);
-        console.log('setCServicesPop :>> ', result);
+        console.log("setCServicesPop :>> ", result);
       },
-      fail: fail => {
-        console.log('setCServicesPop fail >> ', fail);
+      fail: (fail) => {
+        console.log("setCServicesPop fail >> ", fail);
         reject();
       },
     });
