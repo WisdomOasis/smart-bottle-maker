@@ -14,7 +14,7 @@ import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import styles from "./index.module.less";
 
-type TabKey = "climate" | "disinfection" | "light" | "scene";
+type TabKey = "climate" | "disinfection" | "light";
 
 interface TabItem {
   key: TabKey;
@@ -75,6 +75,7 @@ const HomePage: React.FC = () => {
   const [lightEnabled, setLightEnabled] = useState<boolean>(false);
   const [lastLightKey, setLastLightKey] = useState<LightKey>("blue");
   const [sceneEnabled, setSceneEnabled] = useState<boolean>(false);
+  const [scenePending, setScenePending] = useState<boolean>(false);
   const petDpValue = normalizePetDpValue(dpState?.[dpCodes.pet]);
   const selectedPetId = petDpValue !== null ? PET_DP_TO_ID[petDpValue] : null;
   const isPowerOn = powerLocal;
@@ -143,12 +144,6 @@ const HomePage: React.FC = () => {
       actions: ["light_red", "light_blue", "light_green"],
       placeholder: "",
     },
-    {
-      key: "scene",
-      label: t("home_tab_scene"),
-      actions: ["auto"],
-      placeholder: "",
-    },
   ];
 
   const climateActions = [
@@ -166,6 +161,13 @@ const HomePage: React.FC = () => {
       iconActive: Res.icFanActive,
       active: (dpState?.[dpCodes.fan] ?? 0) > 0,
     },
+    {
+      label: t("scene_action_auto"),
+      key: "auto",
+      icon: Res.icAuto,
+      iconActive: Res.icAutoActive,
+      active: sceneEnabled,
+    },
     // {
     //   label: "冷房",
     //   key: "cooling",
@@ -174,16 +176,6 @@ const HomePage: React.FC = () => {
     //   active: (dpState?.[dpCodes.cooling] ?? 0) > 0,
     // },
   ];
-  const sceneActions = [
-    {
-      label: t("scene_action_auto"),
-      key: "auto",
-      icon: Res.icAuto,
-      iconActive: Res.icAutoActive,
-      active: sceneEnabled,
-    },
-  ];
-
   const temperatureIcon =
     status.temperature >= 18 && status.temperature <= 22
       ? Res.temperatureBalance
@@ -208,7 +200,9 @@ const HomePage: React.FC = () => {
     const fn = (actions as any)?.[code]?.set;
     if (typeof fn === "function") {
       fn(val);
+      return true;
     }
+    return false;
   };
 
   const handleAction = (actionKey: string) => {
@@ -229,6 +223,14 @@ const HomePage: React.FC = () => {
           const fanVal = dpState?.[dpCodes.fan] ?? 0;
           setFanLevel(Math.min(5, Math.max(0, fanVal)));
         }
+        if (actionKey === "auto") {
+          if (scenePending) return;
+          const next = !sceneEnabled;
+          const published = setDp(dpCodes.autoMode, next);
+          if (published) {
+            setScenePending(true);
+          }
+        }
         // if (action === "冷房") {
         //   setActiveModal("cooling");
         //   const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
@@ -240,14 +242,6 @@ const HomePage: React.FC = () => {
         if (actionKey === "light_red") setDp(dpCodes.light, LIGHT_MAP.red);
         if (actionKey === "light_blue") setDp(dpCodes.light, LIGHT_MAP.blue);
         if (actionKey === "light_green") setDp(dpCodes.light, LIGHT_MAP.green);
-        break;
-      }
-      case "scene": {
-        if (actionKey === "auto") {
-          const next = !sceneEnabled;
-          setSceneEnabled(next);
-          setDp(dpCodes.autoMode, next);
-        }
         break;
       }
       default:
@@ -336,6 +330,7 @@ const HomePage: React.FC = () => {
     const autoModeVal = dpState?.[dpCodes.autoMode];
     if (autoModeVal !== undefined && autoModeVal !== null) {
       setSceneEnabled(Boolean(autoModeVal));
+      setScenePending(false);
     }
   }, [
     coolingMode,
@@ -516,33 +511,6 @@ const HomePage: React.FC = () => {
             handleLightSelect(key);
           }}
         />
-      ) : activeTab === "scene" ? (
-        <View className={styles.actionsRow}>
-          {sceneActions.map((action) => (
-            <View
-              key={action.key}
-              className={clsx(
-                styles.actionBadge,
-                action.active && styles.actionBadgeActive,
-                !isPowerOn && styles.disabled
-              )}
-              onClick={() => handleAction(action.key)}
-            >
-              <View
-                className={clsx(
-                  styles.actionIcon,
-                  action.active && styles.actionIconActive
-                )}
-              >
-                <Image
-                  src={action.active ? action.iconActive : action.icon}
-                  className={styles.actionIconImg}
-                />
-              </View>
-              <Text className={styles.actionLabel}>{action.label}</Text>
-            </View>
-          ))}
-        </View>
       ) : (
         <View className={styles.actionsRow}>
           {climateActions.map((action) => (
@@ -552,7 +520,8 @@ const HomePage: React.FC = () => {
                 styles.actionBadge,
                 action.active && styles.actionBadgeActive,
                 activeModal === action.key && styles.actionBadgeExpanded,
-                !isPowerOn && styles.disabled
+                (!isPowerOn || (action.key === "auto" && scenePending)) &&
+                  styles.disabled
               )}
               onClick={() => handleAction(action.key)}
             >
