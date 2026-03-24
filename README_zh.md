@@ -11,6 +11,24 @@
 - [创建产品](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#2)
 - [创建项目并在 IDE 中导入项目代码](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#3)
 
+## 开发命令
+
+- 安装依赖：`npm install` 或 `yarn install`
+- 启动（Tuya target）：`npm run start`
+- 打包（Tuya target）：`npm run build`
+- Lint：`npm run lint`
+- 导出 i18n Excel：`npm run i18n:export`
+- 监听 i18n 并自动导出：`npm run i18n:watch`
+
+## i18n 导出流程
+
+- i18n 源文件：`src/i18n/strings.ts`
+- 导出文件：`i18n_export.xlsx`
+- 手动更新：执行 `npm run i18n:export` 或 `yarn i18n:export`
+- 监听模式：执行 `npm run i18n:watch` 或 `yarn i18n:watch`，只要 `src/i18n/strings.ts` 有改动，就会自动重新生成 Excel
+- 提交前自动更新：当 `src/i18n` 下有 staged 变更时，pre-commit hook 会自动更新 `i18n_export.xlsx`，并把它一并加入暂存
+- 通知方式：脚本一定会输出终端提示；如果 macOS 安装了 `terminal-notifier`，还会发送桌面通知
+
 ## 3、能力依赖
 
 - TTT 依赖

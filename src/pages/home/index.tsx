@@ -182,6 +182,12 @@ const HomePage: React.FC = () => {
       : status.temperature > 27
       ? Res.temperatureHigh
       : Res.temperatureLow;
+  const temperatureLabel =
+    status.temperature >= 18 && status.temperature <= 22
+      ? t("home_temperature_good")
+      : status.temperature > 27
+      ? t("home_temperature_high")
+      : t("home_temperature_low");
 
   const petStrokeIcon = useMemo(() => {
     switch (selectedPetId) {
@@ -437,6 +443,9 @@ const HomePage: React.FC = () => {
         <View className={styles.heroCard}>
           <View className={styles.heroImageWrap}>
             <Image src={temperatureIcon} className={styles.heroImage} />
+            <Text className={styles.heroTemperatureLabel}>
+              {temperatureLabel}
+            </Text>
           </View>
           {petStrokeIcon && (
             <Image src={petStrokeIcon} className={styles.heroPetIcon} />
