@@ -16,7 +16,7 @@ interface PetOption {
 const PET_TO_DP: Record<PetOption["id"], string> = {
   dog: "0",
   cat: "1",
-  other: "3",
+  other: "2",
 };
 
 const DP_TO_PET: Record<number, PetOption["id"]> = {

@@ -177,17 +177,17 @@ const HomePage: React.FC = () => {
     // },
   ];
   const temperatureIcon =
-    status.temperature >= 18 && status.temperature <= 22
-      ? Res.temperatureBalance
-      : status.temperature > 27
+    status.temperature <= 18
+      ? Res.temperatureLow
+      : status.temperature >= 27
       ? Res.temperatureHigh
-      : Res.temperatureLow;
+      : Res.temperatureBalance;
   const temperatureLabel =
-    status.temperature >= 18 && status.temperature <= 22
-      ? t("home_temperature_good")
-      : status.temperature > 27
+    status.temperature <= 18
+      ? t("home_temperature_low")
+      : status.temperature >= 27
       ? t("home_temperature_high")
-      : t("home_temperature_low");
+      : t("home_temperature_good");
 
   const petStrokeIcon = useMemo(() => {
     switch (selectedPetId) {
@@ -281,7 +281,6 @@ const HomePage: React.FC = () => {
       : rawO3Status != null
       ? Number(rawO3Status)
       : undefined;
-  const o3RecoveryPhase = o3Status === 5;
   const o3StatusLabelOverride =
     o3Status === 5
       ? t("home_o3_status_recovery")
