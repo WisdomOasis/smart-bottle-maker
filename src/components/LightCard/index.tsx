@@ -5,7 +5,7 @@ import ToggleSwitch from "@/components/ToggleSwitch";
 import Strings from "@/i18n";
 import styles from "./index.module.less";
 
-type LightKey = "red" | "blue" | "green";
+type LightKey = "white" | "blue" | "green";
 
 interface Props {
   // eslint-disable-next-line react/require-default-props
@@ -19,7 +19,7 @@ interface Props {
 }
 
 const LIGHT_MAP: Record<LightKey, number> = {
-  red: 0xfd5454,
+  white: 0xffffff,
   blue: 0x61aeff,
   green: 0x88d069,
 };
@@ -33,14 +33,14 @@ const LightCard: React.FC<Props> = ({
   className,
 }) => {
   const activeKey = useMemo<LightKey | null>(() => {
-    if (value === LIGHT_MAP.red) return "red";
+    if (value === LIGHT_MAP.white) return "white";
     if (value === LIGHT_MAP.blue) return "blue";
     if (value === LIGHT_MAP.green) return "green";
     return null;
   }, [value]);
 
   const items: { key: LightKey; label: string }[] = [
-    { key: "red", label: Strings.getLang("home_action_light_red") },
+    { key: "white", label: Strings.getLang("home_action_light_white") },
     { key: "blue", label: Strings.getLang("home_action_light_blue") },
     { key: "green", label: Strings.getLang("home_action_light_green") },
   ];

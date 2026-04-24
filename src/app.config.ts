@@ -8,5 +8,5 @@ export const thing = {
     navigationBarBackgroundColor: "#f2f4f6",
     navigationBarTextStyle: "black",
   },
-  pages: ["pages/onboarding/index", "pages/home/index"],
+  pages: ["pages/home/index"],
 };

@@ -1,15 +1,20 @@
 import React from "react";
 import { View, Text } from "@ray-js/ray";
 import clsx from "clsx";
+import ToggleSwitch from "@/components/ToggleSwitch";
 import SegmentedRadio from "@/components/SegmentedRadio";
 import Strings from "@/i18n";
 import styles from "./index.module.less";
 
+type DisinfectionMode = "quick" | "deep";
+
 interface Props {
-  mode: "0" | "1" | "2";
+  enabled: boolean;
   isPowerOn: boolean;
   isPetPresent: boolean;
-  onChangeMode: (mode: "0" | "1" | "2") => void;
+  onToggle: () => void;
+  mode: DisinfectionMode;
+  onModeChange: (mode: DisinfectionMode) => void;
   // eslint-disable-next-line react/require-default-props
   remainingMinutes?: number | null;
   // 是否正在消毒（用於 UI 提示）
@@ -26,17 +31,19 @@ interface Props {
 }
 
 const DisinfectionCard: React.FC<Props> = ({
-  mode,
+  enabled,
   isPowerOn,
   isPetPresent,
-  onChangeMode,
+  onToggle,
+  mode,
+  onModeChange,
   remainingMinutes,
   isRunning,
   isPaused,
   statusLabelOverride,
   className,
 }) => {
-  const running = isRunning ?? (mode === "1" || mode === "2");
+  const running = isRunning ?? enabled;
   const paused = isPaused ?? (running && isPetPresent);
   const disabled = !isPowerOn;
   const hasRemaining =
@@ -61,37 +68,50 @@ const DisinfectionCard: React.FC<Props> = ({
     ? Strings.getLang("disinfection_detected")
     : Strings.getLang("disinfection_not_detected");
 
-  const options = [
-    { key: "0", label: Strings.getLang("common_close"), disabled: false },
-    {
-      key: "1",
-      label: Strings.getLang("home_action_disinfection_quick"),
-      disabled: running && mode !== "1",
-    },
-    {
-      key: "2",
-      label: Strings.getLang("home_action_disinfection_deep"),
-      disabled: running && mode !== "2",
-    },
-  ];
-
   return (
     <View className={clsx(styles.card, disabled && styles.disabled, className)}>
       <View className={styles.header}>
         <Text className={styles.title}>
           {Strings.getLang("disinfection_title")}
         </Text>
-        {mergedStatusLabel && (
-          <Text
-            className={clsx(
-              styles.statusLabel,
-              paused && styles.statusLabelPaused
-            )}
-          >
-            {mergedStatusLabel}
-          </Text>
-        )}
+        <ToggleSwitch
+          checked={enabled}
+          onToggle={onToggle}
+          disabled={!isPowerOn}
+          tone="green"
+        />
       </View>
+      <SegmentedRadio
+        className={styles.SegmentedRadioWrapper}
+        tone="green"
+        value={mode}
+        disabled={!isPowerOn}
+        options={[
+          {
+            key: "quick",
+            label: Strings.getLang("home_action_disinfection_quick"),
+          },
+          {
+            key: "deep",
+            label: Strings.getLang("home_action_disinfection_deep"),
+          },
+        ]}
+        onChange={(key) => {
+          if (key === "quick" || key === "deep") {
+            onModeChange(key);
+          }
+        }}
+      />
+      {mergedStatusLabel && (
+        <Text
+          className={clsx(
+            styles.statusLabel,
+            paused && styles.statusLabelPaused
+          )}
+        >
+          {mergedStatusLabel}
+        </Text>
+      )}
       <Text className={styles.desc}>{noteText}</Text>
       <View className={styles.statusRow}>
         <Text
@@ -103,16 +123,6 @@ const DisinfectionCard: React.FC<Props> = ({
           {statusText}
         </Text>
       </View>
-
-      <SegmentedRadio
-        className={styles.SegmentedRadioWrapper}
-        value={mode}
-        options={options}
-        onChange={(val) => onChangeMode(val as "0" | "1" | "2")}
-        disabled={disabled}
-        tone="green"
-        showIndicator={false}
-      />
     </View>
   );
 };
