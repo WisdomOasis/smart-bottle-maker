@@ -1,205 +1,526 @@
-import React, { useState, useMemo } from 'react';
-import { useSelector } from 'react-redux';
-import { View, Text, Image, router, Button } from '@ray-js/ray';
-import { ActionSheet } from '@ray-js/smart-ui';
-import { useDevice, useProps, useActions } from '@ray-js/panel-sdk';
-import TyOutdoorUtils from '@ray-js/ty-outdoor-utils';
-import { selectSystemInfo } from '@/redux/modules/systemInfoSlice';
-import { commonCheckInfo } from '@/redux/modules/commonInfoSlice';
-import { scaleMileageValue, isDpExist, checkPermissions } from '@/utils';
-import { UnlockSlider, TopBar, SignalView, Battery, Record, ServiceToast } from '@/components';
-import useBleOnline from '@/hooks/useBleOnline';
-import Res from '@/res';
-import Strings from '@/i18n';
-import dpCodes from '@/constant/dpCodes';
-import styles from './index.module.less';
+import React, { useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
+import { View, Text, Image } from "@ray-js/ray";
+import { useDevice, useProps, useActions } from "@ray-js/panel-sdk";
+import Res from "@/res";
+import dpCodes from "@/constant/dpCodes";
+import PowerSwitch from "@/components/PowerSwitch";
+import FanModal from "@/components/FanModal";
+// import CoolingModal from "@/components/CoolingModal";
+import DisinfectionCard from "@/components/DisinfectionCard";
+import Strings from "@/i18n";
+import type { I18nKey } from "@/i18n/strings";
+import styles from "./index.module.less";
 
-const { enduranceMileage, mileageTotal, level, unitSet, blelockSwitch } = dpCodes;
+type TabKey = "climate" | "disinfection";
 
-const HomePage = () => {
-  const systemInfo = useSelector(selectSystemInfo);
-  const { devInfo, dpSchema } = useDevice(state => ({
+interface TabItem {
+  key: TabKey;
+  label: string;
+  actions: string[];
+  placeholder: string;
+}
+
+interface EnvironmentStatus {
+  temperature: number;
+  humidity: number;
+  connection: "online" | "offline";
+}
+
+type DisinfectionMode = "quick" | "deep";
+
+const DISINFECTION_DURATION: Record<DisinfectionMode, number> = {
+  quick: 60,
+  deep: 90,
+};
+const DISINFECTION_DP_VALUE: Record<DisinfectionMode, 1 | 2> = {
+  quick: 1,
+  deep: 2,
+};
+const POST_O3_FAN_DURATION = 5;
+
+const fallbackStatus: EnvironmentStatus = {
+  temperature: 22,
+  humidity: 50,
+  connection: "online",
+};
+
+const HomePage: React.FC = () => {
+  const t = (key: I18nKey) => Strings.getLang(key);
+
+  const { devInfo } = useDevice((state) => ({
     devInfo: state.devInfo,
-    dpSchema: state.dpSchema,
   }));
-
-  const commonInfo = useSelector(commonCheckInfo);
-  const { inService, isPidHadVAS } = commonInfo;
   const dpState = useProps();
-  const { devId } = devInfo;
-  const { theme, statusBarHeight } = systemInfo;
   const actions = useActions();
-  const { isBleOnline = false } = useBleOnline(devId);
-  // 档位选择
-  const [showLevelSelect, setShowLevelSelect] = useState(false);
-  // 档位DP枚举数据
-  const levelEnumData = useMemo(() => {
-    const range = dpSchema[level]?.property?.range || [];
-    return range.map(i => {
-      return {
-        id: i,
-        name: Strings.getDpLang(i),
-        checked: dpState[level] === i,
-      };
-    });
-  }, [dpState[level], dpSchema]);
-
-  // 总里程
-  const totalMileageValue = useMemo(
-    () =>
-      isDpExist(mileageTotal, dpSchema)
-        ? scaleMileageValue(
-            mileageTotal,
-            dpState[mileageTotal],
-            dpSchema,
-            dpState[unitSet] !== 'km'
-          )
-        : 0,
-    [dpState[mileageTotal], dpState[unitSet], dpSchema]
+  const [activeTab, setActiveTab] = useState<TabKey>("climate");
+  const [powerLocal, setPowerLocal] = useState<boolean>(true);
+  const [activeModal, setActiveModal] = useState<"fan" | "cooling" | null>(
+    null
   );
-
-  // 续航里程
-  const enduranceMileageValue = useMemo(
-    () =>
-      isDpExist(enduranceMileage, dpSchema)
-        ? scaleMileageValue(
-            enduranceMileage,
-            dpState[enduranceMileage],
-            dpSchema,
-            dpState[unitSet] !== 'km'
-          )
-        : 0,
-    [dpState[enduranceMileage], dpState[unitSet], dpSchema]
+  const [fanLevel, setFanLevel] = useState<number>(0);
+  const [coolingMode, setCoolingMode] = useState<0 | 1 | 2>(0);
+  const [o3Enabled, setO3Enabled] = useState<boolean>(false);
+  const [disinfectionMode, setDisinfectionMode] =
+    useState<DisinfectionMode>("quick");
+  const [o3RemainingMinutes, setO3RemainingMinutes] = useState<number | null>(
+    null
   );
+  const [sceneEnabled, setSceneEnabled] = useState<boolean>(false);
+  const [scenePending, setScenePending] = useState<boolean>(false);
+  const [mistPending, setMistPending] = useState<boolean>(false);
+  const isPowerOn = powerLocal;
+  const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
+  const isO3Running = o3Enabled;
+  const getDpO3Time = (): number | null => {
+    const raw = dpState?.[dpCodes.o3Time];
+    if (raw === undefined || raw === null) return null;
+    const parsed = typeof raw === "number" ? raw : Number(raw);
+    if (Number.isNaN(parsed)) return null;
+    return parsed;
+  };
+  const isDisinfectingLocked = isO3Running;
+  const dpO3Time = getDpO3Time();
+  const o3Remaining = isO3Running
+    ? Math.max(
+        0,
+        o3RemainingMinutes ??
+          dpO3Time ??
+          DISINFECTION_DURATION[disinfectionMode]
+      )
+    : null;
+  const isO3Paused = isO3Running && isPetPresent;
+  const showO3Toast = isO3Running && activeTab !== "disinfection";
+  const o3ToastText = isPetPresent
+    ? t("home_o3_toast_pause")
+    : t("home_o3_toast_running");
+  const formatMetric = (val: number) => {
+    const s = val.toFixed(1);
+    return s.endsWith(".0") ? s.slice(0, -2) : s;
+  };
+
+  useEffect(() => {
+    setActiveModal(null);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const val = (dpState as Record<string, any>)?.[dpCodes.power];
+    if (val === undefined || val === null) return;
+    setPowerLocal(Boolean(val));
+  }, [dpState?.[dpCodes.power]]);
+
+  const status = useMemo<EnvironmentStatus>(() => {
+    const getNumber = (code: string, fallback: number) => {
+      const raw = (dpState as Record<string, any>)?.[code];
+      if (typeof raw !== "number") return fallback;
+      // Some devices report direct values (e.g. 22), others report x10 (e.g. 220).
+      return raw > 100 ? raw / 10 : raw;
+    };
+
+    const temperature = getNumber(
+      dpCodes.tempCurrent,
+      fallbackStatus.temperature
+    );
+    const humidity = getNumber(dpCodes.humidityValue, fallbackStatus.humidity);
+
+    return {
+      temperature,
+      humidity,
+      connection: devInfo?.isOnline ? "online" : fallbackStatus.connection,
+    };
+  }, [devInfo?.isOnline, dpState]);
+
+  const tabs: TabItem[] = [
+    {
+      key: "climate",
+      label: t("home_tab_climate"),
+      actions: ["mist", "fan", "cooling"],
+      placeholder: "",
+    },
+    {
+      key: "disinfection",
+      label: t("home_tab_disinfection"),
+      actions: ["disinfection"],
+      placeholder: "",
+    },
+  ];
+
+  const climateActions = [
+    {
+      label: t("home_action_mist"),
+      key: "mist",
+      icon: Res.icMist,
+      iconActive: Res.icMistActive,
+      active: Number(dpState?.[dpCodes.mist] ?? 0) === 2,
+    },
+    {
+      label: t("home_action_fan"),
+      key: "fan",
+      icon: Res.icFan,
+      iconActive: Res.icFanActive,
+      active: (dpState?.[dpCodes.fan] ?? 0) > 0,
+    },
+    {
+      label: t("scene_action_auto"),
+      key: "auto",
+      icon: Res.icAuto,
+      iconActive: Res.icAutoActive,
+      active: sceneEnabled,
+    },
+    // {
+    //   label: "冷房",
+    //   key: "cooling",
+    //   icon: Res.icCooling,
+    //   iconActive: Res.icCoolingActive,
+    //   active: (dpState?.[dpCodes.cooling] ?? 0) > 0,
+    // },
+  ];
+  const temperatureIcon =
+    status.temperature <= 18
+      ? Res.temperatureLow
+      : status.temperature >= 27
+      ? Res.temperatureHigh
+      : Res.temperatureBalance;
+  const temperatureLabel =
+    status.temperature <= 18
+      ? t("home_temperature_low")
+      : status.temperature >= 27
+      ? t("home_temperature_high")
+      : t("home_temperature_good");
+
+  const petStrokeIcon = Res.petDogWhite;
+
+  const setDp = (code: string, val: any) => {
+    const fn = (actions as any)?.[code]?.set;
+    if (typeof fn === "function") {
+      fn(val);
+      return true;
+    }
+    return false;
+  };
+
+  const handleAction = (actionKey: string) => {
+    if (!isPowerOn) return;
+    if (isDisinfectingLocked) return;
+
+    switch (activeTab) {
+      case "climate": {
+        if (actionKey === "mist") {
+          if (mistPending) return;
+          const raw = dpState?.[dpCodes.mist];
+          const mistVal = typeof raw === "number" ? raw : Number(raw ?? 0);
+          const cur = mistVal === 2;
+          const next = !cur;
+          const published = setDp(dpCodes.mist, next ? 2 : 0);
+          if (published) {
+            setMistPending(true);
+          }
+          return;
+        }
+        if (actionKey === "fan") {
+          setActiveModal("fan");
+          const fanVal = dpState?.[dpCodes.fan] ?? 0;
+          setFanLevel(Math.min(5, Math.max(0, fanVal)));
+        }
+        if (actionKey === "auto") {
+          if (scenePending) return;
+          const next = !sceneEnabled;
+          const published = setDp(dpCodes.autoMode, next);
+          if (published) {
+            setScenePending(true);
+          }
+        }
+        // if (action === "冷房") {
+        //   setActiveModal("cooling");
+        //   const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
+        //   setCoolingMode(coolingVal === 2 ? 2 : 1);
+        // }
+        break;
+      }
+      default:
+        break;
+    }
+  };
+
+  const handleFanChange = (val: number) => {
+    setFanLevel(val);
+    setDp(dpCodes.fan, val);
+  };
+
+  // const handleCoolingChange = (mode: 0 | 1 | 2) => {
+  //   setCoolingMode(mode);
+  //   setDp(dpCodes.cooling, mode);
+  // };
+
+  const rawO3Status = dpState?.[dpCodes.o3Status];
+  const o3Status =
+    typeof rawO3Status === "number"
+      ? rawO3Status
+      : rawO3Status != null
+      ? Number(rawO3Status)
+      : undefined;
+  const postO3FanRemaining =
+    o3Status === 3
+      ? o3RemainingMinutes !== null && o3RemainingMinutes !== undefined
+        ? Math.min(POST_O3_FAN_DURATION, Math.max(0, o3RemainingMinutes))
+        : POST_O3_FAN_DURATION
+      : null;
+  const isPostO3FanFinished =
+    o3Status === 3 && postO3FanRemaining !== null && postO3FanRemaining <= 0;
+  const postO3FanStatusLabel = isPostO3FanFinished
+    ? t("home_o3_status_fan_finished")
+    : postO3FanRemaining !== null && postO3FanRemaining > 0
+    ? Strings.formatValue(
+        "home_o3_status_fan_remaining_minutes",
+        postO3FanRemaining
+      )
+    : undefined;
+  const o3StatusLabelOverride =
+    postO3FanStatusLabel ??
+    (o3Status === 5
+      ? t("home_o3_status_recovery")
+      : o3Status === 3
+      ? t("home_o3_status_diffuse")
+      : undefined);
+
+  // sync UI with dp updates
+  useEffect(() => {
+    const mistVal = dpState?.[dpCodes.mist];
+    if (typeof mistVal === "number") {
+      setMistPending(false);
+    }
+    const fanVal = dpState?.[dpCodes.fan];
+    if (typeof fanVal === "number") {
+      setFanLevel(Math.min(5, Math.max(0, fanVal)));
+    }
+    const coolingVal = dpState?.[dpCodes.cooling];
+    if (typeof coolingVal === "number") {
+      setCoolingMode(coolingVal === 2 ? 2 : coolingVal === 1 ? 1 : 0);
+    }
+    const o3Val = dpState?.[dpCodes.o3];
+    if (typeof o3Val === "number") {
+      setO3Enabled(o3Val > 0);
+      if (o3Val === DISINFECTION_DP_VALUE.quick) {
+        setDisinfectionMode("quick");
+      } else if (o3Val === DISINFECTION_DP_VALUE.deep) {
+        setDisinfectionMode("deep");
+      }
+    }
+    const o3TimeVal = dpState?.[dpCodes.o3Time];
+    if (o3TimeVal !== undefined && o3TimeVal !== null) {
+      const parsed =
+        typeof o3TimeVal === "number" ? o3TimeVal : Number(o3TimeVal);
+      if (!Number.isNaN(parsed)) {
+        setO3RemainingMinutes(parsed);
+        if (parsed === DISINFECTION_DURATION.quick) {
+          setDisinfectionMode("quick");
+        } else if (parsed === DISINFECTION_DURATION.deep) {
+          setDisinfectionMode("deep");
+        }
+      }
+    }
+    const autoModeVal = dpState?.[dpCodes.autoMode];
+    if (autoModeVal !== undefined && autoModeVal !== null) {
+      setSceneEnabled(Boolean(autoModeVal));
+      setScenePending(false);
+    }
+  }, [
+    coolingMode,
+    dpState?.[dpCodes.cooling],
+    dpState?.[dpCodes.fan],
+    dpState?.[dpCodes.mist],
+    dpState?.[dpCodes.o3],
+    dpState?.[dpCodes.o3Time],
+    dpState?.[dpCodes.autoMode],
+  ]);
+
+  const toggleO3Enabled = () => {
+    if (!isPowerOn) return;
+    const next = !o3Enabled;
+    setO3Enabled(next);
+    if (next) {
+      const duration = DISINFECTION_DURATION[disinfectionMode];
+      const nextRemaining = dpO3Time ?? duration;
+      setO3RemainingMinutes(nextRemaining);
+      setDp(dpCodes.o3, DISINFECTION_DP_VALUE[disinfectionMode]);
+      setDp(dpCodes.o3Time, duration);
+    } else {
+      setO3RemainingMinutes(null);
+      setDp(dpCodes.o3, 0);
+    }
+  };
+
+  const handleDisinfectionModeChange = (mode: DisinfectionMode) => {
+    setDisinfectionMode(mode);
+    if (!isPowerOn) return;
+    if (!o3Enabled) return;
+    const duration = DISINFECTION_DURATION[mode];
+    setDp(dpCodes.o3, DISINFECTION_DP_VALUE[mode]);
+    setDp(dpCodes.o3Time, duration);
+  };
+
+  // 本地每分鐘倒數，並在設備上報時校正（單位：分鐘）
+  useEffect(() => {
+    if (!isO3Running || o3RemainingMinutes === null) return;
+    const timer = setInterval(() => {
+      setO3RemainingMinutes((prev) => {
+        if (prev === null) return prev;
+        return Math.max(0, prev - 1);
+      });
+    }, 60 * 1000);
+    // eslint-disable-next-line consistent-return
+    return () => clearInterval(timer);
+  }, [isO3Running, o3RemainingMinutes]);
 
   return (
     <View className={styles.container}>
-      <TopBar />
-      <View className={styles.content}>
-        {/* 续费服务弹窗 */}
-        <ServiceToast devId={devId} theme={theme} statusBarHeight={statusBarHeight} />
+      <View className={styles.navbar}>
+        <Image src={Res.airbuggyLogo} className={styles.logo} />
+        {/* <View className={styles.navActions}>
+          <Image src={Res.icNotification} className={styles.navIcon} />
+          <Image src={Res.icSettings} className={styles.navIcon} />
+        </View> */}
+      </View>
 
-        {/* 信号、蓝牙状态、总里程数 */}
-        <View className={styles.signal}>
-          <View className={styles.signalLeft}>
-            <SignalView isBleOnline={isBleOnline} />
-          </View>
-          {isDpExist(mileageTotal, dpSchema) && (
-            <View>
-              {totalMileageValue}
-              <Text>{dpState[unitSet] === 'km' ? 'Km' : 'Mile'}</Text>
-            </View>
-          )}
+      <View className={styles.statusStrip}>
+        <View className={styles.statusBlock}>
+          <Text className={styles.statusValue}>
+            {formatMetric(status.temperature)}°C
+          </Text>
+          <Text className={styles.statusLabel}>
+            {t("home_status_temperature")}
+          </Text>
         </View>
-        {/* 电池、车辆信息 */}
-        <View className={styles.carInfoContent}>
+        <View className={styles.statusBlock}>
+          <Text className={styles.statusValue}>
+            {formatMetric(status.humidity)}%
+          </Text>
+          <Text className={styles.statusLabel}>
+            {t("home_status_humidity")}
+          </Text>
+        </View>
+        <View className={styles.statusBlock}>
           <Image
-            src={devInfo?.iconUrl || Res.defaultCar}
-            className={devInfo?.iconUrl ? styles.carImg : styles.defaultCar}
+            src={
+              status.connection === "online" ? Res.icConnected : Res.icOffline
+            }
+            className={styles.statusConnIcon}
           />
-          <View className={styles.carInfoLeft}>
-            <Battery />
-            {isDpExist(enduranceMileage, dpSchema) && (
-              <>
-                <View className={styles.numberView}>
-                  <Text className={styles.zeroNum}>{enduranceMileageValue}</Text>
-                  <Text className={styles.util}>{dpState[unitSet] === 'km' ? 'Km' : 'Mile'}</Text>
-                </View>
-                <Text className={styles.subTitle}>{Strings.getLang('enduranceMileage')}</Text>
-              </>
-            )}
-            {isDpExist(level, dpSchema) && (
-              <Button
-                type="primary"
-                className={styles.changeModeBtn}
-                onClick={() => setShowLevelSelect(true)}
-              >
-                <Text className={styles.text}>{Strings.getDpLang(dpState[level])}</Text>
-                <Image
-                  className={styles.icon}
-                  src={theme === 'dark' ? Res.modeChange : Res.modeChangeLight}
-                />
-              </Button>
-            )}
-          </View>
-        </View>
-        {/* 快捷操作 */}
-        <View className={styles.operation}>
-          <View
-            className={styles.operationLi}
-            onClick={
-              () => TyOutdoorUtils.jumpSubPage.toUniversalTargeting({ deviceId: devInfo?.devId }) // 定位二级页
-            }
-          >
-            <Image src={theme === 'dark' ? Res.iconLocation : Res.iconLocationLight} />
-            <Text>{Strings.getLang('locationCar')}</Text>
-          </View>
-          <View
-            className={styles.operationLi}
-            onClick={
-              () => TyOutdoorUtils.jumpSubPage.toVehicleExamine({ deviceId: devId, isEnable: '' }) // 车辆体检
-            }
-          >
-            <Image src={theme === 'dark' ? Res.iconTracks : Res.iconTracksLight} />
-            <Text>{Strings.getLang('vehicleExamine')}</Text>
-          </View>
-          <View className={styles.operationLi} onClick={() => router.push('/more')}>
-            <Image src={theme === 'dark' ? Res.iconSet : Res.iconSetLight} />
-            <Text>{Strings.getLang('more')}</Text>
-          </View>
-        </View>
-        {/* 骑行记录 */}
-        <Record
-          deviceId={devId}
-          mileageUnit={dpState[unitSet]}
-          dpSchema={dpSchema}
-          isKm={dpState[unitSet] !== 'km'}
-        />
-        {/* 滑动开锁 */}
-        <View className={styles.unlock}>
-          {isDpExist(blelockSwitch, dpSchema) && (
-            <UnlockSlider
-              isBleOnline={isBleOnline}
-              inService={inService}
-              isPidHadVAS={isPidHadVAS}
-              dpSchema={dpSchema}
-            />
-          )}
-          <View
-            className={`${styles.go} ${devInfo?.isOnline && styles.onlineGo}`}
-            onClick={() => {
-              // 骑行导航 APP原生二级页
-              ty.router({
-                url: `tuyaSmart://tsod_cycling_navigation?devId=${devInfo?.devId}`,
-              });
-            }}
-            style={{
-              backgroundColor: theme === 'dark' ? '#202124' : '#fff',
-              width: isDpExist(blelockSwitch, dpSchema) ? '95px' : '100%',
-            }}
-          >
-            <Text className={`${styles.goText} ${devInfo?.isOnline && styles.goTextOnline}`}>
-              GO
-            </Text>
-          </View>
+          <Text className={styles.statusLabel}>{t("home_status_device")}</Text>
         </View>
       </View>
-      <ActionSheet
-        show={showLevelSelect}
-        actions={levelEnumData}
-        onClose={() => setShowLevelSelect(false)}
-        onSelect={d =>
-          checkPermissions({
-            dpCode: level,
-            dpSchema,
-            inService,
-            isPidHadVAS,
-            isBleOnline,
-            successCb: () => actions[level].set(d.detail.id),
-          })
-        }
-        cancelText={Strings.getLang('cancel')}
+
+      {!activeModal && (
+        <View className={styles.heroCard}>
+          <View className={styles.heroImageWrap}>
+            <Image src={temperatureIcon} className={styles.heroImage} />
+            <Text className={styles.heroTemperatureLabel}>
+              {temperatureLabel}
+            </Text>
+          </View>
+          <Image src={petStrokeIcon} className={styles.heroPetIcon} />
+        </View>
+      )}
+
+      {showO3Toast && (
+        <View className={styles.o3Toast}>
+          <Image src={Res.icInfoRed} className={styles.o3ToastDot} />
+          <Text className={styles.o3ToastText}>{o3ToastText}</Text>
+        </View>
+      )}
+
+      <View className={styles.divider} />
+
+      <View className={styles.tabs}>
+        {tabs.map((tab) => (
+          <View
+            key={tab.key}
+            className={clsx(
+              styles.tabItem,
+              activeTab === tab.key && styles.tabItemActive,
+              isDisinfectingLocked && tab.key === "climate" && styles.disabled
+            )}
+            onClick={() => {
+              if (isDisinfectingLocked && tab.key === "climate") return;
+              setActiveTab(tab.key);
+            }}
+          >
+            <Text>{tab.label}</Text>
+          </View>
+        ))}
+      </View>
+
+      <FanModal
+        visible={activeTab === "climate" && activeModal === "fan"}
+        value={fanLevel}
+        onChange={handleFanChange}
+        onClose={() => setActiveModal(null)}
+        isPowerOn={isPowerOn}
       />
+      {/* <CoolingModal
+        visible={activeTab === "climate" && activeModal === "cooling"}
+        mode={coolingMode}
+        onChangeMode={handleCoolingChange}
+        onClose={() => setActiveModal(null)}
+        isPowerOn={isPowerOn}
+      /> */}
+
+      {activeTab === "disinfection" ? (
+        <DisinfectionCard
+          enabled={o3Enabled}
+          isRunning={isO3Running}
+          isPaused={isO3Paused}
+          mode={disinfectionMode}
+          onModeChange={handleDisinfectionModeChange}
+          remainingMinutes={o3Remaining ?? undefined}
+          statusLabelOverride={o3StatusLabelOverride}
+          isPowerOn={isPowerOn}
+          isPetPresent={isPetPresent}
+          onToggle={toggleO3Enabled}
+        />
+      ) : (
+        <View className={styles.actionsRow}>
+          {climateActions.map((action) => (
+            <View
+              key={action.key}
+              className={clsx(
+                styles.actionBadge,
+                action.active && styles.actionBadgeActive,
+                activeModal === action.key && styles.actionBadgeExpanded,
+                (!isPowerOn ||
+                  isDisinfectingLocked ||
+                  (action.key === "auto" && scenePending) ||
+                  (action.key === "mist" && mistPending)) &&
+                  styles.disabled
+              )}
+              onClick={() => handleAction(action.key)}
+            >
+              <View
+                className={clsx(
+                  styles.actionIcon,
+                  action.active && styles.actionIconActive
+                )}
+              >
+                <Image
+                  src={action.active ? action.iconActive : action.icon}
+                  className={styles.actionIconImg}
+                />
+              </View>
+              <Text className={styles.actionLabel}>{action.label}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      <View className={styles.powerWrapper}>
+        <PowerSwitch
+          isOn={isPowerOn}
+          onToggle={(next) => {
+            setPowerLocal(next);
+            setDp(dpCodes.power, next);
+          }}
+        />
+      </View>
     </View>
   );
 };

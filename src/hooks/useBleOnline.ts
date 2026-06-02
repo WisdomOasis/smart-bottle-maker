@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from "react";
 import {
   getBLEOnlineState,
   onBLEConnectStatusChange,
@@ -7,13 +7,13 @@ import {
   offBluetoothAdapterStateChange,
   subscribeBLEConnectStatus,
   unsubscribeBLEConnectStatus,
-} from '@ray-js/ray';
+} from "@ray-js/ray";
 
-const useBleOnline = devId => {
+const useBleOnline = (devId) => {
   const [isBleOnline, setIsBleOnline] = useState(false);
 
   const handleBluetoothAdapterStateChange = useCallback(
-    data => {
+    (data) => {
       if (!data.available) {
         setIsBleOnline(false);
       }
@@ -25,9 +25,9 @@ const useBleOnline = devId => {
   );
 
   const handleBleConnectStatusChange = useCallback(
-    data => {
+    (data) => {
       if (data.deviceId === devId) {
-        setIsBleOnline(data.status === 'CONNECTED');
+        setIsBleOnline(data.status === "CONNECTED");
       }
     },
     [devId]
@@ -37,8 +37,8 @@ const useBleOnline = devId => {
     subscribeBLEConnectStatus({ deviceId: devId });
     getBLEOnlineState({
       deviceId: devId,
-      success: data => {
-        if (typeof data.isOnline !== 'undefined') {
+      success: (data) => {
+        if (typeof data.isOnline !== "undefined") {
           setIsBleOnline(data.isOnline);
         }
       },

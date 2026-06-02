@@ -9,7 +9,9 @@
   "scripts": {
     "start": "ray start --target tuya",
     "build": "ray build --target tuya",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix"
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx --fix",
+    "i18n:export": "node scripts/sync-i18n-export.js",
+    "i18n:watch": "node scripts/sync-i18n-export.js --watch"
   },
   "dependencies": {
     "@ray-js/components-ty-cell": "^0.0.19",
@@ -41,7 +43,7 @@
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS --config commitlint.config.js",
-      "pre-commit": "lint-staged"
+      "pre-commit": "node scripts/sync-i18n-export.js --staged-only && lint-staged"
     }
   },
   "lint-staged": {

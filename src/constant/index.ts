@@ -1,1 +1,1 @@
-export const SYSTEM_INFO = 'SYSTEM_INFO';
+export const SYSTEM_INFO = "SYSTEM_INFO";

@@ -1,16 +1,15 @@
 English[](README.md) | [简体中文](README_zh.md)
 
-## Product name: Universal template for two-wheeled vehicles
+## Product name: SmartFan
 
-## 1. Instructions
+## Instructions
 
 Before using this template, you need to have a basic understanding of the Ray framework. It is recommended to refer to the [Ray development documentation](https://developer.tuya.com/cn/miniapp/develop/ray/guide/overview)
 
-## 2. Quick start:
+## Quick start:
 
 - [Create a product](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#2)
 - [Create a project and import the project code in the IDE](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#3)
-- For more details, please refer to the [Travel two-wheeled vehicle template tutorial](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#0)
 
 ### Development commands
 
@@ -18,47 +17,38 @@ Before using this template, you need to have a basic understanding of the Ray fr
 - Start (Tuya target): `npm run start` (runs `ray start --target tuya`)
 - Build (Tuya target): `npm run build` (runs `ray build --target tuya`)
 - Lint: `npm run lint`
+- Export i18n Excel: `npm run i18n:export`
+- Watch i18n and export automatically: `npm run i18n:watch`
+
+### i18n export flow
+
+- Source of truth: `src/i18n/strings.ts`
+- Export file: `i18n_export.xlsx`
+- Manual export: run `npm run i18n:export` or `yarn i18n:export`
+- Watch mode: run `npm run i18n:watch` or `yarn i18n:watch`; when `src/i18n/strings.ts` changes, the Excel file is regenerated automatically
+- Pre-commit: when there are staged changes under `src/i18n`, the pre-commit hook regenerates `i18n_export.xlsx` and stages it automatically
+- Notification: the script always prints a terminal message; if `terminal-notifier` is installed on macOS, it also sends a desktop notification
 
 ## 3. Capability dependency
 
-- App version
-  - Travel Returns 3.0.0 and above
 - TTT dependency
-  - "BaseKit": "3.0.0",
-  - "MiniKit": "3.0.1",
-  - "DeviceKit": "3.0.2",
-  - "BizKit": "3.0.6",
-  - "OutdoorKit": "1.1.7"
-  - "baseversion": "2.19.0",
+  - "BaseKit": "3.0.6",
+  - "MiniKit": "3.0.7",
+  - "DeviceKit": "4.6.1",
 - Component dependency
   - None
 - Function page dependency
-  - Device Detail Functional Page: settings => 'tycryc71qaug8at6yt'
+  - Device Detail Functional Page: settings => 'tyj8e2fjmduxtfw3nc'
 
-## 4. Panel function
-
-- Vehicle unlocking and unlocking
-- View riding records, driving tracks, mileage, etc.
-- Vehicle positioning and physical examination
-
-## 5. Specific function implementation
-
-- See [Travel two-wheeled vehicle template tutorial](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#0)
-
-## 6. Problem feedback
+## Problem feedback
 
 If you have any questions, please visit the link and submit post feedback: https://tuyaos.com/viewforum.php?f=10
 
-## 7. License
+## License
 
 [License details](LICENSE)
-
-## 8. Changelog
-
-### [1.0.2] - 2024-11-27
 
 #### Refactored
 
 - Updated `@ray-js/ray` version to `1.5.44`
 - Updated `@ray-js/smart-ui` version to `2.0.0`
-- Introducing `Device Details Function Page`

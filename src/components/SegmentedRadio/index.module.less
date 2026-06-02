@@ -1,0 +1,103 @@
+.track {
+  display: flex;
+  width: 100%;
+  height: 60px;
+  padding: 4px;
+  border-radius: 40px;
+  background: linear-gradient(270deg, #daefff 0%, #eaf6ff 100%);
+  border: 1px solid #ffffff66;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.trackGreen {
+  background: linear-gradient(90deg, #e3f5dc 8.72%, #d4eec9 100%);
+  border: 1px solid;
+  border-image-source: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, #ffffff 100%);
+  box-shadow: 0px 12px 20px 0px #ffffff33 inset;
+}
+
+.trackDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.optionDisabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.option {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 16px;
+  border-radius: 100px;
+  color: #1f1902;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.optionActive {
+  background: linear-gradient(180deg, #9dd6ff 0%, #59b9ff 100%);
+  border: 1px solid;
+  border-image-source: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, #ffffff 100%);
+  box-shadow: 0px -4px 16px 0px #59b9ff99 inset;
+  color: #ffffff;
+}
+
+.optionIndicatorActiveGreen {
+  background: #ffffff;
+  border: 2px solid #ffffff;
+}
+
+.optionActive.optionActiveGreen {
+  background: linear-gradient(180deg, #baeBA5 0%, #94cb7d 100%);
+  border: 1px solid;
+  border-image-source: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, #ffffff 100%);
+  box-shadow: 0px -4px 16px 0px #70bb5099 inset;
+}
+
+.optionIndicator {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #8b909e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.optionIndicatorActive {
+  background: #FFFFFF;
+  border: 2px solid #FFFFFF;
+}
+
+.optionCheck {
+  width: 6px;
+  height: 10px;
+  border-right: 2px solid #25A3FF;
+  border-bottom: 2px solid #25A3FF;
+  transform: rotate(45deg);
+}
+
+.optionCheckGreen {
+  border-right: 2px solid #94c87d;
+  border-bottom: 2px solid #94c87d;
+}
+
+.optionLabel {
+  color: #7a7a7a;
+  text-align: center;
+}
+
+.optionLabelActive {
+  color: #ffffff;
+}

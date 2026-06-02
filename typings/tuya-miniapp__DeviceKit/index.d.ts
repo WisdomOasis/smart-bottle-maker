@@ -608,6 +608,64 @@ declare namespace ty.device {
   }): void
 
   
+  export function activeDeviceExtendModule(params: {
+    
+    deviceId: string
+    
+    ssid?: string
+    
+    password?: string
+    
+    activeType: number
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function updateMeshProxyState(params: {
+    
+    deviceId: string
+    
+    isOpen: boolean
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function updateMeshRelayState(params: {
+    
+    deviceId: string
+    
+    isOpen: boolean
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
   export function startGWActivation(params: {
     
     gateway: Gateway
@@ -983,6 +1041,8 @@ declare namespace ty.device {
       
       productId: string
       
+      productVer: string
+      
       bizAttribute: number
       
       meshId: string
@@ -1056,6 +1116,14 @@ declare namespace ty.device {
       isSupportAppleHomeKit?: boolean
       
       attributeString: string
+      
+      extModuleType: number
+      
+      isRelayOpen: boolean
+      
+      isProxyOpen: boolean
+      
+      isSupportProxyAndRelay: boolean
     }) => void
     fail?: (params: {
       errorMsg: string
@@ -1090,6 +1158,8 @@ declare namespace ty.device {
   export function getProductInfo(params: {
     
     productId: string
+    
+    productVer?: string
     complete?: () => void
     success?: (params: {
       
@@ -1271,6 +1341,8 @@ declare namespace ty.device {
     deviceId: string
     
     dpIds: number[]
+    
+    queryType?: number
     complete?: () => void
     success?: (params: boolean) => void
     fail?: (params: {
@@ -2226,6 +2298,25 @@ declare namespace ty.device {
   }): void
 
   
+  export function getRemoteRebootTimers(params: {
+    
+    deviceId: string
+    complete?: () => void
+    success?: (params: {
+      
+      timers: RemoteRebootTimers[]
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
   export function openRecommendSceneDetail(params: {
     
     source: string
@@ -2459,7 +2550,7 @@ declare namespace ty.device {
       
       groupId: string
       
-      deviceList: DeviceInfo_RQjz8B[]
+      deviceList: DeviceInfo_27rI6q[]
     }) => void
     fail?: (params: {
       errorMsg: string
@@ -2620,7 +2711,7 @@ declare namespace ty.device {
       
       dpName: {}
       
-      deviceList: DeviceInfo_RQjz8B[]
+      deviceList: DeviceInfo_27rI6q[]
       
       localId: string
       
@@ -2788,9 +2879,42 @@ declare namespace ty.device {
   }): void
 
   
+  export function otaStatus(params: {
+    
+    deviceId: string
+    complete?: () => void
+    success?: (params: {
+      
+      status: number
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
   export function openOTAUpgrade(params: {
     
     deviceId: string
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function registerOTACompleted(params?: {
     complete?: () => void
     success?: (params: null) => void
     fail?: (params: {
@@ -3076,12 +3200,12 @@ declare namespace ty.device {
 
   
   export function onDeviceInfoUpdated(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function offDeviceInfoUpdated(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
@@ -3106,42 +3230,42 @@ declare namespace ty.device {
 
   
   export function onSubDeviceDpUpdate(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function offSubDeviceDpUpdate(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function onSubDeviceRemoved(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function offSubDeviceRemoved(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function onSubDeviceAdded(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function offSubDeviceAdded(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function onSubDeviceInfoUpdate(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
   export function offSubDeviceInfoUpdate(
-    listener: (params: Device_KPL4Lv) => void
+    listener: (params: Device_9TwH4L) => void
   ): void
 
   
@@ -3211,6 +3335,16 @@ declare namespace ty.device {
   ): void
 
   
+  export function onOtaCompleted(
+    listener: (params: OtaCompletedParams) => void
+  ): void
+
+  
+  export function offOtaCompleted(
+    listener: (params: OtaCompletedParams) => void
+  ): void
+
+  
   export function onReceivedThingModelMessage(
     listener: (params: OnReceivedThingModelMessageBody) => void
   ): void
@@ -3277,6 +3411,8 @@ declare namespace ty.device {
     standSchemaModel?: {}
     
     productId: string
+    
+    productVer: string
     
     bizAttribute: number
     
@@ -3351,6 +3487,14 @@ declare namespace ty.device {
     isSupportAppleHomeKit?: boolean
     
     attributeString: string
+    
+    extModuleType: number
+    
+    isRelayOpen: boolean
+    
+    isProxyOpen: boolean
+    
+    isSupportProxyAndRelay: boolean
   }
 
   export type Object = {}
@@ -3443,6 +3587,8 @@ declare namespace ty.device {
     
     attributeSign: number
     
+    widgetUrl: string
+    
     originJson: Record<string, {}>
   }
 
@@ -3451,6 +3597,17 @@ declare namespace ty.device {
     id: string
     
     isShow: boolean
+  }
+
+  export type RemoteRebootTimers = {
+    
+    tid: string
+    
+    time: string
+    
+    loops: string
+    
+    status: boolean
   }
 
   export type SceneAction = {
@@ -3515,7 +3672,7 @@ declare namespace ty.device {
     cityName: string
   }
 
-  export type DeviceInfo_RQjz8B = {
+  export type DeviceInfo_27rI6q = {
     
     schema: {}[]
     
@@ -3700,7 +3857,7 @@ declare namespace ty.device {
     onlineType: number
   }
 
-  export type Device_KPL4Lv = {
+  export type Device_9TwH4L = {
     
     deviceId: string
     
@@ -3758,6 +3915,13 @@ declare namespace ty.device {
     groupId: string
     
     dps: {}
+  }
+
+  export type OtaCompletedParams = {
+    
+    deviceId: string
+    
+    result: number
   }
 
   export type OnReceivedThingModelMessageBody = {
@@ -3818,6 +3982,8 @@ declare namespace ty.device {
   export type Product = {
     
     productId: string
+    
+    productVer?: string
   }
 
   export type ProductInfo = {
@@ -3909,6 +4075,8 @@ declare namespace ty.device {
     deviceId: string
     
     dpIds: number[]
+    
+    queryType?: number
   }
 
   export type MqttMessage = {
@@ -4191,7 +4359,7 @@ declare namespace ty.device {
     warningText: string
   }
 
-  export type Device_zsZlNH = {
+  export type Device_2HeVdr = {
     
     deviceId: string
   }
@@ -4247,6 +4415,16 @@ declare namespace ty.device {
     id: string
     
     data?: Record<string, {}>
+  }
+
+  export type GetRemoteRebootTimersParams = {
+    
+    deviceId: string
+  }
+
+  export type GetRemoteRebootTimersResult = {
+    
+    timers: RemoteRebootTimers[]
   }
 
   export type UiComponent = {
@@ -4437,7 +4615,7 @@ declare namespace ty.device {
     
     groupId: string
     
-    deviceList: DeviceInfo_RQjz8B[]
+    deviceList: DeviceInfo_27rI6q[]
   }
 
   export type DeviceNumResponse = {
@@ -4514,7 +4692,7 @@ declare namespace ty.device {
     
     dpName: {}
     
-    deviceList: DeviceInfo_RQjz8B[]
+    deviceList: DeviceInfo_27rI6q[]
     
     localId: string
     
@@ -4571,6 +4749,11 @@ declare namespace ty.device {
   }
 
   export type CheckOTAUpgradeStatusResponse = {
+    
+    status: number
+  }
+
+  export type OtaStatusResponse = {
     
     status: number
   }

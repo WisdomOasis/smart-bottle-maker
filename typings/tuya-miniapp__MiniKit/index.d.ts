@@ -401,6 +401,59 @@ declare namespace ty {
   export function setBoardTitleSync(boardBean?: BoardBean): null
 
   
+  export function setBoardIcon(params: {
+    
+    icon: string
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function setBoardIconSync(boardIconBean?: BoardIconBean): null
+
+  
+  export function showBoardTitleIcon(params?: {
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function showBoardTitleIconSync(): null
+
+  
+  export function hideBoardTitleIcon(params?: {
+    complete?: () => void
+    success?: (params: null) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function hideBoardTitleIconSync(): null
+
+  
   export function getMenuButtonBoundingClientRect(params?: {
     complete?: () => void
     success?: (params: {
@@ -901,6 +954,11 @@ declare namespace ty {
   export type BoardBean = {
     
     title: string
+  }
+
+  export type BoardIconBean = {
+    
+    icon: string
   }
 
   export type OpenURLBean = {
