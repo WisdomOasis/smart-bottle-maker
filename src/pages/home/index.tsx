@@ -8,12 +8,11 @@ import PowerSwitch from "@/components/PowerSwitch";
 import FanModal from "@/components/FanModal";
 // import CoolingModal from "@/components/CoolingModal";
 import DisinfectionCard from "@/components/DisinfectionCard";
-import LightCard, { LIGHT_MAP, LightKey } from "@/components/LightCard";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import styles from "./index.module.less";
 
-type TabKey = "climate" | "disinfection" | "light";
+type TabKey = "climate" | "disinfection";
 
 interface TabItem {
   key: TabKey;
@@ -33,6 +32,10 @@ type DisinfectionMode = "quick" | "deep";
 const DISINFECTION_DURATION: Record<DisinfectionMode, number> = {
   quick: 60,
   deep: 90,
+};
+const DISINFECTION_DP_VALUE: Record<DisinfectionMode, 1 | 2> = {
+  quick: 1,
+  deep: 2,
 };
 const POST_O3_FAN_DURATION = 5;
 
@@ -63,17 +66,28 @@ const HomePage: React.FC = () => {
   const [o3RemainingMinutes, setO3RemainingMinutes] = useState<number | null>(
     null
   );
-  const [lightVal, setLightVal] = useState<number | undefined>(undefined);
-  const [lightEnabled, setLightEnabled] = useState<boolean>(false);
-  const [lastLightKey, setLastLightKey] = useState<LightKey>("blue");
   const [sceneEnabled, setSceneEnabled] = useState<boolean>(false);
   const [scenePending, setScenePending] = useState<boolean>(false);
   const [mistPending, setMistPending] = useState<boolean>(false);
   const isPowerOn = powerLocal;
   const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
   const isO3Running = o3Enabled;
+  const getDpO3Time = (): number | null => {
+    const raw = dpState?.[dpCodes.o3Time];
+    if (raw === undefined || raw === null) return null;
+    const parsed = typeof raw === "number" ? raw : Number(raw);
+    if (Number.isNaN(parsed)) return null;
+    return parsed;
+  };
+  const isDisinfectingLocked = isO3Running;
+  const dpO3Time = getDpO3Time();
   const o3Remaining = isO3Running
-    ? Math.max(0, o3RemainingMinutes ?? DISINFECTION_DURATION[disinfectionMode])
+    ? Math.max(
+        0,
+        o3RemainingMinutes ??
+          dpO3Time ??
+          DISINFECTION_DURATION[disinfectionMode]
+      )
     : null;
   const isO3Paused = isO3Running && isPetPresent;
   const showO3Toast = isO3Running && activeTab !== "disinfection";
@@ -127,12 +141,6 @@ const HomePage: React.FC = () => {
       key: "disinfection",
       label: t("home_tab_disinfection"),
       actions: ["disinfection"],
-      placeholder: "",
-    },
-    {
-      key: "light",
-      label: t("home_tab_light"),
-      actions: ["light_white", "light_blue", "light_green"],
       placeholder: "",
     },
   ];
@@ -193,6 +201,7 @@ const HomePage: React.FC = () => {
 
   const handleAction = (actionKey: string) => {
     if (!isPowerOn) return;
+    if (isDisinfectingLocked) return;
 
     switch (activeTab) {
       case "climate": {
@@ -226,12 +235,6 @@ const HomePage: React.FC = () => {
         //   const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
         //   setCoolingMode(coolingVal === 2 ? 2 : 1);
         // }
-        break;
-      }
-      case "light": {
-        if (actionKey === "light_white") setDp(dpCodes.light, LIGHT_MAP.white);
-        if (actionKey === "light_blue") setDp(dpCodes.light, LIGHT_MAP.blue);
-        if (actionKey === "light_green") setDp(dpCodes.light, LIGHT_MAP.green);
         break;
       }
       default:
@@ -297,6 +300,11 @@ const HomePage: React.FC = () => {
     const o3Val = dpState?.[dpCodes.o3];
     if (typeof o3Val === "number") {
       setO3Enabled(o3Val > 0);
+      if (o3Val === DISINFECTION_DP_VALUE.quick) {
+        setDisinfectionMode("quick");
+      } else if (o3Val === DISINFECTION_DP_VALUE.deep) {
+        setDisinfectionMode("deep");
+      }
     }
     const o3TimeVal = dpState?.[dpCodes.o3Time];
     if (o3TimeVal !== undefined && o3TimeVal !== null) {
@@ -311,14 +319,6 @@ const HomePage: React.FC = () => {
         }
       }
     }
-    const lightState = dpState?.[dpCodes.light];
-    if (typeof lightState === "number") {
-      setLightVal(lightState);
-      setLightEnabled(lightState > 0);
-      if (lightState === LIGHT_MAP.white) setLastLightKey("white");
-      else if (lightState === LIGHT_MAP.green) setLastLightKey("green");
-      else if (lightState === LIGHT_MAP.blue) setLastLightKey("blue");
-    }
     const autoModeVal = dpState?.[dpCodes.autoMode];
     if (autoModeVal !== undefined && autoModeVal !== null) {
       setSceneEnabled(Boolean(autoModeVal));
@@ -331,7 +331,6 @@ const HomePage: React.FC = () => {
     dpState?.[dpCodes.mist],
     dpState?.[dpCodes.o3],
     dpState?.[dpCodes.o3Time],
-    dpState?.[dpCodes.light],
     dpState?.[dpCodes.autoMode],
   ]);
 
@@ -341,8 +340,9 @@ const HomePage: React.FC = () => {
     setO3Enabled(next);
     if (next) {
       const duration = DISINFECTION_DURATION[disinfectionMode];
-      setO3RemainingMinutes(duration);
-      setDp(dpCodes.o3, 1);
+      const nextRemaining = dpO3Time ?? duration;
+      setO3RemainingMinutes(nextRemaining);
+      setDp(dpCodes.o3, DISINFECTION_DP_VALUE[disinfectionMode]);
       setDp(dpCodes.o3Time, duration);
     } else {
       setO3RemainingMinutes(null);
@@ -355,26 +355,8 @@ const HomePage: React.FC = () => {
     if (!isPowerOn) return;
     if (!o3Enabled) return;
     const duration = DISINFECTION_DURATION[mode];
-    setO3RemainingMinutes(duration);
+    setDp(dpCodes.o3, DISINFECTION_DP_VALUE[mode]);
     setDp(dpCodes.o3Time, duration);
-  };
-
-  const toggleLightEnabled = () => {
-    const next = !lightEnabled;
-    setLightEnabled(next);
-    if (!next) {
-      setDp(dpCodes.light, 0);
-    } else {
-      setDp(dpCodes.light, LIGHT_MAP[lastLightKey]);
-    }
-  };
-
-  const handleLightSelect = (key: LightKey) => {
-    setLastLightKey(key);
-    if (isPowerOn) {
-      setLightEnabled(true);
-      setDp(dpCodes.light, LIGHT_MAP[key]);
-    }
   };
 
   // 本地每分鐘倒數，並在設備上報時校正（單位：分鐘）
@@ -455,9 +437,13 @@ const HomePage: React.FC = () => {
             key={tab.key}
             className={clsx(
               styles.tabItem,
-              activeTab === tab.key && styles.tabItemActive
+              activeTab === tab.key && styles.tabItemActive,
+              isDisinfectingLocked && tab.key === "climate" && styles.disabled
             )}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              if (isDisinfectingLocked && tab.key === "climate") return;
+              setActiveTab(tab.key);
+            }}
           >
             <Text>{tab.label}</Text>
           </View>
@@ -492,16 +478,6 @@ const HomePage: React.FC = () => {
           isPetPresent={isPetPresent}
           onToggle={toggleO3Enabled}
         />
-      ) : activeTab === "light" ? (
-        <LightCard
-          value={lightVal}
-          isPowerOn={isPowerOn}
-          enabled={lightEnabled}
-          onToggle={toggleLightEnabled}
-          onSelect={(key) => {
-            handleLightSelect(key);
-          }}
-        />
       ) : (
         <View className={styles.actionsRow}>
           {climateActions.map((action) => (
@@ -512,6 +488,7 @@ const HomePage: React.FC = () => {
                 action.active && styles.actionBadgeActive,
                 activeModal === action.key && styles.actionBadgeExpanded,
                 (!isPowerOn ||
+                  isDisinfectingLocked ||
                   (action.key === "auto" && scenePending) ||
                   (action.key === "mist" && mistPending)) &&
                   styles.disabled

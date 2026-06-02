@@ -85,7 +85,7 @@ const DisinfectionCard: React.FC<Props> = ({
         className={styles.SegmentedRadioWrapper}
         tone="green"
         value={mode}
-        disabled={!isPowerOn}
+        disabled={!isPowerOn || running}
         options={[
           {
             key: "quick",
