@@ -1,67 +1,65 @@
-import airbuggyLogo from "./airbuggy_logo.svg";
-import petDog from "./pet_dog.svg";
-import petDogActive from "./pet_dog_active.svg";
-import petCat from "./pet_cat.svg";
-import petCatActive from "./pet_cat_active.svg";
-import petOther from "./pet_other.svg";
-import petOtherActive from "./pet_other_active.svg";
-import petDogWhite from "./pet_dog_white.svg";
-import petCatWhite from "./pet_cat_white.svg";
-import petOtherWhite from "./pet_other_white.svg";
-import startIcon from "./ic_arrow_right.svg";
+import maxiCosiLogo from "./maxi_cosi_logo.svg";
 import icNotification from "./ic_notification.svg";
 import icSettings from "./ic_settings.svg";
 import icConnected from "./ic_connected.svg";
 import icOffline from "./ic_offline.svg";
-import icPowerOn from "./ic_power_on.svg";
-import icPowerOnActive from "./ic_power_on_active.svg";
-import icPowerOff from "./ic_power_off.svg";
-import icPowerOffActive from "./ic_power_off_active.svg";
+import icArrowRight from "./ic_arrow_right.svg";
 import icArrowDown from "./ic_arrow_down.svg";
-import icMist from "./ic_mist.svg";
-import icMistActive from "./ic_mist_active.svg";
-import icFan from "./ic_fan.svg";
-import icFanActive from "./ic_fan_active.svg";
-import icCooling from "./ic_cooling.svg";
-import icCoolingActive from "./ic_cooling_active.svg";
-import icAuto from "./ic_auto.svg";
-import icAutoActive from "./ic_auto_active.svg";
+import icWater from "./ic_water.svg";
+import icPowder from "./ic_powder.svg";
+import icTemp from "./ic_temp.svg";
+import icStir from "./ic_stir.svg";
+import icPlay from "./ic_play.svg";
+import icStop from "./ic_stop.svg";
+import icBottle from "./ic_bottle.svg";
+import icMoon from "./ic_moon.svg";
+import icBag from "./ic_bag.svg";
+import icDoubleBottle from "./ic_double_bottle.svg";
+import icClean from "./ic_clean.svg";
+import icLock from "./ic_lock.svg";
+import icHelp from "./ic_help.svg";
+import icWarning from "./ic_warning.svg";
+import icCheck from "./ic_check.svg";
+import icHomeNav from "./ic_home_nav.svg";
 import icInfoRed from "./ic_info_red.svg";
-import temperatureBalance from "./temperature_balance.png";
-import temperatureHigh from "./temperature_high.png";
-import temperatureLow from "./temperature_low.png";
+import { IC_EDIT_ICON_URI } from "./icEditUri";
+import { IC_BRAND_SPARKLE_URI } from "./icBrandSparkleUri";
+import { IC_BRAND_CHEVRON_URI } from "./icBrandChevronUri";
+import { IC_BRAND_HINT_CHEVRON_URI } from "./icBrandHintChevronUri";
+import { SCENE_TAB_ICON_URIS } from "./sceneTabIcons";
+import { ACTION_BUTTON_ICON_URIS } from "./actionButtonIcons";
+import { POWER_ICON_URIS } from "./powerIconUri";
 
 export default {
-  airbuggyLogo,
-  petDog,
-  petDogActive,
-  petCat,
-  petCatActive,
-  petOther,
-  petOtherActive,
-  petDogWhite,
-  petCatWhite,
-  petOtherWhite,
-  startIcon,
+  maxiCosiLogo,
   icNotification,
   icSettings,
   icConnected,
   icOffline,
-  icPowerOn,
-  icPowerOnActive,
-  icPowerOff,
-  icPowerOffActive,
+  icArrowRight,
   icArrowDown,
-  icMist,
-  icMistActive,
-  icFan,
-  icFanActive,
-  icCooling,
-  icCoolingActive,
-  icAuto,
-  icAutoActive,
+  icWater,
+  icPowder,
+  icTemp,
+  icStir,
+  icPlay,
+  icStop,
+  icBottle,
+  icMoon,
+  icBag,
+  icDoubleBottle,
+  icClean,
+  icLock,
+  icHelp,
+  icWarning,
+  icCheck,
+  icHomeNav,
   icInfoRed,
-  temperatureBalance,
-  temperatureHigh,
-  temperatureLow,
+  icEditUri: IC_EDIT_ICON_URI,
+  icBrandSparkleUri: IC_BRAND_SPARKLE_URI,
+  icBrandChevronUri: IC_BRAND_CHEVRON_URI,
+  icBrandHintChevronUri: IC_BRAND_HINT_CHEVRON_URI,
+  sceneTabIcons: SCENE_TAB_ICON_URIS,
+  actionButtonIcons: ACTION_BUTTON_ICON_URIS,
+  powerIcon: POWER_ICON_URIS,
 };
