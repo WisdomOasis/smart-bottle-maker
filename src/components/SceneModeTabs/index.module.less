@@ -1,0 +1,80 @@
+.trackDisabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.track {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 310px;
+  height: 52px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 4px;
+  border-radius: 40px;
+  background: linear-gradient(270deg, #eff5fa 0%, #dee9f2 100%);
+  border: 1px solid #ffffff;
+  box-shadow:
+    inset -3.9px -3.9px 9.74px 0 rgba(89, 125, 159, 0.1),
+    inset 3.9px 3.9px 9.74px 0 rgba(89, 125, 159, 0.04);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+}
+
+/* 預設四格均分填滿軌道；active 為 2 份寬（約 2/5），其餘各 1 份 */
+.tab {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 8px;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.tabIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.tabActive {
+  flex: 2 1 0;
+  padding: 0 12px;
+  background: #4d7294;
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: inset -8px -8px 20px 0 rgba(255, 255, 255, 0.2);
+}
+
+.tabLabel {
+  width: 100%;
+  pointer-events: none;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--color-list-item-chevron, #4d7294);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tabLabelActive {
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+}

@@ -1,0 +1,44 @@
+.bar {
+  width: 306px;
+  max-width: 100%;
+  height: 48px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 16px;
+  opacity: 1;
+  background: #55a074;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow: inset -4px -8px 20px 0 rgba(255, 255, 255, 0.2);
+}
+
+.text {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #ffffff;
+  text-align: center;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  animation: makingSpin 0.9s linear infinite;
+}
+
+@keyframes makingSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

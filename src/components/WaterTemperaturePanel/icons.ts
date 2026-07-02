@@ -1,0 +1,6 @@
+const svgUri = (svg: string) =>
+  `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+const IC_THERMOMETER = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_689_10550)"><path d="M11.6666 12.3007V2.91732C11.6666 2.36478 11.4472 1.83488 11.0565 1.44418C10.6658 1.05348 10.1358 0.833984 9.58331 0.833984C9.03078 0.833984 8.50087 1.05348 8.11017 1.44418C7.71947 1.83488 7.49998 2.36478 7.49998 2.91732V12.3007C6.83104 12.7476 6.32358 13.3978 6.05254 14.1553C5.7815 14.9128 5.76125 15.7374 5.99478 16.5072C6.22831 17.2771 6.70324 17.9515 7.34943 18.4307C7.99562 18.91 8.7788 19.1687 9.58331 19.1687C10.3878 19.1687 11.171 18.91 11.8172 18.4307C12.4634 17.9515 12.9383 17.2771 13.1718 16.5072C13.4054 15.7374 13.3851 14.9128 13.1141 14.1553C12.843 13.3978 12.3356 12.7476 11.6666 12.3007Z" stroke="#4D7294" stroke-width="1.66667" stroke-linecap="round" stroke-linejoin="round"/></g><defs><clipPath id="clip0_689_10550"><rect width="20" height="20" fill="white"/></clipPath></defs></svg>`;
+
+export const WATER_TEMP_ICON_URI = svgUri(IC_THERMOMETER);

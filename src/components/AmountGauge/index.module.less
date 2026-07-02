@@ -1,0 +1,165 @@
+@arc-w: 263.99871826171875px;
+@arc-h: 131.99935913085938px;
+@arc-top: 4px;
+/* 圓點 + round stroke 超出弧框上緣（略留即可） */
+@arc-bleed-top: 8px;
+
+.wrap {
+  width: 100%;
+  margin-bottom: 0;
+  overflow: visible;
+}
+
+/* 離線時整面板已淡化；線上不再降低弧線透明度 */
+.dimmed {
+  pointer-events: none;
+}
+
+.card {
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.arcTrack {
+  position: relative;
+  width: 100%;
+  height: calc(@arc-bleed-top + @arc-top + @arc-h);
+  margin: 0 auto 0;
+  overflow: visible;
+}
+
+.arcRing {
+  position: absolute;
+  top: calc(@arc-bleed-top + @arc-top);
+  left: 50%;
+  transform: translateX(-50%);
+  width: @arc-w;
+  height: @arc-h;
+  z-index: 2;
+  overflow: visible;
+  opacity: 1;
+}
+
+.arcImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: @arc-w;
+  height: @arc-h;
+  display: block;
+  opacity: 1;
+}
+
+.arcKnob {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  box-sizing: border-box;
+  background: var(--color-background-on, #55a074);
+  border: 3px solid #ffffff;
+  box-shadow: 0 2.1px 8.38px rgba(85, 160, 116, 0.4);
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.arcInner {
+  position: absolute;
+  top: calc(@arc-bleed-top + @arc-top);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
+  width: @arc-w;
+  height: @arc-h;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.gaugeContent {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.label {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--color-background-off, #868eaa);
+}
+
+.rangeBar {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  bottom: 10px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.valueRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* 隱形占位，讓大數字單獨置中、ml 顯示在右側 */
+.unitMirror {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 100%;
+  padding-top: 6px;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.unit {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 100%;
+  color: var(--color-background-on, #55a074);
+  padding-top: 6px;
+}
+
+.value {
+  font-family: var(--font-gauge, "D-DIN-PRO"), "DIN Pro", sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 58px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--color-background-on, #55a074);
+}
+
+.rangeText {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 12px;
+  line-height: 100%;
+  color: var(--color-background-off, #868eaa);
+}
