@@ -1,289 +1,867 @@
-.container {
+.page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
   height: 100vh;
-  overflow-y: auto;
-  padding: 120rpx 32rpx 80rpx 32rpx;
-  background: linear-gradient(180deg, #f9e7cd 0%, #f7f4ec 60%);
-  box-sizing: border-box;
-}
-
-.splash {
   min-height: 100vh;
-  background: linear-gradient(180deg, #f9e7cd 0%, #f7f4ec 60%);
+  max-height: 100vh;
+  overflow: visible;
+  padding: 48rpx 32rpx 3vh;
+  background: #f0f3f7;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.navbar {
+.header {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.pageBody {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin-top: 1vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  overflow: visible;
+  background: transparent;
+}
+
+.headerTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 48rpx;
 }
 
 .logo {
-  width: 180rpx;
-  height: 42rpx;
-}
-
-.navActions {
-  display: flex;
-  gap: 48rpx;
-  margin-right: 90px;
-}
-
-.navLink {
-  font-family: "Noto Sans JP", sans-serif;
-  font-size: 24rpx;
-  color: #8b0000;
-  text-decoration: underline;
-}
-
-.navIcon {
-  width: 40rpx;
+  width: 200rpx;
   height: 40rpx;
 }
 
-.statusStrip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  margin-bottom: 56rpx;
-  gap: 10rpx;
+.headerIcons {
+  display: flex;
+  gap: 24rpx;
 }
 
-.o3Toast {
+.headerIcon {
+  width: 40rpx;
+  height: 40rpx;
+  opacity: 0.7;
+}
+
+.titleRow {
+  margin-top: 16rpx;
+  min-height: 32rpx;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.titleGroup {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.appTitle {
+  flex-shrink: 1;
+  font-family: "Noto Sans JP", sans-serif;
+  font-size: 22rpx;
+  font-weight: 600;
+  letter-spacing: 2rpx;
+  color: rgba(45, 58, 74, 0.55);
+  text-align: left;
+}
+
+.onlineRow {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.onlineDot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #c5cdd6;
+}
+
+.onlineDotActive {
+  background: var(--color-background-on, #55a074);
+}
+
+.onlineText {
+  font-size: 24rpx;
+  color: rgba(45, 58, 74, 0.55);
+}
+
+.headerWifiIcon {
+  width: 28rpx;
+  height: 24rpx;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.powerTap {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  margin-bottom: 32rpx;
-  border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 4rpx 16rpx 0 #2d250426;
+  justify-content: center;
+  padding: 4rpx;
+  flex-shrink: 0;
 }
 
-.o3ToastDot {
-  width: 40rpx;
-  height: 40rpx;
+.headerPowerIcon {
+  width: 36rpx;
+  height: 36rpx;
 }
 
-.o3ToastText {
-  font-family: "Noto Sans JP", sans-serif;
-  font-size: 24rpx;
-  font-weight: 500;
-  color: #8b0000;
-  line-height: 1.2;
-}
-
-.statusBlock {
-  text-align: center;
+/* 外層第二道底色：儀表板 → 三圓鈕 */
+.mainPanel {
+  width: 366px;
+  max-width: 100%;
+  flex: 0 0 auto;
+  margin: 0 auto;
+  padding: 8px 12px 12px;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  row-gap: 12rpx;
-  justify-content: center;
   align-items: center;
+  justify-content: flex-start;
+  gap: 0;
+  border-radius: 40px;
+  background: linear-gradient(270deg, #f2f7fc 0%, #e7eef4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 2px 8px rgba(24, 67, 119, 0.05);
+  overflow: visible;
 }
 
-.statusValue {
-  font-family: 'Poppins', sans-serif;
-  font-size: 40rpx;
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: 0;
-  text-align: center;
-  color: #1f1902;
-  display: block;
+/* 離線或關機時淡化主面板 */
+.mainPanelOffline {
+  opacity: 0.55;
 }
 
-.statusConnIcon {
-  width: 78rpx;
-  height: 64rpx;
+.panelBlock {
+  pointer-events: none;
 }
 
-.statusLabel {
-  margin-top: 6rpx;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 24rpx;
-  font-weight: 500;
-  line-height: 1;
-  letter-spacing: 0;
-  text-align: center;
-  color: rgba(31, 25, 2, 0.5);
-  display: block;
+.metricDisabled {
+  opacity: 0.45;
+  pointer-events: none;
 }
 
-.heroCard {
-  position: relative;
-  width: 100%;
-  height: 500rpx;
+/* 儀表板 → 品牌 banner → 模式 tabs */
+.dashboardCard {
+  width: 342px;
+  max-width: 100%;
+  flex: 0 0 auto;
+  margin: 0 auto;
+  padding: 10px 16px 12px;
+  box-sizing: border-box;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 88rpx;
+  justify-content: flex-start;
+  gap: 0;
+  border-radius: 36px;
+  opacity: 1;
+  background: linear-gradient(270deg, #fafcfd 0%, #e9f0f6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 1px 6px rgba(24, 67, 119, 0.04);
+  overflow: visible;
 }
 
-.heroImage {
-  width: 232px;
-  height: 248px;
-  object-fit: contain;
-  display: block;
-  position: relative;
-  z-index: 2;
+/* 儀表、虛線、四小卡共用寬度並向中間虛線靠攏 */
+.dashboardCard .panelGaugeCluster {
+  width: 100%;
+  max-width: 310px;
+  flex: 0 0 auto;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+  overflow: visible;
 }
 
-.heroImageWrap {
-  width: 232px;
-  height: 248px;
-  border-radius: 120px;
-  position: relative;
+.dashboardCardTop {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.dashboardCardFooter {
+  width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gaugeSlot {
+  flex: 0 0 auto;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: visible;
 }
 
-.heroTemperatureLabel {
-  position: absolute;
-  left: 50%;
-  bottom: 54rpx;
-  transform: translateX(-50%);
-  z-index: 3;
-  font-family: "Noto Sans JP", sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1;
-  color: #ffffff;
-  white-space: nowrap;
-  text-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.16);
-}
-
-.heroImageWrap::after {
-  content: '';
-  position: absolute;
-  width: 232px;
-  height: 248px;
-  bottom: -10rpx;
-  right: -10rpx;
-  background: radial-gradient(120% 120% at 70% 70%, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0) 70%);
-  filter: blur(22rpx);
-  border-radius: 120px;
-  z-index: 0;
-}
-
-.heroPetIcon {
-  position: absolute;
-  width: 72px;
-  height: 72px;
-  transform: translateY(45rpx);
-  z-index: 3;
-}
-
-.divider {
+.gaugeDivider {
   width: 100%;
   height: 0;
-  border-bottom: 1px dashed rgba(31, 25, 2, 0.3);
-  margin-bottom: 48rpx;
+  margin: 14px 0 0;
+  border: none;
+  border-top: 1px dashed #cbdeef;
+  flex-shrink: 0;
+  opacity: 1;
 }
 
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10rpx;
-  margin-bottom: 48rpx;
-}
-
-.tabItem {
-  position: relative;
+/* 虛線與溫度區（dashboardMiddle） */
+.gapAfterDivider {
   width: 100%;
-  padding: 16rpx 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  font-family: 'Noto Sans JP', sans-serif;
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 1;
-  letter-spacing: 0;
-  color: rgba(31, 25, 2, 0.7);
+  height: 4px;
+  flex-shrink: 0;
 }
 
-.tabItemActive {
-  font-weight: 600;
-  color: #8b0000;
+/* 虛線下方固定高度區：內容向下分散 */
+.dashboardMiddle {
+  width: 100%;
+  max-width: 310px;
+  height: 80px;
+  min-height: 80px;
+  max-height: 80px;
+  margin: 0 auto 0;
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.tabItemActive::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%, 8rpx);
-  bottom: 0;
-  width: 39px;
-  border-bottom: 2px solid #8b0000;
-}
-
-.actionsRow {
-  display: flex;
-  justify-content: space-between;
-  gap: 10rpx;
-  margin-bottom: 24rpx;
-}
-
-.powerWrapper {
-  margin-top: auto;
-  display: flex;
-  justify-content: center;
-  padding-top: 64rpx;
-}
-
-.actionBadge {
-  flex: 1;
+.dashboardMiddleInner {
+  width: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32rpx;
-  padding: 10rpx 0 0;
-}
-
-.disabled {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.actionIcon {
-  width: 64px;
-  height: 64px;
-  border-radius: 28px;
-  padding: 20px;
-  background: linear-gradient(151.69deg, #fff9ec 27.73%, #fff5e0 49.68%, #fffaf2 86.26%);
-  border: 1px solid;
-  border-image-source: linear-gradient(332.03deg, rgba(255, 255, 255, 0) 70.6%, rgba(255, 255, 255, 0.7) 85.38%);
-  box-shadow: 16px 16px 16px 0px #a57d3f14;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 6px 0 8px;
   box-sizing: border-box;
 }
 
-.actionIconActive {
-  background: linear-gradient(151.69deg, #f2f9ff 27.73%, #dff0ff 49.68%, #f8fcff 86.26%);
+.dashboardCard .panelGaugeCluster .metrics {
+  width: 100%;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
-.actionBadgeExpanded .actionIcon {
-  background: #ffffff;
+.middleContentSpread {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
 }
 
-.actionIconImg {
+.dashboardMiddleInner .metrics {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  align-content: end;
+  align-items: end;
+}
+
+/* 固定高度間距（小程序 margin 易被覆蓋，用 spacer 更穩） */
+.gapMiddleToBrand {
+  width: 100%;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.gapMiddleToTabs {
+  width: 100%;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+.gapBrandToTabs {
+  width: 100%;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.panelGaugeCluster .brandBannerSlot {
+  width: 100%;
+  max-width: 310px;
+  margin: 0 auto;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.panelGaugeCluster .modeTabsSlot {
+  position: relative;
+  z-index: 3;
+  width: 100%;
+  max-width: 310px;
+  margin: 0 auto;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.mainPanel .doneBanner {
+  width: 100%;
+  max-width: 342px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.mainPanelSpacer {
+  flex: 0 0 auto;
+  height: 12px;
+  width: 100%;
+}
+
+.mainPanel .actions {
+  width: 100%;
+  max-width: 342px;
+  flex: 0 0 auto;
+  margin: 0;
+  padding-top: 8px;
+  box-sizing: border-box;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.metricAfterDivider {
+  box-sizing: border-box;
+  border-left: 1px dashed #cbdeef;
+}
+
+.metricTap {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.metricEditIcon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+}
+
+.metricValue {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+}
+
+.metricValueNum {
+  font-family: var(--font-gauge, "D-DIN-PRO"), "DIN Pro", sans-serif;
+  font-weight: 600;
+  font-style: normal;
+  font-size: 20px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--color-background-on, #55a074);
+}
+
+.metricValueSuffix {
+  font-family: var(--font-gauge, "D-DIN-PRO"), "DIN Pro", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  color: var(--color-background-on, #55a074);
+}
+
+.metricLabel {
+  display: block;
+  width: 100%;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--color-background-off, #868eaa);
+}
+
+.warnBanner {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 16rpx;
+  border-radius: 16rpx;
+  background: #fff4e5;
+}
+
+.warnIcon {
+  width: 32rpx;
+  height: 32rpx;
+  flex-shrink: 0;
+}
+
+.warnText {
+  font-size: 24rpx;
+  color: #e65100;
+  line-height: 1.35;
+}
+
+.brandRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24rpx 28rpx;
+  margin-bottom: 24rpx;
+  border-radius: 20rpx;
+  background: linear-gradient(145deg, #ffffff, #eef2f6);
+  box-shadow:
+    8rpx 8rpx 16rpx rgba(163, 177, 198, 0.35),
+    -8rpx -8rpx 16rpx rgba(255, 255, 255, 0.9);
+}
+
+.brandText {
+  font-size: 26rpx;
+  color: rgba(45, 58, 74, 0.65);
+}
+
+.brandArrow {
+  width: 28rpx;
+  height: 28rpx;
+  opacity: 0.4;
+}
+
+.modeBar {
+  display: flex;
+  gap: 12rpx;
+  margin-bottom: 28rpx;
+  flex-wrap: wrap;
+}
+
+.modeItem {
+  flex: 1;
+  min-width: 120rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  padding: 20rpx 12rpx;
+  border-radius: 20rpx;
+  background: #e8edf2;
+  color: #5b7c99;
+}
+
+.modeItemActive {
+  background: #5b7c99;
+  color: #ffffff;
+}
+
+.modeIcon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.modeLabel {
+  font-size: 20rpx;
+  font-weight: 600;
+  color: inherit;
+}
+
+.doneBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+  border-radius: 16rpx;
+  background: #e8f5e9;
+}
+
+.doneIcon {
+  width: 40rpx;
+  height: 40rpx;
+}
+
+.doneText {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #2e7d32;
+}
+
+.actions {
+  width: 100%;
+  max-width: 342px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 32rpx;
+  margin: 0 auto;
+  position: relative;
+}
+
+.actionsMaking {
+  align-items: center;
+  justify-content: center;
+}
+
+.actionIconRow {
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sideBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: auto;
+  min-width: 60px;
+  pointer-events: auto;
+}
+
+.sideBtnCircle {
+  width: 60px;
+  height: 60px;
+  border-radius: 100px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  opacity: 1;
+  background: linear-gradient(270deg, #fafcfd 0%, #e9f0f6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow:
+    -8px -8px 20px 0 rgba(255, 255, 255, 0.4) inset,
+    4px 8px 20px 0 rgba(24, 67, 119, 0.06),
+    -4px -8px 12px 0 rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.sideBtnCircleInner {
+  width: 100%;
+  height: 100%;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(270deg, #fafcfd 0%, #e9f0f6 100%);
+}
+
+.sideBtnCircle.sideBtnCircleSelected {
+  padding: 1px;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  background: linear-gradient(270deg, #ffffff 0%, rgba(255, 255, 255, 0.6) 100%);
+  box-shadow:
+    -8px -8px 20px 0 rgba(255, 255, 255, 0.2) inset,
+    4px 8px 20px 0 rgba(24, 67, 119, 0.06),
+    -4px -8px 12px 0 rgba(255, 255, 255, 0.6);
+}
+
+.sideBtnCircleInner.sideBtnCircleInnerSelected {
+  background: #4d7294;
+  background-image: linear-gradient(270deg, #4d7294 0%, #5b7c99 100%);
+  box-shadow:
+    -8px -8px 20px 0 rgba(255, 255, 255, 0.2) inset,
+    4px 8px 20px 0 rgba(24, 67, 119, 0.1);
+}
+
+.sideIcon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.sideLabel {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #2d365f;
+  text-align: center;
+}
+
+.startCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  min-width: 76px;
+}
+
+.startBtn {
+  width: 76px;
+  height: 60px;
+  border-radius: 100px;
+  box-sizing: border-box;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  opacity: 1;
+  background: #55a074;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  box-shadow:
+    -4px -8px 20px 0 rgba(255, 255, 255, 0.2) inset,
+    8px 4px 20px 0 rgba(24, 67, 119, 0.2),
+    -4px -8px 12px 0 #ffffff;
+}
+
+.startIcon {
+  width: 24px;
+  height: 24px;
+  margin-left: 0;
+}
+
+.startLabel {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #2d365f;
+  text-align: center;
+}
+
+.secondaryList {
+  width: 342px;
+  max-width: 100%;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1.5vh;
+  margin: 0 auto;
+  padding-bottom: 1vh;
+  box-sizing: border-box;
+}
+
+.settingsRowCard {
+  width: 100%;
+  max-width: 100%;
+  min-height: 72px;
+  height: auto;
+  box-sizing: border-box;
+  padding: 12px 12px 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  border-radius: 40px;
+  opacity: 1;
+  background: linear-gradient(270deg, #f2f7fc 0%, #e7eef4 100%);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  /* 上方白色亮邊 + 下方短陰影，貼合 40px 圓角 */
+  box-shadow:
+    0 -2px 6px rgba(255, 255, 255, 0.85),
+    -2px -2px 8px rgba(255, 255, 255, 0.55),
+    0 2px 8px rgba(24, 67, 119, 0.12),
+    0 6px 14px rgba(24, 67, 119, 0.08);
+  overflow: hidden;
+}
+
+.settingsRowLabel {
+  flex: 1;
+  min-width: 0;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #2d365f;
+}
+
+.settingsRowCardCleanActive {
+  align-items: center;
+  min-height: 80px;
+}
+
+.settingsRowCardCleanActive .cleanRowTextCol {
+  justify-content: center;
+}
+
+.cleanRowTextCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: center;
+
+  .settingsRowLabel {
+    flex: none;
+  }
+}
+
+.cleanRowSubtext {
+  width: 100%;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #2d365f;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.cleanRowBtn {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 100px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(270deg, #f9fcff 0%, #ebf0f6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 2px 6px rgba(24, 67, 119, 0.1);
+  overflow: hidden;
+}
+
+.cleanRowBtnActive {
+  background: linear-gradient(180deg, #6bb68a 0%, #55a074 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 -4px 20px rgba(255, 255, 255, 0.2) inset;
+}
+
+.cleanRowIcon {
   width: 24px;
   height: 24px;
 }
 
-.actionLabel {
-  font-family: "Noto Sans JP", sans-serif;
-  font-weight: 400;
-  font-size: 14px;
-  line-height: 1;
-  text-align: center;
-  color: #1f1902;
+.diaryToastSlot {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* 操作鈕發送指令等待中：圖示 + 文字一併淡化 */
+.actionDisabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.actionLabelDisabled {
+  opacity: 0.45;
+  color: rgba(45, 58, 95, 0.45);
+}
+
+.modalMask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 48rpx;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 600rpx;
+  padding: 40rpx 32rpx;
+  border-radius: 24rpx;
+  background: #ffffff;
+}
+
+.modalTitle {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #2d3a4a;
+  margin-bottom: 16rpx;
+}
+
+.modalBody {
+  font-size: 26rpx;
+  color: rgba(45, 58, 74, 0.7);
+  line-height: 1.5;
+  margin-bottom: 32rpx;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 24rpx;
+}
+
+.modalBtnGhost {
+  font-size: 28rpx;
+  color: rgba(45, 58, 74, 0.55);
+  padding: 12rpx 20rpx;
+}
+
+.modalBtnPrimary {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #ffffff;
+  background: var(--color-background-on, #55a074);
+  padding: 12rpx 28rpx;
+  border-radius: 12rpx;
 }

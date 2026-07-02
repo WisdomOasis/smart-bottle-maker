@@ -1,54 +1,36 @@
-[English](README.md) | 简体中文[](README_zh.md)
+# Smart Bottler Maker 面板
 
-## 项目名称：SmartFan
+基于涂鸦 Ray Panel SDK 的智慧嬰兒配奶機控制面板，由寵物推車風扇面板模板改造而來。
 
-## 使用须知
+## 功能
 
-使用该模板开发前， 需要对 Ray 框架有基本的了解，建议先查阅 [Ray 开发文档](https://developer.tuya.com/cn/miniapp/develop/ray/guide/overview)
+- 首頁儀表盤：水量/奶粉量、溫度、攪拌等級
+- 場景預設：標準 / 夜間 / 外出 / 雙倍
+- 操作：開始沖奶、僅出水、僅出粉、高溫清潔、停止
+- 設備狀態：`work_mode`、`wifi_status`、啟動攔截、哭聲聯動確認
+- 多語言：英 / 日 / 簡中 / 繁中
 
-## 快速上手
+## 開發
 
-- [创建产品](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#2)
-- [创建项目并在 IDE 中导入项目代码](https://developer.tuya.com/cn/miniapp-codelabs/codelabs/panel-outdoor-guide/index.html#3)
+```bash
+yarn install
+yarn start
+```
 
-## 开发命令
+在 Tuya 開發者平台將本面板綁定產品 PID `SmartBottleMaker`，並確保 DP 標識符與 `src/constant/dpCodes.ts` 一致。
 
-- 安装依赖：`npm install` 或 `yarn install`
-- 启动（Tuya target）：`npm run start`
-- 打包（Tuya target）：`npm run build`
-- Lint：`npm run lint`
-- 导出 i18n Excel：`npm run i18n:export`
-- 监听 i18n 并自动导出：`npm run i18n:watch`
+## DP 對照
 
-## i18n 导出流程
+| 標識符                   | 說明                                 |
+| ------------------------ | ------------------------------------ |
+| `milk`                   | 遠程啟動沖奶                         |
+| `water`                  | 僅出水                               |
+| `powder`                 | 僅出粉                               |
+| `clean`                  | 高溫清潔                             |
+| `work_mode`              | milk / water / powder / clean / idle |
+| `ml` / `oz` / `unit_set` | 水量與單位                           |
+| `temp`                   | 37 / 40 / 45 °C                      |
+| `formula_ratio`          | 奶粉比例 (g/100mL, scale 1)          |
+| `cancel_work`            | 取消當前流程                         |
 
-- i18n 源文件：`src/i18n/strings.ts`
-- 导出文件：`i18n_export.xlsx`
-- 手动更新：执行 `npm run i18n:export` 或 `yarn i18n:export`
-- 监听模式：执行 `npm run i18n:watch` 或 `yarn i18n:watch`，只要 `src/i18n/strings.ts` 有改动，就会自动重新生成 Excel
-- 提交前自动更新：当 `src/i18n` 下有 staged 变更时，pre-commit hook 会自动更新 `i18n_export.xlsx`，并把它一并加入暂存
-- 通知方式：脚本一定会输出终端提示；如果 macOS 安装了 `terminal-notifier`，还会发送桌面通知
-
-## 3、能力依赖
-
-- TTT 依赖
-  - "BaseKit": "3.0.6",
-  - "MiniKit": "3.0.7",
-  - "DeviceKit": "4.6.1",
-- 组件依赖
-  - 暂无
-- 功能页依赖
-  - 设备详情功能页：settings => 'tyj8e2fjmduxtfw3nc'
-
-## 问题反馈
-
-若有疑问，请访问链接，提交帖子反馈：https://tuyaos.com/viewforum.php?f=10
-
-## 许可
-
-[许可详情](LICENSE)
-
-#### Refactored
-
-- 更新 `@ray-js/ray` 版本至 `1.5.44`
-- 更新 `@ray-js/smart-ui` 版本至 `2.0.0`
+完整列表見雲端 DP 表或 `src/devices/schema.ts`。

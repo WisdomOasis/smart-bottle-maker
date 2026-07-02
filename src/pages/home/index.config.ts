@@ -1,5 +1,5 @@
 export default {
-  backgroundColor: "@bgColor",
+  backgroundColor: "#f0f3f7",
   navigationBarBackgroundColor: "@navBgColor",
   navigationBarTextStyle: "@navTxtStyle",
   navigationBarTitleText: "Smart Fan",

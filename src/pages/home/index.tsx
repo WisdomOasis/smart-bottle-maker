@@ -1,526 +1,966 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import clsx from "clsx";
-import { View, Text, Image } from "@ray-js/ray";
-import { useDevice, useProps, useActions } from "@ray-js/panel-sdk";
+import { useSelector } from "react-redux";
+import { View, Text, Image, showToast, router } from "@ray-js/ray";
+import { useProps, useActions } from "@ray-js/panel-sdk";
+import useDeviceConnectivity from "@/hooks/useDeviceConnectivity";
 import Res from "@/res";
 import dpCodes from "@/constant/dpCodes";
-import PowerSwitch from "@/components/PowerSwitch";
-import FanModal from "@/components/FanModal";
-// import CoolingModal from "@/components/CoolingModal";
-import DisinfectionCard from "@/components/DisinfectionCard";
+import {
+  SCENE_PRESETS,
+  type ScenePresetKey,
+  GAUGE_ML_MAX,
+} from "@/constant/presets";
+import AmountGauge from "@/components/AmountGauge";
+import CustomModeSettingsPanel, {
+  type CustomModeDraft,
+} from "@/components/CustomModeSettingsPanel";
+import BrandBanner from "@/components/BrandBanner";
+import SceneModeTabs, { type SceneTabItem } from "@/components/SceneModeTabs";
+import MakingModeBar, {
+  type MakingBarVariant,
+} from "@/components/MakingModeBar";
+import MakingActionsPanel from "@/components/MakingActionsPanel";
+import BottleMadeButton from "@/components/BottleMadeButton";
+import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
+import PowderCautionPanel from "@/components/PowderCautionPanel";
+import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
+import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
+import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
+import {
+  HIGH_TEMP_CLEAN_COUNTDOWN_SEC,
+  HIGH_TEMP_CLEAN_TEMP,
+  HIGH_TEMP_CLEAN_TOTAL_ML,
+} from "@/constant/highTempClean";
+import { useAppDispatch } from "@/redux";
+import {
+  hydratePowderBrandFromStorage,
+  markBrandBannerEverClicked,
+  selectBrandBannerEverClicked,
+  selectPowderBrandConfigured,
+  selectPowderBrandEntries,
+  selectPowderBrandSelection,
+  syncBrandBannerEverClicked,
+} from "@/redux/modules/powderBrandSlice";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
+import {
+  calcPowderGrams,
+  clampMl,
+  getVolumeFromDp,
+  isWorking,
+  parseTemp,
+  parseUnit,
+  parseWorkMode,
+  type TempSet,
+  type WorkMode,
+} from "@/utils/bottleMaker";
+import {
+  createDpSetter,
+  pulseBoolDp,
+  publishDpBatch,
+  setBoolDp,
+} from "@/utils/dpControl";
+import {
+  buildMilkStartDpPayload,
+  resolveMilkRecipeParams,
+} from "@/utils/milkRecipe";
+import { formatConnectionStatus } from "@/utils/deviceStatus";
 import styles from "./index.module.less";
 
-type TabKey = "climate" | "disinfection";
+type ActionKind = "milk" | "water" | "powder";
+type CompletionKind = "milk" | "water" | "powder";
 
-interface TabItem {
-  key: TabKey;
-  label: string;
-  actions: string[];
-  placeholder: string;
-}
-
-interface EnvironmentStatus {
-  temperature: number;
-  humidity: number;
-  connection: "online" | "offline";
-}
-
-type DisinfectionMode = "quick" | "deep";
-
-const DISINFECTION_DURATION: Record<DisinfectionMode, number> = {
-  quick: 60,
-  deep: 90,
-};
-const DISINFECTION_DP_VALUE: Record<DisinfectionMode, 1 | 2> = {
-  quick: 1,
-  deep: 2,
-};
-const POST_O3_FAN_DURATION = 5;
-
-const fallbackStatus: EnvironmentStatus = {
-  temperature: 22,
-  humidity: 50,
-  connection: "online",
-};
+const SCENE_TABS: SceneTabItem[] = [
+  {
+    key: "standard",
+    labelKey: "mode_standard",
+    iconUri: Res.sceneTabIcons.standard,
+  },
+  {
+    key: "nighttime",
+    labelKey: "mode_nighttime",
+    iconUri: Res.sceneTabIcons.nighttime,
+  },
+  {
+    key: "goOut",
+    labelKey: "mode_go_out",
+    iconUri: Res.sceneTabIcons.goOut,
+  },
+  {
+    key: "doubleFeeding",
+    labelKey: "mode_double",
+    iconUri: Res.sceneTabIcons.doubleFeeding,
+  },
+];
 
 const HomePage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
-  const { devInfo } = useDevice((state) => ({
-    devInfo: state.devInfo,
-  }));
-  const dpState = useProps();
+  const { switchOn, isOnline, wifiStatus, panelDisabled } =
+    useDeviceConnectivity();
+  const dpState = useProps() as Record<string, unknown>;
   const actions = useActions();
-  const [activeTab, setActiveTab] = useState<TabKey>("climate");
-  const [powerLocal, setPowerLocal] = useState<boolean>(true);
-  const [activeModal, setActiveModal] = useState<"fan" | "cooling" | null>(
+
+  const [sceneKey, setSceneKey] = useState<ScenePresetKey>("standard");
+  const dispatch = useAppDispatch();
+  const brandSet = useSelector(selectPowderBrandConfigured);
+  const powderBrandEntries = useSelector(selectPowderBrandEntries);
+  const powderBrandSelection = useSelector(selectPowderBrandSelection);
+  const brandBannerClicked = useSelector(selectBrandBannerEverClicked);
+  const hasSavedPowderBrands = powderBrandEntries.length > 0;
+  const isCustomBrand = powderBrandSelection?.brandId === CUSTOM_BRAND_ID;
+  const showBrandBanner = !brandSet || Boolean(powderBrandSelection);
+  const [childLock, setChildLock] = useState(false);
+  const [customModeOpen, setCustomModeOpen] = useState(false);
+  const [bottleMadePhase, setBottleMadePhase] = useState(false);
+  const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
+  const [selectedAction, setSelectedAction] = useState<ActionKind>("milk");
+  const [milkSessionActive, setMilkSessionActive] = useState(false);
+  const [babyDiaryToastVisible, setBabyDiaryToastVisible] = useState(false);
+  const [waterSessionActive, setWaterSessionActive] = useState(false);
+  const [powderSessionActive, setPowderSessionActive] = useState(false);
+  const [cleanCountdown, setCleanCountdown] = useState(
+    HIGH_TEMP_CLEAN_COUNTDOWN_SEC
+  );
+  const [awaitingWorkMode, setAwaitingWorkMode] = useState<WorkMode | null>(
     null
   );
-  const [fanLevel, setFanLevel] = useState<number>(0);
-  const [coolingMode, setCoolingMode] = useState<0 | 1 | 2>(0);
-  const [o3Enabled, setO3Enabled] = useState<boolean>(false);
-  const [disinfectionMode, setDisinfectionMode] =
-    useState<DisinfectionMode>("quick");
-  const [o3RemainingMinutes, setO3RemainingMinutes] = useState<number | null>(
-    null
+  const [stopBusy, setStopBusy] = useState(false);
+  const prevWorkMode = useRef<WorkMode>("idle");
+  const wasInCleanMode = useRef(false);
+
+  const workMode = parseWorkMode(dpState[dpCodes.workMode]);
+  /** 泡奶 UI 完全由設備 work_mode 驅動 */
+  const isMaking = isWorking(workMode);
+  /** 清潔 UI 僅在設備 work_mode === clean 時顯示 */
+  const isCleanSession = workMode === "clean";
+  const isMakingUi = isMaking && !isCleanSession;
+  const unit = parseUnit(dpState[dpCodes.unitSet]);
+  const temp = parseTemp(dpState[dpCodes.tempSet]);
+  const formulaRatio = Number(dpState[dpCodes.formulaRatio] ?? 130);
+  const volumeMl = getVolumeFromDp(dpState, unit);
+  const powderG = calcPowderGrams(volumeMl, formulaRatio);
+  const preset = SCENE_PRESETS[sceneKey as keyof typeof SCENE_PRESETS];
+  const powderPrimary = preset?.powderPrimary ?? false;
+
+  const setDp = useMemo(
+    () =>
+      createDpSetter(
+        actions as Record<string, { set?: (v: unknown) => unknown }> | undefined
+      ),
+    [actions]
   );
-  const [sceneEnabled, setSceneEnabled] = useState<boolean>(false);
-  const [scenePending, setScenePending] = useState<boolean>(false);
-  const [mistPending, setMistPending] = useState<boolean>(false);
-  const isPowerOn = powerLocal;
-  const isPetPresent = Boolean(dpState?.[dpCodes.pir]);
-  const isO3Running = o3Enabled;
-  const getDpO3Time = (): number | null => {
-    const raw = dpState?.[dpCodes.o3Time];
-    if (raw === undefined || raw === null) return null;
-    const parsed = typeof raw === "number" ? raw : Number(raw);
-    if (Number.isNaN(parsed)) return null;
-    return parsed;
-  };
-  const isDisinfectingLocked = isO3Running;
-  const dpO3Time = getDpO3Time();
-  const o3Remaining = isO3Running
-    ? Math.max(
-        0,
-        o3RemainingMinutes ??
-          dpO3Time ??
-          DISINFECTION_DURATION[disinfectionMode]
-      )
-    : null;
-  const isO3Paused = isO3Running && isPetPresent;
-  const showO3Toast = isO3Running && activeTab !== "disinfection";
-  const o3ToastText = isPetPresent
-    ? t("home_o3_toast_pause")
-    : t("home_o3_toast_running");
-  const formatMetric = (val: number) => {
-    const s = val.toFixed(1);
-    return s.endsWith(".0") ? s.slice(0, -2) : s;
-  };
 
   useEffect(() => {
-    setActiveModal(null);
-  }, [activeTab]);
+    if (awaitingWorkMode && workMode === awaitingWorkMode) {
+      setAwaitingWorkMode(null);
+    }
+  }, [awaitingWorkMode, workMode]);
 
   useEffect(() => {
-    const val = (dpState as Record<string, any>)?.[dpCodes.power];
-    if (val === undefined || val === null) return;
-    setPowerLocal(Boolean(val));
-  }, [dpState?.[dpCodes.power]]);
+    if (!awaitingWorkMode) return undefined;
+    const timer = setTimeout(() => setAwaitingWorkMode(null), 12000);
+    return () => clearTimeout(timer);
+  }, [awaitingWorkMode]);
 
-  const status = useMemo<EnvironmentStatus>(() => {
-    const getNumber = (code: string, fallback: number) => {
-      const raw = (dpState as Record<string, any>)?.[code];
-      if (typeof raw !== "number") return fallback;
-      // Some devices report direct values (e.g. 22), others report x10 (e.g. 220).
-      return raw > 100 ? raw / 10 : raw;
-    };
-
-    const temperature = getNumber(
-      dpCodes.tempCurrent,
-      fallbackStatus.temperature
-    );
-    const humidity = getNumber(dpCodes.humidityValue, fallbackStatus.humidity);
-
-    return {
-      temperature,
-      humidity,
-      connection: devInfo?.isOnline ? "online" : fallbackStatus.connection,
-    };
-  }, [devInfo?.isOnline, dpState]);
-
-  const tabs: TabItem[] = [
-    {
-      key: "climate",
-      label: t("home_tab_climate"),
-      actions: ["mist", "fan", "cooling"],
-      placeholder: "",
+  const applyPreset = useCallback(
+    (key: Exclude<ScenePresetKey, "custom">) => {
+      if (panelDisabled) return;
+      const p = SCENE_PRESETS[key];
+      setSceneKey(key);
+      setSelectedAction("milk");
+      setDp(dpCodes.volumeMl, p.ml);
+      setDp(dpCodes.tempSet, String(p.temp));
+      setDp(dpCodes.formulaRatio, p.formulaRatio);
+      setDp(dpCodes.unitSet, "mL");
     },
-    {
-      key: "disinfection",
-      label: t("home_tab_disinfection"),
-      actions: ["disinfection"],
-      placeholder: "",
-    },
-  ];
+    [setDp, panelDisabled]
+  );
 
-  const climateActions = [
-    {
-      label: t("home_action_mist"),
-      key: "mist",
-      icon: Res.icMist,
-      iconActive: Res.icMistActive,
-      active: Number(dpState?.[dpCodes.mist] ?? 0) === 2,
-    },
-    {
-      label: t("home_action_fan"),
-      key: "fan",
-      icon: Res.icFan,
-      iconActive: Res.icFanActive,
-      active: (dpState?.[dpCodes.fan] ?? 0) > 0,
-    },
-    {
-      label: t("scene_action_auto"),
-      key: "auto",
-      icon: Res.icAuto,
-      iconActive: Res.icAutoActive,
-      active: sceneEnabled,
-    },
-    // {
-    //   label: "冷房",
-    //   key: "cooling",
-    //   icon: Res.icCooling,
-    //   iconActive: Res.icCoolingActive,
-    //   active: (dpState?.[dpCodes.cooling] ?? 0) > 0,
-    // },
-  ];
-  const temperatureIcon =
-    status.temperature <= 18
-      ? Res.temperatureLow
-      : status.temperature >= 27
-      ? Res.temperatureHigh
-      : Res.temperatureBalance;
-  const temperatureLabel =
-    status.temperature <= 18
-      ? t("home_temperature_low")
-      : status.temperature >= 27
-      ? t("home_temperature_high")
-      : t("home_temperature_good");
+  useEffect(() => {
+    dispatch(syncBrandBannerEverClicked());
+    dispatch(hydratePowderBrandFromStorage());
+  }, [dispatch]);
 
-  const petStrokeIcon = Res.petDogWhite;
+  useEffect(() => {
+    if (isWorking(prevWorkMode.current) && workMode === "idle") {
+      setAwaitingWorkMode(null);
+      const finished = prevWorkMode.current;
+      const wasWater = waterSessionActive || finished === "water";
+      const wasPowder = powderSessionActive || finished === "powder";
+      const wasClean = finished === "clean";
+      if (finished === "milk") {
+        setCompletionKind("milk");
+        setBottleMadePhase(true);
+        setBabyDiaryToastVisible(true);
+      } else if (wasWater) {
+        setCompletionKind("water");
+        setBottleMadePhase(true);
+      } else if (wasPowder) {
+        setCompletionKind("powder");
+        setBottleMadePhase(true);
+      } else if (wasClean) {
+        setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
+      } else {
+        setMilkSessionActive(false);
+        setWaterSessionActive(false);
+        setPowderSessionActive(false);
+        setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
+      }
+      prevWorkMode.current = workMode;
+      return;
+    }
+    prevWorkMode.current = workMode;
+  }, [workMode, milkSessionActive, waterSessionActive, powderSessionActive]);
 
-  const setDp = (code: string, val: any) => {
-    const fn = (actions as any)?.[code]?.set;
-    if (typeof fn === "function") {
-      fn(val);
+  /** 完成後 3 秒收起 Bottle Made，並關閉 Baby Diary toast */
+  useEffect(() => {
+    if (!bottleMadePhase) return undefined;
+    const timer = setTimeout(() => {
+      setBottleMadePhase(false);
+      setBabyDiaryToastVisible(false);
+      setMilkSessionActive(false);
+      setWaterSessionActive(false);
+      setPowderSessionActive(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [bottleMadePhase]);
+
+  useEffect(() => {
+    const inClean = workMode === "clean";
+    if (inClean && !wasInCleanMode.current) {
+      setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
+    }
+    wasInCleanMode.current = inClean;
+  }, [workMode]);
+
+  useEffect(() => {
+    if (workMode !== "clean") return undefined;
+    if (cleanCountdown <= 0) return undefined;
+    const timer = setInterval(() => {
+      setCleanCountdown((s) => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [workMode, cleanCountdown]);
+
+  const gaugeValue = isCleanSession
+    ? HIGH_TEMP_CLEAN_TOTAL_ML
+    : powderPrimary
+    ? powderG
+    : volumeMl;
+  const gaugeUnit = powderPrimary ? "g" : "mL";
+  const gaugeLabel = powderPrimary
+    ? t("gauge_powder_amount")
+    : t("gauge_water_amount");
+
+  const statusText = useMemo(
+    () =>
+      formatConnectionStatus(isOnline, wifiStatus, {
+        online: t("status_online"),
+        offline: t("status_offline"),
+        connecting: t("status_connecting"),
+      }),
+    [isOnline, wifiStatus, t]
+  );
+
+  const activeSceneTab = useMemo(
+    () => SCENE_TABS.find((tab) => tab.key === sceneKey),
+    [sceneKey]
+  );
+
+  const isWaterActionSelected = selectedAction === "water";
+  const isPowderActionSelected = selectedAction === "powder";
+
+  const handleCustomModeSave = (draft: CustomModeDraft) => {
+    setSceneKey("custom");
+    setDp(dpCodes.volumeMl, clampMl(draft.ml));
+    setDp(dpCodes.formulaRatio, draft.formulaRatio);
+    setDp(dpCodes.tempSet, String(draft.temp));
+    setDp(dpCodes.unitSet, "mL");
+  };
+
+  const openCustomMode = () => {
+    if (panelDisabled) {
+      showToast({ title: t("device_power_off"), icon: "none" });
+      return;
+    }
+    setCustomModeOpen(true);
+  };
+
+  const cycleTemp = () => {
+    if (panelDisabled) {
+      showToast({ title: t("device_power_off"), icon: "none" });
+      return;
+    }
+    const order: TempSet[] = [37, 40, 45];
+    const idx = order.indexOf(temp);
+    const next = order[(idx + 1) % order.length];
+    setSceneKey("custom");
+    setDp(dpCodes.tempSet, String(next));
+  };
+
+  const makingBarVariant: MakingBarVariant =
+    workMode === "water"
+      ? "water"
+      : workMode === "powder"
+      ? "powder"
+      : workMode === "clean"
+      ? "clean"
+      : "milk";
+
+  /** 關機或已送出對應 start 等待設備回應時鎖定 Start */
+  const startAwaiting = isWaterActionSelected
+    ? awaitingWorkMode === "water"
+    : isPowderActionSelected
+    ? awaitingWorkMode === "powder"
+    : awaitingWorkMode === "milk";
+  const startDisabled = panelDisabled || startAwaiting;
+  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP as TempSet;
+
+  const toastIfBlocked = useCallback((): boolean => {
+    if (panelDisabled) {
+      showToast({ title: t("device_power_off"), icon: "none" });
+      return true;
+    }
+    if (childLock) {
+      showToast({ title: t("child_lock_on"), icon: "none" });
+      return true;
+    }
+    if (isMaking) return true;
+    if (!isOnline) {
+      showToast({ title: t("status_offline"), icon: "none" });
       return true;
     }
     return false;
-  };
+  }, [panelDisabled, childLock, isMaking, isOnline, t]);
 
-  const handleAction = (actionKey: string) => {
-    if (!isPowerOn) return;
-    if (isDisinfectingLocked) return;
-
-    switch (activeTab) {
-      case "climate": {
-        if (actionKey === "mist") {
-          if (mistPending) return;
-          const raw = dpState?.[dpCodes.mist];
-          const mistVal = typeof raw === "number" ? raw : Number(raw ?? 0);
-          const cur = mistVal === 2;
-          const next = !cur;
-          const published = setDp(dpCodes.mist, next ? 2 : 0);
-          if (published) {
-            setMistPending(true);
-          }
-          return;
-        }
-        if (actionKey === "fan") {
-          setActiveModal("fan");
-          const fanVal = dpState?.[dpCodes.fan] ?? 0;
-          setFanLevel(Math.min(5, Math.max(0, fanVal)));
-        }
-        if (actionKey === "auto") {
-          if (scenePending) return;
-          const next = !sceneEnabled;
-          const published = setDp(dpCodes.autoMode, next);
-          if (published) {
-            setScenePending(true);
-          }
-        }
-        // if (action === "冷房") {
-        //   setActiveModal("cooling");
-        //   const coolingVal = dpState?.[dpCodes.cooling] ?? 0;
-        //   setCoolingMode(coolingVal === 2 ? 2 : 1);
-        // }
-        break;
-      }
-      default:
-        break;
+  const handleStartMilk = async () => {
+    if (toastIfBlocked() || startDisabled) return;
+    setMilkSessionActive(true);
+    setAwaitingWorkMode("milk");
+    const recipe = resolveMilkRecipeParams({
+      sceneKey,
+      volumeMl,
+      temp,
+      formulaRatio,
+      powderBrandSelection: brandSet ? powderBrandSelection : null,
+    });
+    const sent = await publishDpBatch(setDp, buildMilkStartDpPayload(recipe));
+    if (!sent) {
+      setMilkSessionActive(false);
+      setAwaitingWorkMode(null);
+      showToast({ title: t("dp_command_failed"), icon: "none" });
     }
   };
 
-  const handleFanChange = (val: number) => {
-    setFanLevel(val);
-    setDp(dpCodes.fan, val);
+  const handleSelectWater = () => {
+    if (panelDisabled) {
+      showToast({ title: t("device_power_off"), icon: "none" });
+      return;
+    }
+    setAwaitingWorkMode(null);
+    setSelectedAction((prev) => (prev === "water" ? "milk" : "water"));
   };
 
-  // const handleCoolingChange = (mode: 0 | 1 | 2) => {
-  //   setCoolingMode(mode);
-  //   setDp(dpCodes.cooling, mode);
-  // };
+  const handleSelectPowder = () => {
+    if (panelDisabled) {
+      showToast({ title: t("device_power_off"), icon: "none" });
+      return;
+    }
+    setAwaitingWorkMode(null);
+    setSelectedAction((prev) => (prev === "powder" ? "milk" : "powder"));
+  };
 
-  const rawO3Status = dpState?.[dpCodes.o3Status];
-  const o3Status =
-    typeof rawO3Status === "number"
-      ? rawO3Status
-      : rawO3Status != null
-      ? Number(rawO3Status)
-      : undefined;
-  const postO3FanRemaining =
-    o3Status === 3
-      ? o3RemainingMinutes !== null && o3RemainingMinutes !== undefined
-        ? Math.min(POST_O3_FAN_DURATION, Math.max(0, o3RemainingMinutes))
-        : POST_O3_FAN_DURATION
-      : null;
-  const isPostO3FanFinished =
-    o3Status === 3 && postO3FanRemaining !== null && postO3FanRemaining <= 0;
-  const postO3FanStatusLabel = isPostO3FanFinished
-    ? t("home_o3_status_fan_finished")
-    : postO3FanRemaining !== null && postO3FanRemaining > 0
-    ? Strings.formatValue(
-        "home_o3_status_fan_remaining_minutes",
-        postO3FanRemaining
-      )
-    : undefined;
-  const o3StatusLabelOverride =
-    postO3FanStatusLabel ??
-    (o3Status === 5
-      ? t("home_o3_status_recovery")
-      : o3Status === 3
-      ? t("home_o3_status_diffuse")
-      : undefined);
+  const handleWaterTempChange = (next: TempSet) => {
+    if (panelDisabled) return;
+    setSceneKey("custom");
+    setDp(dpCodes.tempSet, String(next));
+  };
 
-  // sync UI with dp updates
-  useEffect(() => {
-    const mistVal = dpState?.[dpCodes.mist];
-    if (typeof mistVal === "number") {
-      setMistPending(false);
-    }
-    const fanVal = dpState?.[dpCodes.fan];
-    if (typeof fanVal === "number") {
-      setFanLevel(Math.min(5, Math.max(0, fanVal)));
-    }
-    const coolingVal = dpState?.[dpCodes.cooling];
-    if (typeof coolingVal === "number") {
-      setCoolingMode(coolingVal === 2 ? 2 : coolingVal === 1 ? 1 : 0);
-    }
-    const o3Val = dpState?.[dpCodes.o3];
-    if (typeof o3Val === "number") {
-      setO3Enabled(o3Val > 0);
-      if (o3Val === DISINFECTION_DP_VALUE.quick) {
-        setDisinfectionMode("quick");
-      } else if (o3Val === DISINFECTION_DP_VALUE.deep) {
-        setDisinfectionMode("deep");
-      }
-    }
-    const o3TimeVal = dpState?.[dpCodes.o3Time];
-    if (o3TimeVal !== undefined && o3TimeVal !== null) {
-      const parsed =
-        typeof o3TimeVal === "number" ? o3TimeVal : Number(o3TimeVal);
-      if (!Number.isNaN(parsed)) {
-        setO3RemainingMinutes(parsed);
-        if (parsed === DISINFECTION_DURATION.quick) {
-          setDisinfectionMode("quick");
-        } else if (parsed === DISINFECTION_DURATION.deep) {
-          setDisinfectionMode("deep");
-        }
-      }
-    }
-    const autoModeVal = dpState?.[dpCodes.autoMode];
-    if (autoModeVal !== undefined && autoModeVal !== null) {
-      setSceneEnabled(Boolean(autoModeVal));
-      setScenePending(false);
-    }
-  }, [
-    coolingMode,
-    dpState?.[dpCodes.cooling],
-    dpState?.[dpCodes.fan],
-    dpState?.[dpCodes.mist],
-    dpState?.[dpCodes.o3],
-    dpState?.[dpCodes.o3Time],
-    dpState?.[dpCodes.autoMode],
-  ]);
-
-  const toggleO3Enabled = () => {
-    if (!isPowerOn) return;
-    const next = !o3Enabled;
-    setO3Enabled(next);
-    if (next) {
-      const duration = DISINFECTION_DURATION[disinfectionMode];
-      const nextRemaining = dpO3Time ?? duration;
-      setO3RemainingMinutes(nextRemaining);
-      setDp(dpCodes.o3, DISINFECTION_DP_VALUE[disinfectionMode]);
-      setDp(dpCodes.o3Time, duration);
-    } else {
-      setO3RemainingMinutes(null);
-      setDp(dpCodes.o3, 0);
+  const handleStartWater = async () => {
+    if (toastIfBlocked() || startDisabled) return;
+    setWaterSessionActive(true);
+    setAwaitingWorkMode("water");
+    const sent = await publishDpBatch(setDp, {
+      [dpCodes.volumeMl]: volumeMl,
+      [dpCodes.tempSet]: String(temp),
+      [dpCodes.unitSet]: "mL",
+      [dpCodes.startWater]: true,
+    });
+    if (!sent) {
+      setAwaitingWorkMode(null);
+      setWaterSessionActive(false);
+      showToast({ title: t("dp_command_failed"), icon: "none" });
     }
   };
 
-  const handleDisinfectionModeChange = (mode: DisinfectionMode) => {
-    setDisinfectionMode(mode);
-    if (!isPowerOn) return;
-    if (!o3Enabled) return;
-    const duration = DISINFECTION_DURATION[mode];
-    setDp(dpCodes.o3, DISINFECTION_DP_VALUE[mode]);
-    setDp(dpCodes.o3Time, duration);
+  const handleStartPowder = async () => {
+    if (toastIfBlocked() || startDisabled) return;
+    setPowderSessionActive(true);
+    setAwaitingWorkMode("powder");
+    const sent = await publishDpBatch(setDp, {
+      [dpCodes.volumeMl]: volumeMl,
+      [dpCodes.formulaRatio]: formulaRatio,
+      [dpCodes.unitSet]: "mL",
+      [dpCodes.startPowder]: true,
+    });
+    if (!sent) {
+      setAwaitingWorkMode(null);
+      setPowderSessionActive(false);
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
   };
 
-  // 本地每分鐘倒數，並在設備上報時校正（單位：分鐘）
-  useEffect(() => {
-    if (!isO3Running || o3RemainingMinutes === null) return;
-    const timer = setInterval(() => {
-      setO3RemainingMinutes((prev) => {
-        if (prev === null) return prev;
-        return Math.max(0, prev - 1);
-      });
-    }, 60 * 1000);
-    // eslint-disable-next-line consistent-return
-    return () => clearInterval(timer);
-  }, [isO3Running, o3RemainingMinutes]);
+  const handleStart = () => {
+    if (isWaterActionSelected) {
+      handleStartWater();
+      return;
+    }
+    if (isPowderActionSelected) {
+      handleStartPowder();
+      return;
+    }
+    handleStartMilk();
+  };
+
+  const handleStopMaking = async () => {
+    if (panelDisabled || stopBusy) return;
+    setStopBusy(true);
+    setAwaitingWorkMode(null);
+    const sent = await pulseBoolDp(setDp, dpCodes.cancelWork);
+    setStopBusy(false);
+    if (!sent) {
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const handleClean = async () => {
+    if (workMode === "clean" || awaitingWorkMode === "clean") return;
+    if (toastIfBlocked()) return;
+    if (panelDisabled || childLock || !isOnline) return;
+    setAwaitingWorkMode("clean");
+    const cleanSent = await setBoolDp(setDp, dpCodes.startClean, true);
+    if (!cleanSent) {
+      setAwaitingWorkMode(null);
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+      return;
+    }
+    const paramsSent = await publishDpBatch(setDp, {
+      [dpCodes.volumeMl]: HIGH_TEMP_CLEAN_TOTAL_ML,
+      [dpCodes.tempSet]: String(HIGH_TEMP_CLEAN_TEMP),
+      [dpCodes.unitSet]: "mL",
+    });
+    if (!paramsSent) {
+      await setBoolDp(setDp, dpCodes.startClean, false);
+      setAwaitingWorkMode(null);
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const handleCleanStop = async () => {
+    if (workMode !== "clean" || panelDisabled || stopBusy) return;
+    setStopBusy(true);
+    const sent = await setBoolDp(setDp, dpCodes.startClean, false);
+    setStopBusy(false);
+    if (!sent) {
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const handlePowerToggle = async () => {
+    if (!isOnline) {
+      showToast({ title: t("status_offline"), icon: "none" });
+      return;
+    }
+    const sent = await setDp(dpCodes.switch, !switchOn);
+    if (!sent) {
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const handleBrandBanner = () => {
+    if (panelDisabled) return;
+    dispatch(markBrandBannerEverClicked());
+    if (hasSavedPowderBrands) {
+      router.push("/powder-brand-settings");
+      return;
+    }
+    router.push("/powder-brand");
+  };
 
   return (
-    <View className={styles.container}>
-      <View className={styles.navbar}>
-        <Image src={Res.airbuggyLogo} className={styles.logo} />
-        {/* <View className={styles.navActions}>
-          <Image src={Res.icNotification} className={styles.navIcon} />
-          <Image src={Res.icSettings} className={styles.navIcon} />
-        </View> */}
-      </View>
-
-      <View className={styles.statusStrip}>
-        <View className={styles.statusBlock}>
-          <Text className={styles.statusValue}>
-            {formatMetric(status.temperature)}°C
-          </Text>
-          <Text className={styles.statusLabel}>
-            {t("home_status_temperature")}
-          </Text>
-        </View>
-        <View className={styles.statusBlock}>
-          <Text className={styles.statusValue}>
-            {formatMetric(status.humidity)}%
-          </Text>
-          <Text className={styles.statusLabel}>
-            {t("home_status_humidity")}
-          </Text>
-        </View>
-        <View className={styles.statusBlock}>
-          <Image
-            src={
-              status.connection === "online" ? Res.icConnected : Res.icOffline
-            }
-            className={styles.statusConnIcon}
-          />
-          <Text className={styles.statusLabel}>{t("home_status_device")}</Text>
-        </View>
-      </View>
-
-      {!activeModal && (
-        <View className={styles.heroCard}>
-          <View className={styles.heroImageWrap}>
-            <Image src={temperatureIcon} className={styles.heroImage} />
-            <Text className={styles.heroTemperatureLabel}>
-              {temperatureLabel}
-            </Text>
+    <View className={styles.page}>
+      <View className={styles.header}>
+        <View className={styles.headerTop}>
+          <Image src={Res.maxiCosiLogo} className={styles.logo} />
+          <View className={styles.headerIcons}>
+            <Image src={Res.icNotification} className={styles.headerIcon} />
+            <Image src={Res.icHelp} className={styles.headerIcon} />
           </View>
-          <Image src={petStrokeIcon} className={styles.heroPetIcon} />
         </View>
-      )}
-
-      {showO3Toast && (
-        <View className={styles.o3Toast}>
-          <Image src={Res.icInfoRed} className={styles.o3ToastDot} />
-          <Text className={styles.o3ToastText}>{o3ToastText}</Text>
-        </View>
-      )}
-
-      <View className={styles.divider} />
-
-      <View className={styles.tabs}>
-        {tabs.map((tab) => (
-          <View
-            key={tab.key}
-            className={clsx(
-              styles.tabItem,
-              activeTab === tab.key && styles.tabItemActive,
-              isDisinfectingLocked && tab.key === "climate" && styles.disabled
-            )}
-            onClick={() => {
-              if (isDisinfectingLocked && tab.key === "climate") return;
-              setActiveTab(tab.key);
-            }}
-          >
-            <Text>{tab.label}</Text>
-          </View>
-        ))}
-      </View>
-
-      <FanModal
-        visible={activeTab === "climate" && activeModal === "fan"}
-        value={fanLevel}
-        onChange={handleFanChange}
-        onClose={() => setActiveModal(null)}
-        isPowerOn={isPowerOn}
-      />
-      {/* <CoolingModal
-        visible={activeTab === "climate" && activeModal === "cooling"}
-        mode={coolingMode}
-        onChangeMode={handleCoolingChange}
-        onClose={() => setActiveModal(null)}
-        isPowerOn={isPowerOn}
-      /> */}
-
-      {activeTab === "disinfection" ? (
-        <DisinfectionCard
-          enabled={o3Enabled}
-          isRunning={isO3Running}
-          isPaused={isO3Paused}
-          mode={disinfectionMode}
-          onModeChange={handleDisinfectionModeChange}
-          remainingMinutes={o3Remaining ?? undefined}
-          statusLabelOverride={o3StatusLabelOverride}
-          isPowerOn={isPowerOn}
-          isPetPresent={isPetPresent}
-          onToggle={toggleO3Enabled}
-        />
-      ) : (
-        <View className={styles.actionsRow}>
-          {climateActions.map((action) => (
+        <View className={styles.titleRow}>
+          <View className={styles.titleGroup}>
+            <Text className={styles.appTitle}>{t("app_title")}</Text>
             <View
-              key={action.key}
-              className={clsx(
-                styles.actionBadge,
-                action.active && styles.actionBadgeActive,
-                activeModal === action.key && styles.actionBadgeExpanded,
-                (!isPowerOn ||
-                  isDisinfectingLocked ||
-                  (action.key === "auto" && scenePending) ||
-                  (action.key === "mist" && mistPending)) &&
-                  styles.disabled
-              )}
-              onClick={() => handleAction(action.key)}
+              className={styles.powerTap}
+              onClick={() => {
+                handlePowerToggle();
+              }}
             >
+              <Image
+                src={switchOn ? Res.powerIcon.on : Res.powerIcon.off}
+                className={styles.headerPowerIcon}
+              />
+            </View>
+          </View>
+          <View className={styles.onlineRow}>
+            <View
+              className={clsx(
+                styles.onlineDot,
+                isOnline && styles.onlineDotActive
+              )}
+            />
+            <Text className={styles.onlineText}>{statusText}</Text>
+            <Image
+              src={isOnline ? Res.icConnected : Res.icOffline}
+              className={styles.headerWifiIcon}
+            />
+          </View>
+        </View>
+      </View>
+
+      <View className={styles.pageBody}>
+        <View
+          className={clsx(
+            styles.mainPanel,
+            (!isOnline || panelDisabled) && styles.mainPanelOffline
+          )}
+        >
+          <View className={styles.dashboardCard}>
+            <View className={styles.panelGaugeCluster}>
+              <View className={styles.dashboardCardTop}>
+                <View className={styles.gaugeSlot}>
+                  <AmountGauge
+                    value={gaugeValue}
+                    unit={gaugeUnit}
+                    label={gaugeLabel}
+                    min={0}
+                    max={powderPrimary ? 200 : GAUGE_ML_MAX}
+                    dimmed={
+                      panelDisabled || !isOnline || childLock || isMakingUi
+                    }
+                  />
+                </View>
+
+                <View className={styles.gaugeDivider} />
+                <View className={styles.gapAfterDivider} />
+
+                <View className={styles.dashboardMiddle}>
+                  <View className={styles.dashboardMiddleInner}>
+                    {isCleanSession ? (
+                      <WaterTemperaturePanel
+                        temp={cleanDisplayTemp}
+                        fixedTemp={cleanDisplayTemp}
+                        disabled
+                        onChange={() => undefined}
+                      />
+                    ) : isMakingUi ? (
+                      <View className={styles.middleContentSpread}>
+                        <MakingModeBar
+                          variant={makingBarVariant}
+                          modeKey={sceneKey}
+                          modeLabelKey={activeSceneTab?.labelKey}
+                        />
+                      </View>
+                    ) : isWaterActionSelected ? (
+                      <WaterTemperaturePanel
+                        temp={temp}
+                        disabled={panelDisabled}
+                        onChange={handleWaterTempChange}
+                      />
+                    ) : isPowderActionSelected ? (
+                      <PowderCautionPanel />
+                    ) : (
+                      <View className={styles.metrics}>
+                        <View className={styles.metric}>
+                          <View className={styles.metricValue}>
+                            <Text className={styles.metricValueNum}>
+                              {volumeMl}
+                            </Text>
+                            <Text className={styles.metricValueSuffix}>mL</Text>
+                          </View>
+                          <Text className={styles.metricLabel}>
+                            {t("metric_water")}
+                          </Text>
+                        </View>
+                        <View className={styles.metric}>
+                          <View className={styles.metricValue}>
+                            <Text className={styles.metricValueNum}>
+                              {powderG}
+                            </Text>
+                            <Text className={styles.metricValueSuffix}>g</Text>
+                          </View>
+                          <Text className={styles.metricLabel}>
+                            {t("metric_powder")}
+                          </Text>
+                        </View>
+                        <View
+                          className={clsx(
+                            styles.metric,
+                            panelDisabled && styles.metricDisabled
+                          )}
+                          onClick={panelDisabled ? undefined : cycleTemp}
+                        >
+                          <View className={styles.metricValue}>
+                            <Text className={styles.metricValueNum}>
+                              {temp}
+                            </Text>
+                            <Text className={styles.metricValueSuffix}>°C</Text>
+                          </View>
+                          <Text className={styles.metricLabel}>
+                            {t("metric_temp")}
+                          </Text>
+                        </View>
+                        <View
+                          className={clsx(
+                            styles.metric,
+                            styles.metricAfterDivider,
+                            styles.metricTap,
+                            panelDisabled && styles.metricDisabled
+                          )}
+                          onClick={panelDisabled ? undefined : openCustomMode}
+                        >
+                          <View className={styles.metricValue}>
+                            <Image
+                              src={Res.icEditUri}
+                              className={styles.metricEditIcon}
+                            />
+                          </View>
+                          <Text className={styles.metricLabel}>
+                            {t("metric_edit")}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              </View>
+
+              {!isMakingUi &&
+                !isCleanSession &&
+                !isWaterActionSelected &&
+                !isPowderActionSelected && (
+                  <View className={styles.dashboardCardFooter}>
+                    {showBrandBanner ? (
+                      <>
+                        <View className={styles.gapMiddleToBrand} />
+                        <View
+                          className={clsx(
+                            styles.brandBannerSlot,
+                            panelDisabled && styles.panelBlock
+                          )}
+                        >
+                          <BrandBanner
+                            clicked={!brandSet && brandBannerClicked}
+                            customRatio={
+                              isCustomBrand && powderBrandSelection
+                                ? {
+                                    waterMl: powderBrandSelection.waterMl,
+                                    powderG: powderBrandSelection.powderG,
+                                  }
+                                : null
+                            }
+                            brandSummary={
+                              brandSet && !isCustomBrand && powderBrandSelection
+                                ? {
+                                    brand: powderBrandSelection.brandLabel,
+                                    series: powderBrandSelection.seriesLabel,
+                                    stage: powderBrandSelection.stageLabel,
+                                  }
+                                : null
+                            }
+                            onClick={
+                              panelDisabled
+                                ? () => undefined
+                                : handleBrandBanner
+                            }
+                          />
+                        </View>
+                      </>
+                    ) : null}
+                    <View
+                      className={
+                        showBrandBanner
+                          ? styles.gapBrandToTabs
+                          : styles.gapMiddleToTabs
+                      }
+                    />
+                    <View
+                      className={clsx(
+                        styles.modeTabsSlot,
+                        panelDisabled && styles.panelBlock
+                      )}
+                    >
+                      <SceneModeTabs
+                        tabs={SCENE_TABS}
+                        activeKey={sceneKey}
+                        onChange={applyPreset}
+                        disabled={panelDisabled}
+                      />
+                    </View>
+                  </View>
+                )}
+            </View>
+          </View>
+
+          <View className={styles.mainPanelSpacer} />
+
+          <View
+            className={clsx(
+              styles.actions,
+              (isMakingUi || bottleMadePhase) && styles.actionsMaking
+            )}
+          >
+            {bottleMadePhase ? (
+              <BottleMadeButton
+                labelKey={
+                  completionKind === "water"
+                    ? "water_dispensed"
+                    : completionKind === "powder"
+                    ? "powder_dispensed"
+                    : "bottle_made"
+                }
+              />
+            ) : isMakingUi ? (
+              <MakingActionsPanel
+                onStop={() => {
+                  handleStopMaking();
+                }}
+                stopDisabled={panelDisabled || stopBusy}
+                stopLabelKey={
+                  workMode === "water"
+                    ? "action_stop_water"
+                    : workMode === "powder"
+                    ? "action_stop_powder"
+                    : "action_stop_making"
+                }
+              />
+            ) : (
+              <>
+                <View
+                  className={clsx(
+                    styles.sideBtn,
+                    isCleanSession && styles.actionDisabled
+                  )}
+                  onClick={isCleanSession ? undefined : handleSelectWater}
+                >
+                  <View className={styles.actionIconRow}>
+                    <View
+                      className={clsx(
+                        styles.sideBtnCircle,
+                        isWaterActionSelected && styles.sideBtnCircleSelected
+                      )}
+                    >
+                      <View
+                        className={clsx(
+                          styles.sideBtnCircleInner,
+                          isWaterActionSelected &&
+                            styles.sideBtnCircleInnerSelected
+                        )}
+                      >
+                        <Image
+                          src={
+                            isWaterActionSelected
+                              ? Res.actionButtonIcons.waterActive
+                              : Res.actionButtonIcons.water
+                          }
+                          className={styles.sideIcon}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <Text className={styles.sideLabel}>
+                    {t("action_water_only")}
+                  </Text>
+                </View>
+                <View
+                  className={clsx(
+                    styles.startCol,
+                    (startDisabled || isCleanSession) && styles.actionDisabled
+                  )}
+                  onClick={
+                    startDisabled || isCleanSession ? undefined : handleStart
+                  }
+                >
+                  <View className={styles.actionIconRow}>
+                    <View className={styles.startBtn}>
+                      <Image
+                        src={Res.actionButtonIcons.play}
+                        className={styles.startIcon}
+                      />
+                    </View>
+                  </View>
+                  <Text
+                    className={clsx(
+                      styles.startLabel,
+                      (startDisabled || isCleanSession) &&
+                        styles.actionLabelDisabled
+                    )}
+                  >
+                    {t("action_start")}
+                  </Text>
+                </View>
+                <View
+                  className={clsx(
+                    styles.sideBtn,
+                    isCleanSession && styles.actionDisabled
+                  )}
+                  onClick={isCleanSession ? undefined : handleSelectPowder}
+                >
+                  <View className={styles.actionIconRow}>
+                    <View
+                      className={clsx(
+                        styles.sideBtnCircle,
+                        isPowderActionSelected && styles.sideBtnCircleSelected
+                      )}
+                    >
+                      <View
+                        className={clsx(
+                          styles.sideBtnCircleInner,
+                          isPowderActionSelected &&
+                            styles.sideBtnCircleInnerSelected
+                        )}
+                      >
+                        <Image
+                          src={
+                            isPowderActionSelected
+                              ? Res.actionButtonIcons.powderActive
+                              : Res.actionButtonIcons.powder
+                          }
+                          className={styles.sideIcon}
+                        />
+                      </View>
+                    </View>
+                  </View>
+                  <Text className={styles.sideLabel}>
+                    {t("action_powder_only")}
+                  </Text>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+
+        <View
+          className={clsx(
+            styles.secondaryList,
+            panelDisabled && styles.panelBlock
+          )}
+        >
+          <View
+            className={clsx(
+              styles.settingsRowCard,
+              isCleanSession && styles.settingsRowCardCleanActive,
+              (panelDisabled || childLock || awaitingWorkMode === "clean") &&
+                !isCleanSession &&
+                styles.disabled
+            )}
+            onClick={
+              isCleanSession || awaitingWorkMode === "clean"
+                ? undefined
+                : () => {
+                    handleClean();
+                  }
+            }
+          >
+            <View className={styles.cleanRowTextCol}>
+              <Text className={styles.settingsRowLabel}>
+                {isCleanSession
+                  ? t("high_temp_cleaning")
+                  : t("row_high_temp_clean")}
+              </Text>
+              {isCleanSession ? (
+                <Text className={styles.cleanRowSubtext}>
+                  {t("clean_milk_on_hold")}
+                </Text>
+              ) : null}
+            </View>
+            {isCleanSession ? (
+              <HighTempCleanStopButton
+                secondsLeft={cleanCountdown}
+                disabled={panelDisabled || stopBusy}
+                onStop={() => {
+                  handleCleanStop();
+                }}
+              />
+            ) : (
+              <View className={styles.cleanRowBtn}>
+                <Image
+                  src={Res.actionButtonIcons.clean}
+                  className={styles.cleanRowIcon}
+                />
+              </View>
+            )}
+          </View>
+          {babyDiaryToastVisible ? (
+            <View className={styles.diaryToastSlot}>
+              <BabyDiarySnackbar
+                onClose={() => {
+                  setBabyDiaryToastVisible(false);
+                  setMilkSessionActive(false);
+                }}
+              />
+            </View>
+          ) : (
+            <View
+              className={clsx(
+                styles.settingsRowCard,
+                panelDisabled && styles.disabled
+              )}
+              onClick={
+                panelDisabled ? undefined : () => setChildLock((v) => !v)
+              }
+            >
+              <Text className={styles.settingsRowLabel}>
+                {t("row_child_lock")}
+              </Text>
               <View
                 className={clsx(
-                  styles.actionIcon,
-                  action.active && styles.actionIconActive
+                  styles.cleanRowBtn,
+                  childLock && styles.cleanRowBtnActive
                 )}
               >
                 <Image
-                  src={action.active ? action.iconActive : action.icon}
-                  className={styles.actionIconImg}
+                  src={
+                    childLock
+                      ? Res.actionButtonIcons.lockActive
+                      : Res.actionButtonIcons.lock
+                  }
+                  className={styles.cleanRowIcon}
                 />
               </View>
-              <Text className={styles.actionLabel}>{action.label}</Text>
             </View>
-          ))}
+          )}
         </View>
-      )}
-
-      <View className={styles.powerWrapper}>
-        <PowerSwitch
-          isOn={isPowerOn}
-          onToggle={(next) => {
-            setPowerLocal(next);
-            setDp(dpCodes.power, next);
-          }}
-        />
       </View>
+
+      {customModeOpen && (
+        <CustomModeSettingsPanel
+          ml={volumeMl}
+          formulaRatio={formulaRatio}
+          temp={temp}
+          onSave={handleCustomModeSave}
+          onClose={() => setCustomModeOpen(false)}
+          saveDisabled={panelDisabled || isMaking || childLock}
+        />
+      )}
     </View>
   );
 };

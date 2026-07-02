@@ -24,8 +24,12 @@ const composeLayout = (SubComp: React.ComponentType<any>) => {
   return class PanelComponent extends Component<Props, State> {
     async onLaunch(object: any) {
       console.log("=== App onLaunch", object);
-      devices.common.init();
       devices.common.onInitialized((device) => dpKit.init(device));
+      try {
+        await devices.common.init();
+      } catch (error) {
+        console.error("SmartDeviceModel init failed", error);
+      }
       const systemInfo = getSystemInfoSync();
       const { theme } = systemInfo;
 
