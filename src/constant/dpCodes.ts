@@ -1,16 +1,25 @@
 export default {
-  // Smart fan DP set
-  tempCurrent: "temp_current", // 当前温度 (0-1000, ℃)
-  humidityValue: "humidity_value", // 当前湿度 (0-1000, %)
-  fan: "fan", // 风扇 (0-5)
-  mist: "mist", // 水雾 (0 关 / 2 双喷)
-  cooling: "cooling", // 制冷模式 (0-2)
-  light: "light", // 灯光 RGB (0-16777215)
-  pir: "pir", // 红外感应
-  o3: "o3", // 臭氧 (0 关 / 1 消毒 / 2 彻底消毒)
-  o3Status: "o3_status", // 臭氧状态 (enum 0-5)
-  o3Time: "o3_time", // 臭氧剩余时间（分钟）
-  power: "power_switch", // 总电源
-  pet: "pet", // 宠物类型 (enum 0/1/2, legacy 3 also maps to other)
-  autoMode: "auto_mode", // 自动模式
-};
+  switch: "switch",
+  startMilk: "milk",
+  startWater: "water",
+  startClean: "clean",
+  startPowder: "powder",
+  workMode: "work_mode",
+  tempSet: "temp",
+  volumeMl: "ml",
+  volumeOz: "oz",
+  unitSet: "unit_set",
+  formulaRatio: "formula_ratio",
+  powderDensity: "powder_density",
+  startBlockReason: "start_block_reason",
+  sceneFeedRequest: "scene_feed_request",
+  remindFunnelClean: "remind_funnel_clean",
+  remindDailyPowderClean: "remind_daily_powder_clean",
+  remindTankClean: "remind_tank_clean",
+  wifiStatus: "wifi_status",
+  drinkRecordUpload: "drink_record_upload",
+  cancelWork: "cancel_work",
+  errorCode: "error_code",
+} as const;
+
+export type DpCode = (typeof dpCodes)[keyof typeof dpCodes];

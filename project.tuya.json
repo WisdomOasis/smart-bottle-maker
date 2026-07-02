@@ -3,7 +3,7 @@
   "type": "panel-app",
   "ownerType": "tuya-official",
   "i18n": false,
-  "description": "宠物充气车配件",
+  "description": "",
   "miniprogramRoot": "./dist/tuya",
   "dependencies": {
     "MiniKit": "3.0.7",
@@ -11,7 +11,7 @@
     "BaseKit": "3.0.6"
   },
   "baseversion": "2.30.14",
-  "projectname": "SmartFan",
+  "projectname": "SmartBottleMaker",
   "devMode": "ray",
   "compileType": "miniprogram",
   "compilerOptions": {
