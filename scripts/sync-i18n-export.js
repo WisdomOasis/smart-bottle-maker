@@ -67,7 +67,7 @@ function getColumnName(index) {
 function loadStrings() {
   const source = fs.readFileSync(stringsFile, "utf8");
   const executableSource = source
-    .replace(/^const strings =/, "module.exports =")
+    .replace(/^const strings =/m, "module.exports =")
     .replace(/^export type .*$/gm, "")
     .replace(/^export default strings;?$/gm, "");
 
