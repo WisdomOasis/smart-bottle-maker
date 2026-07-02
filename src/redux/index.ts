@@ -5,6 +5,7 @@ import { useDispatch } from "react-redux";
 import systemInfoReducer from "./modules/systemInfoSlice";
 import themeReducer from "./modules/themeSlice";
 import commonInfoReducer from "./modules/commonInfoSlice";
+import powderBrandReducer from "./modules/powderBrandSlice";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -21,6 +22,7 @@ const store = configureStore({
     systemInfo: systemInfoReducer,
     theme: themeReducer,
     commonInfo: commonInfoReducer,
+    powderBrand: powderBrandReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(middlewares),
