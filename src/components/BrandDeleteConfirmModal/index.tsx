@@ -10,6 +10,7 @@ interface Props {
   message: string;
   onCancel: () => void;
   onConfirm: () => void;
+  confirmLabel?: I18nKey;
 }
 
 const BrandDeleteConfirmModal: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const BrandDeleteConfirmModal: React.FC<Props> = ({
   message,
   onCancel,
   onConfirm,
+  confirmLabel = "common_yes",
 }) => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
@@ -40,7 +42,7 @@ const BrandDeleteConfirmModal: React.FC<Props> = ({
           </View>
           <View className={styles.btnDivider} />
           <View className={styles.btnRow} onClick={onConfirm}>
-            <Text className={styles.btnYesText}>{t("common_yes")}</Text>
+            <Text className={styles.btnYesText}>{t(confirmLabel)}</Text>
           </View>
         </View>
       </View>

@@ -51,6 +51,14 @@ export const defaultSchema = [
     type: "obj",
   },
   {
+    code: "working_status",
+    id: 122,
+    mode: "ro",
+    name: "working_status",
+    property: { type: "bool" },
+    type: "obj",
+  },
+  {
     code: "temp",
     id: 106,
     mode: "rw",

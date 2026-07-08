@@ -22,6 +22,15 @@ export const WORK_MODES: WorkMode[] = [
 export const isWorking = (mode: WorkMode | string | undefined): boolean =>
   Boolean(mode && mode !== "idle");
 
+export const parseWorkingStatus = (raw: unknown): boolean =>
+  raw === true || raw === 1 || raw === "true";
+
+/** 設備正在執行：work_mode 非 idle 且 working_status 為 true */
+export const isActivelyWorking = (
+  mode: WorkMode,
+  workingStatus: boolean
+): boolean => isWorking(mode) && workingStatus;
+
 export const parseWorkMode = (raw: unknown): WorkMode => {
   if (typeof raw === "string" && WORK_MODES.includes(raw as WorkMode)) {
     return raw as WorkMode;

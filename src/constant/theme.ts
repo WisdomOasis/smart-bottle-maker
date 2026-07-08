@@ -7,6 +7,9 @@ export const BACKGROUND_OFF = "#868EAA";
 /** Deep Blue — 主操作、列表標題、Chevron */
 export const DEEP_BLUE = "#4D7294";
 
+/** Error — 表單錯誤、校驗提示 */
+export const ERROR = "#BA2F2F";
+
 /** Black — 面板標題、數值正文 */
 export const BLACK = "#2D365F";
 

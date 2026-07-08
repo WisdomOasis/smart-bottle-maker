@@ -5,6 +5,7 @@ export default {
   startClean: "clean",
   startPowder: "powder",
   workMode: "work_mode",
+  workingStatus: "working_status",
   tempSet: "temp",
   volumeMl: "ml",
   volumeOz: "oz",

@@ -30,7 +30,6 @@ import MakingActionsPanel from "@/components/MakingActionsPanel";
 import BottleMadeButton from "@/components/BottleMadeButton";
 import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
 import PowderCautionPanel from "@/components/PowderCautionPanel";
-import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
 import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
@@ -50,14 +49,16 @@ import {
 } from "@/redux/modules/powderBrandSlice";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
+import { openBabyDiaryPanel } from "@/utils/openBabyDiaryPanel";
 import {
   calcPowderGrams,
   clampMl,
   getVolumeFromDp,
-  isWorking,
+  isActivelyWorking,
   parseTemp,
   parseUnit,
   parseWorkMode,
+  parseWorkingStatus,
   type TempSet,
   type WorkMode,
 } from "@/utils/bottleMaker";
@@ -123,7 +124,6 @@ const HomePage: React.FC = () => {
   const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
   const [selectedAction, setSelectedAction] = useState<ActionKind>("milk");
   const [milkSessionActive, setMilkSessionActive] = useState(false);
-  const [babyDiaryToastVisible, setBabyDiaryToastVisible] = useState(false);
   const [waterSessionActive, setWaterSessionActive] = useState(false);
   const [powderSessionActive, setPowderSessionActive] = useState(false);
   const [cleanCountdown, setCleanCountdown] = useState(
@@ -133,14 +133,15 @@ const HomePage: React.FC = () => {
     null
   );
   const [stopBusy, setStopBusy] = useState(false);
-  const prevWorkMode = useRef<WorkMode>("idle");
+  const prevWorkingStatus = useRef<boolean | null>(null);
   const wasInCleanMode = useRef(false);
 
   const workMode = parseWorkMode(dpState[dpCodes.workMode]);
-  /** 泡奶 UI 完全由設備 work_mode 驅動 */
-  const isMaking = isWorking(workMode);
-  /** 清潔 UI 僅在設備 work_mode === clean 時顯示 */
-  const isCleanSession = workMode === "clean";
+  const workingStatus = parseWorkingStatus(dpState[dpCodes.workingStatus]);
+  /** 執行中模式：work_mode + working_status；status 為 false 時視為停滯 */
+  const isMaking = isActivelyWorking(workMode, workingStatus);
+  /** 清潔 UI 僅在 work_mode === clean 且 working_status 為 true 時顯示 */
+  const isCleanSession = workMode === "clean" && workingStatus;
   const isMakingUi = isMaking && !isCleanSession;
   const unit = parseUnit(dpState[dpCodes.unitSet]);
   const temp = parseTemp(dpState[dpCodes.tempSet]);
@@ -159,10 +160,10 @@ const HomePage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (awaitingWorkMode && workMode === awaitingWorkMode) {
+    if (awaitingWorkMode && workMode === awaitingWorkMode && workingStatus) {
       setAwaitingWorkMode(null);
     }
-  }, [awaitingWorkMode, workMode]);
+  }, [awaitingWorkMode, workMode, workingStatus]);
 
   useEffect(() => {
     if (!awaitingWorkMode) return undefined;
@@ -190,16 +191,17 @@ const HomePage: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (isWorking(prevWorkMode.current) && workMode === "idle") {
+    const prev = prevWorkingStatus.current;
+    if (prev === true && !workingStatus) {
       setAwaitingWorkMode(null);
-      const finished = prevWorkMode.current;
+      const finished = workMode;
       const wasWater = waterSessionActive || finished === "water";
       const wasPowder = powderSessionActive || finished === "powder";
       const wasClean = finished === "clean";
       if (finished === "milk") {
         setCompletionKind("milk");
         setBottleMadePhase(true);
-        setBabyDiaryToastVisible(true);
+        openBabyDiaryPanel();
       } else if (wasWater) {
         setCompletionKind("water");
         setBottleMadePhase(true);
@@ -214,18 +216,21 @@ const HomePage: React.FC = () => {
         setPowderSessionActive(false);
         setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
       }
-      prevWorkMode.current = workMode;
-      return;
     }
-    prevWorkMode.current = workMode;
-  }, [workMode, milkSessionActive, waterSessionActive, powderSessionActive]);
+    prevWorkingStatus.current = workingStatus;
+  }, [
+    workMode,
+    workingStatus,
+    milkSessionActive,
+    waterSessionActive,
+    powderSessionActive,
+  ]);
 
-  /** 完成後 3 秒收起 Bottle Made，並關閉 Baby Diary toast */
+  /** 完成後 3 秒收起 Bottle Made */
   useEffect(() => {
     if (!bottleMadePhase) return undefined;
     const timer = setTimeout(() => {
       setBottleMadePhase(false);
-      setBabyDiaryToastVisible(false);
       setMilkSessionActive(false);
       setWaterSessionActive(false);
       setPowderSessionActive(false);
@@ -234,28 +239,28 @@ const HomePage: React.FC = () => {
   }, [bottleMadePhase]);
 
   useEffect(() => {
-    const inClean = workMode === "clean";
+    const inClean = workMode === "clean" && workingStatus;
     if (inClean && !wasInCleanMode.current) {
       setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
     }
     wasInCleanMode.current = inClean;
-  }, [workMode]);
+  }, [workMode, workingStatus]);
 
   useEffect(() => {
-    if (workMode !== "clean") return undefined;
+    if (workMode !== "clean" || !workingStatus) return undefined;
     if (cleanCountdown <= 0) return undefined;
     const timer = setInterval(() => {
       setCleanCountdown((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [workMode, cleanCountdown]);
+  }, [workMode, workingStatus, cleanCountdown]);
 
   const gaugeValue = isCleanSession
     ? HIGH_TEMP_CLEAN_TOTAL_ML
     : powderPrimary
     ? powderG
     : volumeMl;
-  const gaugeUnit = powderPrimary ? "g" : "mL";
+  const gaugeUnit = powderPrimary ? t("unit_g") : t("unit_ml");
   const gaugeLabel = powderPrimary
     ? t("gauge_powder_amount")
     : t("gauge_water_amount");
@@ -442,7 +447,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleClean = async () => {
-    if (workMode === "clean" || awaitingWorkMode === "clean") return;
+    if (isCleanSession || awaitingWorkMode === "clean") return;
     if (toastIfBlocked()) return;
     if (panelDisabled || childLock || !isOnline) return;
     setAwaitingWorkMode("clean");
@@ -465,7 +470,7 @@ const HomePage: React.FC = () => {
   };
 
   const handleCleanStop = async () => {
-    if (workMode !== "clean" || panelDisabled || stopBusy) return;
+    if (!isCleanSession || panelDisabled || stopBusy) return;
     setStopBusy(true);
     const sent = await setBoolDp(setDp, dpCodes.startClean, false);
     setStopBusy(false);
@@ -489,10 +494,10 @@ const HomePage: React.FC = () => {
     if (panelDisabled) return;
     dispatch(markBrandBannerEverClicked());
     if (hasSavedPowderBrands) {
-      router.push("/powder-brand-settings");
+      router.push("/formula");
       return;
     }
-    router.push("/powder-brand");
+    router.push("/formula");
   };
 
   return (
@@ -594,7 +599,9 @@ const HomePage: React.FC = () => {
                             <Text className={styles.metricValueNum}>
                               {volumeMl}
                             </Text>
-                            <Text className={styles.metricValueSuffix}>mL</Text>
+                            <Text className={styles.metricValueSuffix}>
+                              {t("unit_ml")}
+                            </Text>
                           </View>
                           <Text className={styles.metricLabel}>
                             {t("metric_water")}
@@ -605,7 +612,9 @@ const HomePage: React.FC = () => {
                             <Text className={styles.metricValueNum}>
                               {powderG}
                             </Text>
-                            <Text className={styles.metricValueSuffix}>g</Text>
+                            <Text className={styles.metricValueSuffix}>
+                              {t("unit_g")}
+                            </Text>
                           </View>
                           <Text className={styles.metricLabel}>
                             {t("metric_powder")}
@@ -622,7 +631,9 @@ const HomePage: React.FC = () => {
                             <Text className={styles.metricValueNum}>
                               {temp}
                             </Text>
-                            <Text className={styles.metricValueSuffix}>°C</Text>
+                            <Text className={styles.metricValueSuffix}>
+                              {t("unit_celsius")}
+                            </Text>
                           </View>
                           <Text className={styles.metricLabel}>
                             {t("metric_temp")}
@@ -909,45 +920,32 @@ const HomePage: React.FC = () => {
               </View>
             )}
           </View>
-          {babyDiaryToastVisible ? (
-            <View className={styles.diaryToastSlot}>
-              <BabyDiarySnackbar
-                onClose={() => {
-                  setBabyDiaryToastVisible(false);
-                  setMilkSessionActive(false);
-                }}
-              />
-            </View>
-          ) : (
+          <View
+            className={clsx(
+              styles.settingsRowCard,
+              panelDisabled && styles.disabled
+            )}
+            onClick={panelDisabled ? undefined : () => setChildLock((v) => !v)}
+          >
+            <Text className={styles.settingsRowLabel}>
+              {t("row_child_lock")}
+            </Text>
             <View
               className={clsx(
-                styles.settingsRowCard,
-                panelDisabled && styles.disabled
+                styles.cleanRowBtn,
+                childLock && styles.cleanRowBtnActive
               )}
-              onClick={
-                panelDisabled ? undefined : () => setChildLock((v) => !v)
-              }
             >
-              <Text className={styles.settingsRowLabel}>
-                {t("row_child_lock")}
-              </Text>
-              <View
-                className={clsx(
-                  styles.cleanRowBtn,
-                  childLock && styles.cleanRowBtnActive
-                )}
-              >
-                <Image
-                  src={
-                    childLock
-                      ? Res.actionButtonIcons.lockActive
-                      : Res.actionButtonIcons.lock
-                  }
-                  className={styles.cleanRowIcon}
-                />
-              </View>
+              <Image
+                src={
+                  childLock
+                    ? Res.actionButtonIcons.lockActive
+                    : Res.actionButtonIcons.lock
+                }
+                className={styles.cleanRowIcon}
+              />
             </View>
-          )}
+          </View>
         </View>
       </View>
 

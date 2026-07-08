@@ -6,16 +6,20 @@ import styles from "./index.module.less";
 
 interface Props {
   checked: boolean;
-  onClick: () => void;
+  onClick?: () => void;
 }
 
 const BrandRadio: React.FC<Props> = ({ checked, onClick }) => (
   <View
     className={clsx(styles.radio, checked && styles.radioChecked)}
-    onClick={(e: { stopPropagation?: () => void }) => {
-      e?.stopPropagation?.();
-      onClick();
-    }}
+    onClick={
+      onClick
+        ? (e: { stopPropagation?: () => void }) => {
+            e?.stopPropagation?.();
+            onClick();
+          }
+        : undefined
+    }
   >
     {checked ? <View className={styles.radioDot} /> : null}
   </View>

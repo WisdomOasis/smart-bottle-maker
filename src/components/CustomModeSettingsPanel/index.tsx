@@ -3,6 +3,11 @@ import React, { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { View, Text, Image } from "@ray-js/ray";
 import Strings from "@/i18n";
+import {
+  formatUnitValueCelsius,
+  formatUnitValueG,
+  formatUnitValueMlUpper,
+} from "@/i18n/formatters";
 import CustomModeSlider from "@/components/CustomModeSlider";
 import { ML_MIN, ML_MAX, ML_STEP } from "@/constant/presets";
 import {
@@ -113,7 +118,9 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_water")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>{draftMl}ML</Text>
+              <Text className={styles.settingValue}>
+                {formatUnitValueMlUpper(draftMl)}
+              </Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
@@ -137,7 +144,9 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_powder")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>{draftPowderG}g</Text>
+              <Text className={styles.settingValue}>
+                {formatUnitValueG(draftPowderG)}
+              </Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
@@ -161,7 +170,9 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_temperature")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>{draftTemp}°C</Text>
+              <Text className={styles.settingValue}>
+                {formatUnitValueCelsius(draftTemp)}
+              </Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider

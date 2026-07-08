@@ -1,4 +1,5 @@
 import type { PowderStage } from "@/constant/powderBrands";
+import { formatFormulaStageLabelFromId } from "@/i18n/formatters";
 import {
   entryToSelection,
   getActivePowderBrandEntry,
@@ -17,6 +18,7 @@ export interface PowderBrandSelection {
   waterMl: number;
   powderG: number;
   formulaRatio: number;
+  barcode?: string;
 }
 
 export const selectionFromStage = (
@@ -31,7 +33,7 @@ export const selectionFromStage = (
   seriesId,
   seriesLabel,
   stageId: stage.id,
-  stageLabel: stage.label,
+  stageLabel: formatFormulaStageLabelFromId(stage.id),
   waterMl: stage.waterMl,
   powderG: stage.powderG,
   formulaRatio: stage.formulaRatio,

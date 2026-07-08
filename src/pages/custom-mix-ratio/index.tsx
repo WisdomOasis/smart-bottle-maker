@@ -189,8 +189,8 @@ const CustomMixRatioPage: React.FC = () => {
           <EditableRatioMetricCard
             label={t("powder_brand_ratio_water")}
             value={waterMl}
-            unit="ml"
-            placeholder="--"
+            unit={t("unit_ml_lower")}
+            placeholder={t("common_empty_placeholder")}
             active={activeField === "water"}
             min={CUSTOM_MIX_WATER_MIN}
             onActivate={() => setActiveField("water")}
@@ -200,8 +200,8 @@ const CustomMixRatioPage: React.FC = () => {
           <EditableRatioMetricCard
             label={t("powder_brand_ratio_powder")}
             value={powderG}
-            unit="g"
-            placeholder="--"
+            unit={t("unit_g")}
+            placeholder={t("common_empty_placeholder")}
             active={activeField === "powder"}
             min={CUSTOM_MIX_POWDER_MIN}
             max={CUSTOM_MIX_POWDER_MAX}

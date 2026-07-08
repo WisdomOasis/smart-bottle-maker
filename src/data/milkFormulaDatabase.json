@@ -1,0 +1,335 @@
+[
+  {
+    "barcode": "3041090086342",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 3,
+    "powderG": 32.9,
+    "waterMl": 210.0,
+    "milkId": "1289"
+  },
+  {
+    "barcode": "3041090695131",
+    "brand": "Gallia",
+    "series": "milk_series_calisma_infant",
+    "segment": 1,
+    "powderG": 28.2,
+    "waterMl": 180.0,
+    "milkId": "1353"
+  },
+  {
+    "barcode": "3041090734700",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 4,
+    "powderG": 23.5,
+    "waterMl": 150.0,
+    "milkId": "1287"
+  },
+  {
+    "barcode": "3041090898013",
+    "brand": "Gallia",
+    "series": "milk_series_ha_hydrolyzed",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "1470"
+  },
+  {
+    "barcode": "3041090899270",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 2,
+    "powderG": 32.9,
+    "waterMl": 210.0,
+    "milkId": "1290"
+  },
+  {
+    "barcode": "3041090899300",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 2,
+    "powderG": 32.9,
+    "waterMl": 210.0,
+    "milkId": "1286"
+  },
+  {
+    "barcode": "3041090899942",
+    "brand": "Gallia",
+    "series": "milk_series_breast_milk_style",
+    "segment": 1,
+    "powderG": 28.2,
+    "waterMl": 180.0,
+    "milkId": "1284"
+  },
+  {
+    "barcode": "3041090900372",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "1285"
+  },
+  {
+    "barcode": "3041090900389",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 1,
+    "powderG": 28.2,
+    "waterMl": 180.0,
+    "milkId": "1291"
+  },
+  {
+    "barcode": "3041091461254",
+    "brand": "Gallia",
+    "series": "milk_series_near_breast_milk",
+    "segment": 1,
+    "powderG": 28.2,
+    "waterMl": 180.0,
+    "milkId": "3354"
+  },
+  {
+    "barcode": "3041096667842",
+    "brand": "Gallia",
+    "series": "milk_series_classic_imported",
+    "segment": 3,
+    "powderG": 32.9,
+    "waterMl": 210.0,
+    "milkId": "1288"
+  },
+  {
+    "barcode": "3288131500034",
+    "brand": "babybio",
+    "series": "milk_series_optima",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "1901"
+  },
+  {
+    "barcode": "3288131500041",
+    "brand": "babybio",
+    "series": "milk_series_organic_infant",
+    "segment": 1,
+    "powderG": 24.4,
+    "waterMl": 180.0,
+    "milkId": "1379"
+  },
+  {
+    "barcode": "3288131500058",
+    "brand": "babybio",
+    "series": "milk_series_croissance",
+    "segment": 3,
+    "powderG": 36.0,
+    "waterMl": 240.0,
+    "milkId": "1788"
+  },
+  {
+    "barcode": "3288131505015",
+    "brand": "babybio",
+    "series": "milk_series_organic",
+    "segment": 2,
+    "powderG": 30.8,
+    "waterMl": 210.0,
+    "milkId": "268"
+  },
+  {
+    "barcode": "3288131505022",
+    "brand": "babybio",
+    "series": "milk_series_organic",
+    "segment": 1,
+    "powderG": 26.4,
+    "waterMl": 180.0,
+    "milkId": "267"
+  },
+  {
+    "barcode": "3288131505039",
+    "brand": "babybio",
+    "series": "milk_series_organic",
+    "segment": 3,
+    "powderG": 35.2,
+    "waterMl": 240.0,
+    "milkId": "269"
+  },
+  {
+    "barcode": "3288131580012",
+    "brand": "babybio",
+    "series": "milk_series_organic_infant",
+    "segment": 1,
+    "powderG": 26.4,
+    "waterMl": 180.0,
+    "milkId": "1639"
+  },
+  {
+    "barcode": "3288131580029",
+    "brand": "babybio",
+    "series": "milk_series_primea",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "2781"
+  },
+  {
+    "barcode": "3288131580319",
+    "brand": "babybio",
+    "series": "milk_series_optima",
+    "segment": 1,
+    "powderG": 26.4,
+    "waterMl": 180.0,
+    "milkId": "5456"
+  },
+  {
+    "barcode": "3288131580326",
+    "brand": "babybio",
+    "series": "milk_series_optima",
+    "segment": 2,
+    "powderG": 30.8,
+    "waterMl": 210.0,
+    "milkId": "5328"
+  },
+  {
+    "barcode": "3288131580333",
+    "brand": "babybio",
+    "series": "milk_series_optima",
+    "segment": 3,
+    "powderG": 35.2,
+    "waterMl": 240.0,
+    "milkId": "5128"
+  },
+  {
+    "barcode": "3288131580418",
+    "brand": "babybio",
+    "series": "milk_series_babybio",
+    "segment": 1,
+    "powderG": 27.0,
+    "waterMl": 180.0,
+    "milkId": "2383"
+  },
+  {
+    "barcode": "3288131580463",
+    "brand": "babybio",
+    "series": "milk_series_goat_milk",
+    "segment": 3,
+    "powderG": 41.0,
+    "waterMl": 240.0,
+    "milkId": "1905"
+  },
+  {
+    "barcode": "3288131580517",
+    "brand": "babybio",
+    "series": "milk_series_caprea",
+    "segment": 1,
+    "powderG": 4.3,
+    "waterMl": 30.0,
+    "milkId": "4935"
+  },
+  {
+    "barcode": "3288131580524",
+    "brand": "babybio",
+    "series": "milk_series_caprea",
+    "segment": 2,
+    "powderG": 30.1,
+    "waterMl": 210.0,
+    "milkId": "5268"
+  },
+  {
+    "barcode": "3288131580531",
+    "brand": "babybio",
+    "series": "CAPREA CROISSANCE",
+    "segment": 3,
+    "powderG": 34.4,
+    "waterMl": 240.0,
+    "milkId": "5699"
+  },
+  {
+    "barcode": "3288131590325",
+    "brand": "babybio",
+    "series": "milk_series_optima",
+    "segment": 2,
+    "powderG": 30.8,
+    "waterMl": 210.0,
+    "milkId": "5719"
+  },
+  {
+    "barcode": "3288132505038",
+    "brand": "babybio",
+    "series": "milk_series_organic_growing_up",
+    "segment": 3,
+    "powderG": 36.0,
+    "waterMl": 240.0,
+    "milkId": "2092"
+  },
+  {
+    "barcode": "3401554244143",
+    "brand": "Novalac",
+    "series": "milk_series_relia",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "1597"
+  },
+  {
+    "barcode": "7613033116094",
+    "brand": "Guigoz",
+    "series": "milk_series_optipro",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "3232"
+  },
+  {
+    "barcode": "7613033363467",
+    "brand": "Guigoz",
+    "series": "milk_series_pelargon",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "2498"
+  },
+  {
+    "barcode": "7613035607729",
+    "brand": "Guigoz",
+    "series": "milk_series_optipro",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "3190"
+  },
+  {
+    "barcode": "7613035608856",
+    "brand": "Guigoz",
+    "series": "milk_series_guigoz",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4046"
+  },
+  {
+    "barcode": "7613036217378",
+    "brand": "Guigoz",
+    "series": "milk_series_bio",
+    "segment": 3,
+    "powderG": 4.57,
+    "waterMl": 30.0,
+    "milkId": "4547"
+  },
+  {
+    "barcode": "8445290000811",
+    "brand": "Guigoz",
+    "series": "milk_series_guigoz",
+    "segment": 1,
+    "powderG": 25.8,
+    "waterMl": 180.0,
+    "milkId": "5959"
+  },
+  {
+    "barcode": "8445290624918",
+    "brand": "Guigoz",
+    "series": "milk_series_optipro",
+    "segment": 3,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "5412"
+  }
+]

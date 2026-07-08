@@ -8,6 +8,7 @@ import CustomRatioListCard from "@/components/CustomRatioListCard";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import dpCodes from "@/constant/dpCodes";
 import { entryToSelection } from "@/constant/powderBrandListStorage";
+import { writeFormulaDetailEntryId } from "@/constant/formulaDetailStorage";
 import { IC_BACK_URI } from "@/res/icBackUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
@@ -73,7 +74,8 @@ const PowderBrandSettingsPage: React.FC = () => {
   const handleEditBrand = useCallback(
     (id: string) => {
       dispatch(setEditingBrandId(id));
-      router.push("/powder-brand");
+      writeFormulaDetailEntryId(id);
+      router.push("/formula-details");
     },
     [dispatch]
   );
@@ -88,7 +90,7 @@ const PowderBrandSettingsPage: React.FC = () => {
 
   const handleAdd = useCallback(() => {
     dispatch(setEditingBrandId(null));
-    router.push("/powder-brand");
+    router.push("/search-brand");
   }, [dispatch]);
 
   const handleBatchDelete = useCallback(() => {

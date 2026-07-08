@@ -1,29 +1,16 @@
-import { getLaunchOptionsSync } from "@ray-js/ray";
+import {
+  getLaunchOptionsSync,
+  hideLoading,
+  initVirtualDevice,
+  openPanel,
+  showLoading,
+  showToast,
+} from "@ray-js/ray";
 import { BABY_DIARY_VIRTUAL_PID } from "@/constant/babyDiary";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 
-type TyApi = {
-  showLoading?: (params: { title?: string }) => void;
-  hideLoading?: () => void;
-  showToast?: (params: { title: string; icon?: string }) => void;
-  openPanel?: (params: {
-    deviceId: string;
-    fail?: (res: { errorMsg?: string }) => void;
-  }) => void;
-  device?: {
-    initVirtualDevice?: (params: {
-      pid: string;
-      success?: (res: { devId: string }) => void;
-      fail?: (res: { errorMsg?: string }) => void;
-      complete?: () => void;
-    }) => void;
-  };
-};
-
 const t = (key: I18nKey) => Strings.getLang(key);
-
-const getTy = (): TyApi | undefined => (globalThis as { ty?: TyApi }).ty;
 
 /** 解析 Baby Diary 虛擬設備 PID：參數 > 啟動 query > 常量配置 */
 export const resolveBabyDiaryPid = (overridePid?: string): string | null => {
@@ -37,49 +24,38 @@ export const resolveBabyDiaryPid = (overridePid?: string): string | null => {
 };
 
 /**
- * 以 PID 初始化虛擬設備並打開 Baby Diary 面板（ty.device.initVirtualDevice → ty.openPanel）
+ * 以 PID 初始化虛擬設備並打開 Baby Diary 面板（initVirtualDevice → openPanel）
  */
 export const openBabyDiaryPanel = (options?: {
   pid?: string;
   onBeforeOpen?: () => void;
+  initialProps?: Record<string, Record<string, unknown>>;
 }): void => {
-  const tyApi = getTy();
   const pid = resolveBabyDiaryPid(options?.pid);
 
   if (!pid) {
-    tyApi?.showToast?.({
-      title: t("baby_diary_pid_missing"),
-      icon: "none",
-    });
-    return;
-  }
-
-  if (!tyApi?.device?.initVirtualDevice || !tyApi.openPanel) {
-    tyApi?.showToast?.({
-      title: t("baby_diary_open_failed"),
-      icon: "none",
-    });
+    showToast({ title: t("baby_diary_pid_missing"), icon: "none" });
     return;
   }
 
   options?.onBeforeOpen?.();
-  tyApi.showLoading?.({ title: "" });
+  showLoading({ title: "" });
 
-  tyApi.device.initVirtualDevice({
+  initVirtualDevice({
     pid,
     success: (res) => {
       const devId = res?.devId;
       if (!devId) {
-        tyApi.showToast?.({
-          title: t("baby_diary_open_failed"),
-          icon: "none",
-        });
+        showToast({ title: t("baby_diary_open_failed"), icon: "none" });
         return;
       }
-      tyApi.openPanel?.({
+
+      openPanel({
         deviceId: devId,
+        extraInfo: { productId: pid },
+        initialProps: options?.initialProps,
         fail: (err) => {
-          tyApi.showToast?.({
+          showToast({
             title: err?.errorMsg || t("baby_diary_open_failed"),
             icon: "error",
           });
@@ -87,13 +63,13 @@ export const openBabyDiaryPanel = (options?: {
       });
     },
     fail: (err) => {
-      tyApi.showToast?.({
+      showToast({
         title: err?.errorMsg || t("baby_diary_open_failed"),
         icon: "error",
       });
     },
     complete: () => {
-      tyApi.hideLoading?.();
+      hideLoading();
     },
   });
 };

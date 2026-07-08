@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { View, Text, Image } from "@ray-js/ray";
 import CustomModeSlider from "@/components/CustomModeSlider";
 import Strings from "@/i18n";
+import { formatUnitValueCelsius } from "@/i18n/formatters";
 import {
   TEMP_MAX,
   TEMP_MIN,
@@ -41,7 +42,9 @@ const WaterTemperaturePanel: React.FC<Props> = ({
           <Image src={WATER_TEMP_ICON_URI} className={styles.icon} />
           <Text className={styles.label}>{t("water_temperature_label")}</Text>
         </View>
-        <Text className={styles.value}>{displayTemp}°C</Text>
+        <Text className={styles.value}>
+          {formatUnitValueCelsius(displayTemp)}
+        </Text>
       </View>
       <View className={styles.sliderWrap}>
         <CustomModeSlider

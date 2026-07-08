@@ -107,8 +107,10 @@ export const getActivePowderBrandEntry = (): PowderBrandEntry | null => {
 
 export const upsertPowderBrandEntry = (
   selection: PowderBrandSelection,
-  entryId?: string | null
+  entryId?: string | null,
+  options?: { activate?: boolean }
 ): PowderBrandEntry => {
+  const activate = options?.activate ?? true;
   const store = readPowderBrandListStore();
   if (entryId) {
     const idx = store.entries.findIndex((e) => e.id === entryId);
@@ -118,7 +120,9 @@ export const upsertPowderBrandEntry = (
     } else {
       store.entries.push(entry);
     }
-    store.activeId = entryId;
+    if (activate) {
+      store.activeId = entryId;
+    }
     writePowderBrandListStore(store);
     return entry;
   }
@@ -128,7 +132,9 @@ export const upsertPowderBrandEntry = (
     id: createPowderBrandEntryId(),
   };
   store.entries.push(entry);
-  store.activeId = entry.id;
+  if (activate) {
+    store.activeId = entry.id;
+  }
   writePowderBrandListStore(store);
   return entry;
 };

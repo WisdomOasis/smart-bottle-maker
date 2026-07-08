@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from "react";
+import clsx from "clsx";
 import { useSelector } from "react-redux";
 import { View, Text, Image, router } from "@ray-js/ray";
 import BatchDeleteSelectRow from "@/components/BatchDeleteSelectRow";
@@ -6,13 +7,15 @@ import BrandDeleteConfirmModal from "@/components/BrandDeleteConfirmModal";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import { IC_BACK_URI } from "@/res/icBackUri";
 import Strings from "@/i18n";
+import { formatLabeledValue } from "@/i18n/formatters";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
 import {
   removePowderBrandEntries,
   selectPowderBrandEntries,
 } from "@/redux/modules/powderBrandSlice";
-import { countToEnglishWord } from "@/utils/englishCount";
+import { formatFormulaStageRatio } from "@/utils/formulaEntrySearch";
+import { formatFormulaRatioDisplay } from "@/utils/barcodeLookup";
 import styles from "./index.module.less";
 
 const applyTemplate = (template: string, values: string[]) => {
@@ -64,15 +67,14 @@ const PowderBrandBatchDeletePage: React.FC = () => {
   const selectedCount = selectedIds.length;
 
   const deleteConfirmMessage = useMemo(() => {
-    const countWord = countToEnglishWord(selectedCount);
     const templateKey =
       selectedCount === 1
         ? "powder_brand_batch_confirm_message_one"
         : "powder_brand_batch_confirm_message_many";
-    return applyTemplate(t(templateKey), [countWord]);
+    return selectedCount === 1
+      ? t(templateKey)
+      : applyTemplate(t(templateKey), [String(selectedCount)]);
   }, [selectedCount, t]);
-
-  const customLabel = t("powder_brand_custom_label");
 
   return (
     <View className={styles.page}>
@@ -88,40 +90,45 @@ const PowderBrandBatchDeletePage: React.FC = () => {
 
       <View className={styles.sections}>
         {brandEntries.length > 0 ? (
-          <View className={styles.sectionBlock}>
-            <Text className={styles.sectionLabel}>
-              {t("powder_brand_select_brand")}
-            </Text>
-            <View className={styles.list}>
-              {brandEntries.map((entry) => (
-                <BatchDeleteSelectRow
-                  key={entry.id}
-                  primary={entry.brandLabel}
-                  secondary={`${entry.seriesLabel} / ${entry.stageLabel}`}
-                  checked={selectedIds.includes(entry.id)}
-                  onToggle={() => toggleId(entry.id)}
-                />
-              ))}
-            </View>
+          <View className={styles.list}>
+            {brandEntries.map((entry) => (
+              <BatchDeleteSelectRow
+                key={entry.id}
+                primary={entry.brandLabel}
+                secondary={formatFormulaStageRatio(
+                  entry.stageLabel,
+                  entry.powderG,
+                  entry.waterMl
+                )}
+                tertiary={
+                  entry.barcode
+                    ? formatLabeledValue(
+                        t("barcode_result_barcode_label"),
+                        entry.barcode
+                      )
+                    : undefined
+                }
+                checked={selectedIds.includes(entry.id)}
+                onToggle={() => toggleId(entry.id)}
+              />
+            ))}
           </View>
         ) : null}
 
         {customEntries.length > 0 ? (
-          <View className={styles.sectionBlock}>
-            <Text className={styles.sectionLabel}>
-              {t("powder_brand_custom_ratio_section")}
-            </Text>
-            <View className={styles.list}>
-              {customEntries.map((entry) => (
-                <BatchDeleteSelectRow
-                  key={entry.id}
-                  primary={`${entry.waterMl}ml / ${entry.powderG}g`}
-                  secondary={customLabel}
-                  checked={selectedIds.includes(entry.id)}
-                  onToggle={() => toggleId(entry.id)}
-                />
-              ))}
-            </View>
+          <View className={styles.list}>
+            {customEntries.map((entry) => (
+              <BatchDeleteSelectRow
+                key={entry.id}
+                primary={entry.brandLabel}
+                secondary={formatFormulaRatioDisplay(
+                  entry.powderG,
+                  entry.waterMl
+                )}
+                checked={selectedIds.includes(entry.id)}
+                onToggle={() => toggleId(entry.id)}
+              />
+            ))}
           </View>
         ) : null}
       </View>
@@ -130,8 +137,19 @@ const PowderBrandBatchDeletePage: React.FC = () => {
         <View className={styles.btnCancel} onClick={handleBack}>
           <Text className={styles.btnCancelText}>{t("common_cancel")}</Text>
         </View>
-        <View className={styles.btnDelete} onClick={handleDeletePress}>
-          <Text className={styles.btnDeleteText}>
+        <View
+          className={clsx(
+            styles.btnDelete,
+            selectedCount === 0 && styles.btnDeleteDisabled
+          )}
+          onClick={handleDeletePress}
+        >
+          <Text
+            className={clsx(
+              styles.btnDeleteText,
+              selectedCount === 0 && styles.btnDeleteTextDisabled
+            )}
+          >
             {applyTemplate(t("powder_brand_batch_footer_delete"), [
               String(selectedCount),
             ])}
@@ -142,6 +160,7 @@ const PowderBrandBatchDeletePage: React.FC = () => {
       <BrandDeleteConfirmModal
         visible={deleteModalVisible}
         message={deleteConfirmMessage}
+        confirmLabel="common_delete"
         onCancel={() => setDeleteModalVisible(false)}
         onConfirm={handleConfirmDelete}
       />
