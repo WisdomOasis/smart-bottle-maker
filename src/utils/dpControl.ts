@@ -33,14 +33,14 @@ export const createDpSetter = (
   };
 };
 
-/** bool 型 DP 維持指定值（如 clean 開始 true、停止 false） */
+/** bool 型 DP 維持指定值（如 child_lock、working_status） */
 export const setBoolDp = async (
   setDp: DpSetter,
   code: string,
   value: boolean
 ): Promise<boolean> => setDp(code, value);
 
-/** bool 型啟動 DP：true → 約 400ms 後 false（如 cancel_work） */
+/** bool 型脈衝 DP：true → 約 400ms 後 false */
 export const pulseBoolDp = async (
   setDp: DpSetter,
   code: string

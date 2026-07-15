@@ -60,7 +60,7 @@ const resolveSeriesLabel = (seriesKey: string): string => {
 const recordToResult = (record: MilkFormulaRecord): BarcodeFormulaResult => {
   const waterMl = Math.round(record.waterMl);
   const powderG = Math.round(record.powderG * 10) / 10;
-  const formulaRatio = powderGramsToFormulaRatio(waterMl, powderG);
+  const formulaRatio = powderGramsToFormulaRatio(powderG);
   const seriesKey = toMilkSeriesI18nKey(record.series);
   const seriesLabel = resolveSeriesLabel(seriesKey);
   const brandLabel = formatMilkBrandLabel(record.brand);

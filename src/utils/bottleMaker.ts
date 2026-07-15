@@ -1,13 +1,14 @@
 import dpCodes from "@/constant/dpCodes";
 import { ML_MAX, ML_MIN } from "@/constant/presets";
 
+/** 設備 work_mode 枚舉；idle 為 App 端合成狀態（working_status=false / 未知） */
 export type WorkMode = "milk" | "water" | "powder" | "clean" | "idle";
 export type UnitSet = "mL" | "oz";
-export type TempSet = 37 | 40 | 45 | 70;
+/** temp DP：20–40℃，步进 5 */
+export type TempSet = 20 | 25 | 30 | 35 | 40;
 
-/** 與 devices/schema.ts temp enum 一致 */
-export const TEMP_SET_OPTIONS: TempSet[] = [37, 40, 45];
-export const HIGH_TEMP_CLEAN_TEMP_SET = 70 as TempSet;
+export const TEMP_SET_OPTIONS: TempSet[] = [20, 25, 30, 35, 40];
+export const TEMP_STEP = 5;
 export const TEMP_MIN = TEMP_SET_OPTIONS[0];
 export const TEMP_MAX = TEMP_SET_OPTIONS[TEMP_SET_OPTIONS.length - 1];
 
@@ -17,6 +18,13 @@ export const WORK_MODES: WorkMode[] = [
   "powder",
   "clean",
   "idle",
+];
+
+export const DEVICE_WORK_MODES: Exclude<WorkMode, "idle">[] = [
+  "milk",
+  "water",
+  "powder",
+  "clean",
 ];
 
 export const isWorking = (mode: WorkMode | string | undefined): boolean =>
@@ -32,7 +40,10 @@ export const isActivelyWorking = (
 ): boolean => isWorking(mode) && workingStatus;
 
 export const parseWorkMode = (raw: unknown): WorkMode => {
-  if (typeof raw === "string" && WORK_MODES.includes(raw as WorkMode)) {
+  if (
+    typeof raw === "string" &&
+    DEVICE_WORK_MODES.includes(raw as Exclude<WorkMode, "idle">)
+  ) {
     return raw as WorkMode;
   }
   return "idle";
@@ -40,7 +51,15 @@ export const parseWorkMode = (raw: unknown): WorkMode => {
 
 export const parseTemp = (raw: unknown): TempSet => {
   const n = typeof raw === "number" ? raw : Number(raw);
-  if (n === 37 || n === 40 || n === 45 || n === 70) return n;
+  if (
+    TEMP_SET_OPTIONS.includes(n as TempSet) ||
+    (n >= TEMP_MIN && n <= TEMP_MAX && n % TEMP_STEP === 0)
+  ) {
+    const snapped = Math.round(n / TEMP_STEP) * TEMP_STEP;
+    if (TEMP_SET_OPTIONS.includes(snapped as TempSet)) {
+      return snapped as TempSet;
+    }
+  }
   return 40;
 };
 
@@ -52,64 +71,109 @@ export const parseUnit = (raw: unknown): UnitSet => {
 export const clampMl = (val: number) =>
   Math.min(ML_MAX, Math.max(ML_MIN, Math.round(val / 10) * 10));
 
+/** formula_ratio：每勺克数，scale 1 → display g = raw / 10 */
+export const FORMULA_RATIO_MIN = 25;
+export const FORMULA_RATIO_MAX = 350;
+
+/** formula_water：每勺对应水量 mL */
+export const FORMULA_WATER_MIN = 30;
+export const FORMULA_WATER_MAX = 300;
+export const FORMULA_WATER_STEP = 10;
+
+/** formula_density：校准值，scale 1 → 0.5~1.5，默认 1.0 = 10 */
+export const FORMULA_DENSITY_MIN = 5;
+export const FORMULA_DENSITY_MAX = 15;
+export const FORMULA_DENSITY_DEFAULT = 10;
+
 export const formulaRatioToDisplay = (raw: number) => raw / 10;
 
-export const calcPowderGrams = (ml: number, formulaRatioRaw: number) => {
-  const ratio = formulaRatioToDisplay(formulaRatioRaw);
-  return Math.round((ml * ratio) / 100);
-};
+export const clampFormulaWater = (ml: number): number =>
+  Math.min(
+    FORMULA_WATER_MAX,
+    Math.max(
+      FORMULA_WATER_MIN,
+      Math.round(ml / FORMULA_WATER_STEP) * FORMULA_WATER_STEP
+    )
+  );
 
-export const FORMULA_RATIO_MIN = 36;
-export const FORMULA_RATIO_MAX = 660;
+export const clampFormulaDensity = (raw: number): number =>
+  Math.min(FORMULA_DENSITY_MAX, Math.max(FORMULA_DENSITY_MIN, Math.round(raw)));
 
-export const powderGramsToFormulaRatio = (
-  ml: number,
-  grams: number
-): number => {
-  if (ml <= 0) return FORMULA_RATIO_MIN;
-  const raw = Math.round((grams * 1000) / ml);
+/** 将粉末克数转为 formula_ratio raw（每勺克数 * 10） */
+export const powderGramsToFormulaRatio = (grams: number): number => {
+  const raw = Math.round(grams * 10);
   return Math.min(FORMULA_RATIO_MAX, Math.max(FORMULA_RATIO_MIN, raw));
 };
+
+/**
+ * 依配方 DP 计算本次冲调粉量：
+ * (volumeMl / formula_water) * (formula_ratio/10) * (formula_density/10)
+ */
+export const calcPowderGrams = (
+  volumeMl: number,
+  formulaRatioRaw: number,
+  formulaWaterMl = 100,
+  formulaDensityRaw: number = FORMULA_DENSITY_DEFAULT
+): number => {
+  if (formulaWaterMl <= 0) return 0;
+  const scoopG = formulaRatioToDisplay(formulaRatioRaw);
+  const density = formulaDensityRaw / 10;
+  return Math.round((volumeMl / formulaWaterMl) * scoopG * density);
+};
+
+/** 构建奶粉信息页应下发的配方三 DP */
+export const buildFormulaSettingDpPayload = (
+  waterMl: number,
+  powderG: number,
+  densityRaw: number = FORMULA_DENSITY_DEFAULT
+): Record<string, number> => ({
+  [dpCodes.formulaWater]: clampFormulaWater(waterMl),
+  [dpCodes.formulaRatio]: powderGramsToFormulaRatio(powderG),
+  [dpCodes.formulaDensity]: clampFormulaDensity(densityRaw),
+});
 
 export const ozToMl = (oz: number) => Math.round(oz * 29.57);
 
 export const mlToOz = (ml: number) => Math.round(ml / 29.57);
 
-export type StartBlockReason =
-  | "none"
-  | "water_tank_missing"
-  | "low_water"
-  | "powder_box_missing"
-  | "funnel_missing"
-  | "bottle_missing"
-  | "hot_alert";
-
-export const parseBlockReason = (raw: unknown): StartBlockReason => {
-  const reasons: StartBlockReason[] = [
-    "none",
-    "water_tank_missing",
-    "low_water",
-    "powder_box_missing",
-    "funnel_missing",
-    "bottle_missing",
-    "hot_alert",
-  ];
-  if (typeof raw === "string" && reasons.includes(raw as StartBlockReason)) {
-    return raw as StartBlockReason;
-  }
-  return "none";
+/**
+ * 感测器：true/1 = 正常装配；false/0 = 拆除。
+ * 未上报 / 关闭功能视为正常装配。
+ */
+export const parseSensorInstalled = (raw: unknown): boolean => {
+  if (raw === undefined || raw === null) return true;
+  if (raw === false || raw === 0 || raw === "false" || raw === "0")
+    return false;
+  return true;
 };
 
-/** @deprecated 請改用 dpControl.pulseBoolDp */
-export const pulseStartDp = (
-  setDp: (code: string, val: unknown) => boolean,
-  code: string
-) => {
-  const ok = setDp(code, true);
-  if (ok) {
-    setTimeout(() => setDp(code, false), 400);
+export type ErrorCode =
+  | "none"
+  | "Hot"
+  | "E01"
+  | "E02"
+  | "E03"
+  | "C01"
+  | "C02"
+  | "C03"
+  | "C04";
+
+export const parseErrorCode = (raw: unknown): ErrorCode => {
+  const codes: ErrorCode[] = [
+    "none",
+    "Hot",
+    "E01",
+    "E02",
+    "E03",
+    "C01",
+    "C02",
+    "C03",
+    "C04",
+  ];
+  if (typeof raw === "string" && codes.includes(raw as ErrorCode)) {
+    return raw as ErrorCode;
   }
-  return ok;
+  return "none";
 };
 
 export const getVolumeFromDp = (

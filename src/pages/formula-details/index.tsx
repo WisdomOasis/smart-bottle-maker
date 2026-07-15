@@ -25,7 +25,8 @@ import {
 } from "@/redux/modules/powderBrandSlice";
 import { formatFormulaRatioDisplay } from "@/utils/barcodeLookup";
 import { formatFormulaSummary } from "@/utils/formulaEntrySearch";
-import { createDpSetter } from "@/utils/dpControl";
+import { buildFormulaSettingDpPayload } from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
 
 const resolveEntryImageUri = (brandId: string): string | undefined => {
@@ -87,9 +88,11 @@ const FormulaDetailsPage: React.FC = () => {
     dispatch(setActiveBrandId(entry.id));
     dispatch(markBrandBannerEverClicked());
     const selection = entryToSelection(entry);
-    const ratioOk = await setDp(dpCodes.formulaRatio, selection.formulaRatio);
-    const mlOk = await setDp(dpCodes.volumeMl, selection.waterMl);
-    if (!ratioOk && !mlOk) {
+    const ok = await publishDpBatch(setDp, {
+      ...buildFormulaSettingDpPayload(selection.waterMl, selection.powderG),
+      [dpCodes.volumeMl]: selection.waterMl,
+    });
+    if (!ok) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
       return;
     }

@@ -18,8 +18,8 @@ interface Props {
   temp: TempSet;
   disabled?: boolean;
   onChange: (temp: TempSet) => void;
-  /** 高溫清潔等固定溫度：滑桿鎖在單一值 */
-  fixedTemp?: TempSet;
+  /** 高溫清潔等固定溫度：滑桿鎖在單一值（可超出 temp DP 範圍，僅 UI） */
+  fixedTemp?: number;
 }
 
 const WaterTemperaturePanel: React.FC<Props> = ({

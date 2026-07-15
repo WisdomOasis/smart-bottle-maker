@@ -19,7 +19,8 @@ import {
   setActiveBrandId,
   setEditingBrandId,
 } from "@/redux/modules/powderBrandSlice";
-import { createDpSetter } from "@/utils/dpControl";
+import { buildFormulaSettingDpPayload } from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
 
 const PowderBrandSettingsPage: React.FC = () => {
@@ -57,8 +58,10 @@ const PowderBrandSettingsPage: React.FC = () => {
       const entry = entries.find((e) => e.id === id);
       if (!entry) return;
       const selection = entryToSelection(entry);
-      await setDp(dpCodes.formulaRatio, selection.formulaRatio);
-      await setDp(dpCodes.volumeMl, selection.waterMl);
+      await publishDpBatch(setDp, {
+        ...buildFormulaSettingDpPayload(selection.waterMl, selection.powderG),
+        [dpCodes.volumeMl]: selection.waterMl,
+      });
     },
     [dispatch, entries, setDp]
   );

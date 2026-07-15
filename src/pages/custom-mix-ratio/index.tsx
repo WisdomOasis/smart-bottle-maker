@@ -36,8 +36,11 @@ import {
   setEditingBrandId,
   setPowderBrandSelection,
 } from "@/redux/modules/powderBrandSlice";
-import { powderGramsToFormulaRatio } from "@/utils/bottleMaker";
-import { createDpSetter } from "@/utils/dpControl";
+import {
+  powderGramsToFormulaRatio,
+  buildFormulaSettingDpPayload,
+} from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
 
 type ActiveField = "water" | "powder" | null;
@@ -108,7 +111,7 @@ const CustomMixRatioPage: React.FC = () => {
 
     const water = clampCustomWaterMl(waterMl as number);
     const powder = clampCustomPowderG(powderG as number);
-    const formulaRatio = powderGramsToFormulaRatio(water, powder);
+    const formulaRatio = powderGramsToFormulaRatio(powder);
 
     const selection = {
       brandId: CUSTOM_BRAND_ID,
@@ -126,9 +129,11 @@ const CustomMixRatioPage: React.FC = () => {
     dispatch(setPowderBrandSelection(selection));
     dispatch(markBrandBannerEverClicked());
 
-    const ratioOk = await setDp(dpCodes.formulaRatio, formulaRatio);
-    const mlOk = await setDp(dpCodes.volumeMl, water);
-    if (!ratioOk && !mlOk) {
+    const ok = await publishDpBatch(setDp, {
+      ...buildFormulaSettingDpPayload(water, powder),
+      [dpCodes.volumeMl]: water,
+    });
+    if (!ok) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
       return;
     }

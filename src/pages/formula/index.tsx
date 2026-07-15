@@ -12,7 +12,7 @@ import FormulaSavedToast from "@/components/FormulaSavedToast";
 import MilkFormulaSuggestionList from "@/components/MilkFormulaSuggestionList";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
-  DEFAULT_FORMULA_RATIO_RAW,
+  DEFAULT_FORMULA_POWDER_G,
   DEFAULT_FORMULA_WATER_ML,
   formatDefaultFormulaRatioLabel,
 } from "@/constant/defaultFormula";
@@ -35,7 +35,8 @@ import {
   setActiveBrandId,
   setEditingBrandId,
 } from "@/redux/modules/powderBrandSlice";
-import { createDpSetter } from "@/utils/dpControl";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
+import { buildFormulaSettingDpPayload } from "@/utils/bottleMaker";
 import {
   filterFormulaEntries,
   formatFormulaSummary,
@@ -166,8 +167,13 @@ const FormulaPage: React.FC = () => {
 
   const confirmDisable = useCallback(async () => {
     dispatch(setActiveBrandId(null));
-    await setDp(dpCodes.formulaRatio, DEFAULT_FORMULA_RATIO_RAW);
-    await setDp(dpCodes.volumeMl, DEFAULT_FORMULA_WATER_ML);
+    await publishDpBatch(setDp, {
+      ...buildFormulaSettingDpPayload(
+        DEFAULT_FORMULA_WATER_ML,
+        DEFAULT_FORMULA_POWDER_G
+      ),
+      [dpCodes.volumeMl]: DEFAULT_FORMULA_WATER_ML,
+    });
   }, [dispatch, setDp]);
 
   const confirmEnable = useCallback(
@@ -177,8 +183,10 @@ const FormulaPage: React.FC = () => {
       const entry = entries.find((e) => e.id === id);
       if (!entry) return;
       const selection = entryToSelection(entry);
-      await setDp(dpCodes.formulaRatio, selection.formulaRatio);
-      await setDp(dpCodes.volumeMl, selection.waterMl);
+      await publishDpBatch(setDp, {
+        ...buildFormulaSettingDpPayload(selection.waterMl, selection.powderG),
+        [dpCodes.volumeMl]: selection.waterMl,
+      });
       setSavedToastMessage(t("formula_enabled"));
       setSavedToastVisible(true);
     },

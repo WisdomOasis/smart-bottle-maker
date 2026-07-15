@@ -51,10 +51,13 @@ import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import { openBabyDiaryPanel } from "@/utils/openBabyDiaryPanel";
 import {
+  buildFormulaSettingDpPayload,
   calcPowderGrams,
   clampMl,
+  FORMULA_DENSITY_DEFAULT,
   getVolumeFromDp,
   isActivelyWorking,
+  parseSensorInstalled,
   parseTemp,
   parseUnit,
   parseWorkMode,
@@ -62,17 +65,12 @@ import {
   type TempSet,
   type WorkMode,
 } from "@/utils/bottleMaker";
-import {
-  createDpSetter,
-  pulseBoolDp,
-  publishDpBatch,
-  setBoolDp,
-} from "@/utils/dpControl";
+import { createDpSetter, publishDpBatch, setBoolDp } from "@/utils/dpControl";
 import {
   buildMilkStartDpPayload,
   resolveMilkRecipeParams,
 } from "@/utils/milkRecipe";
-import { formatConnectionStatus } from "@/utils/deviceStatus";
+import { formatConnectionStatus, parseSwitchOn } from "@/utils/deviceStatus";
 import styles from "./index.module.less";
 
 type ActionKind = "milk" | "water" | "powder";
@@ -104,8 +102,7 @@ const SCENE_TABS: SceneTabItem[] = [
 const HomePage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
-  const { switchOn, isOnline, wifiStatus, panelDisabled } =
-    useDeviceConnectivity();
+  const { switchOn, isOnline, panelDisabled } = useDeviceConnectivity();
   const dpState = useProps() as Record<string, unknown>;
   const actions = useActions();
 
@@ -118,7 +115,7 @@ const HomePage: React.FC = () => {
   const hasSavedPowderBrands = powderBrandEntries.length > 0;
   const isCustomBrand = powderBrandSelection?.brandId === CUSTOM_BRAND_ID;
   const showBrandBanner = !brandSet || Boolean(powderBrandSelection);
-  const [childLock, setChildLock] = useState(false);
+  const childLock = parseSwitchOn(dpState[dpCodes.childLock]);
   const [customModeOpen, setCustomModeOpen] = useState(false);
   const [bottleMadePhase, setBottleMadePhase] = useState(false);
   const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
@@ -145,9 +142,18 @@ const HomePage: React.FC = () => {
   const isMakingUi = isMaking && !isCleanSession;
   const unit = parseUnit(dpState[dpCodes.unitSet]);
   const temp = parseTemp(dpState[dpCodes.tempSet]);
-  const formulaRatio = Number(dpState[dpCodes.formulaRatio] ?? 130);
+  const formulaRatio = Number(dpState[dpCodes.formulaRatio] ?? 90);
+  const formulaWaterMl = Number(dpState[dpCodes.formulaWater] ?? 100);
+  const formulaDensity = Number(
+    dpState[dpCodes.formulaDensity] ?? FORMULA_DENSITY_DEFAULT
+  );
   const volumeMl = getVolumeFromDp(dpState, unit);
-  const powderG = calcPowderGrams(volumeMl, formulaRatio);
+  const powderG = calcPowderGrams(
+    volumeMl,
+    formulaRatio,
+    formulaWaterMl,
+    formulaDensity
+  );
   const preset = SCENE_PRESETS[sceneKey as keyof typeof SCENE_PRESETS];
   const powderPrimary = preset?.powderPrimary ?? false;
 
@@ -178,7 +184,8 @@ const HomePage: React.FC = () => {
       setSceneKey(key);
       setSelectedAction("milk");
       setDp(dpCodes.volumeMl, p.ml);
-      setDp(dpCodes.tempSet, String(p.temp));
+      setDp(dpCodes.tempSet, p.temp);
+      setDp(dpCodes.formulaWater, p.formulaWaterMl);
       setDp(dpCodes.formulaRatio, p.formulaRatio);
       setDp(dpCodes.unitSet, "mL");
     },
@@ -267,12 +274,12 @@ const HomePage: React.FC = () => {
 
   const statusText = useMemo(
     () =>
-      formatConnectionStatus(isOnline, wifiStatus, {
+      formatConnectionStatus(isOnline, {
         online: t("status_online"),
         offline: t("status_offline"),
         connecting: t("status_connecting"),
       }),
-    [isOnline, wifiStatus, t]
+    [isOnline, t]
   );
 
   const activeSceneTab = useMemo(
@@ -286,9 +293,14 @@ const HomePage: React.FC = () => {
   const handleCustomModeSave = (draft: CustomModeDraft) => {
     setSceneKey("custom");
     setDp(dpCodes.volumeMl, clampMl(draft.ml));
-    setDp(dpCodes.formulaRatio, draft.formulaRatio);
-    setDp(dpCodes.tempSet, String(draft.temp));
-    setDp(dpCodes.unitSet, "mL");
+    publishDpBatch(setDp, {
+      ...buildFormulaSettingDpPayload(
+        draft.formulaWaterMl,
+        draft.formulaRatio / 10
+      ),
+      [dpCodes.tempSet]: draft.temp,
+      [dpCodes.unitSet]: "mL",
+    });
   };
 
   const openCustomMode = () => {
@@ -304,11 +316,11 @@ const HomePage: React.FC = () => {
       showToast({ title: t("device_power_off"), icon: "none" });
       return;
     }
-    const order: TempSet[] = [37, 40, 45];
+    const order: TempSet[] = [20, 25, 30, 35, 40];
     const idx = order.indexOf(temp);
     const next = order[(idx + 1) % order.length];
     setSceneKey("custom");
-    setDp(dpCodes.tempSet, String(next));
+    setDp(dpCodes.tempSet, next);
   };
 
   const makingBarVariant: MakingBarVariant =
@@ -327,24 +339,65 @@ const HomePage: React.FC = () => {
     ? awaitingWorkMode === "powder"
     : awaitingWorkMode === "milk";
   const startDisabled = panelDisabled || startAwaiting;
-  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP as TempSet;
+  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP;
 
-  const toastIfBlocked = useCallback((): boolean => {
-    if (panelDisabled) {
-      showToast({ title: t("device_power_off"), icon: "none" });
-      return true;
-    }
-    if (childLock) {
-      showToast({ title: t("child_lock_on"), icon: "none" });
-      return true;
-    }
-    if (isMaking) return true;
-    if (!isOnline) {
-      showToast({ title: t("status_offline"), icon: "none" });
-      return true;
-    }
-    return false;
-  }, [panelDisabled, childLock, isMaking, isOnline, t]);
+  const milkboxOk = parseSensorInstalled(dpState[dpCodes.milkboxSensor]);
+  const funnelOk = parseSensorInstalled(dpState[dpCodes.funnelSensor]);
+  const bottleOk = parseSensorInstalled(dpState[dpCodes.bottleSensor]);
+  const watertankOk = parseSensorInstalled(dpState[dpCodes.watertankSensor]);
+
+  const toastIfBlocked = useCallback(
+    (forClean = false): boolean => {
+      if (panelDisabled) {
+        showToast({ title: t("device_power_off"), icon: "none" });
+        return true;
+      }
+      if (childLock) {
+        showToast({ title: t("child_lock_on"), icon: "none" });
+        return true;
+      }
+      if (isMaking) return true;
+      if (!isOnline) {
+        showToast({ title: t("status_offline"), icon: "none" });
+        return true;
+      }
+      const checkPowder = forClean
+        ? false
+        : selectedAction === "milk" || selectedAction === "powder";
+      const checkPour = forClean
+        ? true
+        : selectedAction === "milk" || selectedAction === "water";
+      if (checkPowder && !milkboxOk) {
+        showToast({ title: t("sensor_milkbox_missing"), icon: "none" });
+        return true;
+      }
+      if (checkPour && !funnelOk) {
+        showToast({ title: t("sensor_funnel_missing"), icon: "none" });
+        return true;
+      }
+      if (checkPour && !bottleOk) {
+        showToast({ title: t("sensor_bottle_missing"), icon: "none" });
+        return true;
+      }
+      if (checkPour && !watertankOk) {
+        showToast({ title: t("sensor_watertank_missing"), icon: "none" });
+        return true;
+      }
+      return false;
+    },
+    [
+      panelDisabled,
+      childLock,
+      isMaking,
+      isOnline,
+      selectedAction,
+      milkboxOk,
+      funnelOk,
+      bottleOk,
+      watertankOk,
+      t,
+    ]
+  );
 
   const handleStartMilk = async () => {
     if (toastIfBlocked() || startDisabled) return;
@@ -354,7 +407,9 @@ const HomePage: React.FC = () => {
       sceneKey,
       volumeMl,
       temp,
+      formulaWaterMl,
       formulaRatio,
+      formulaDensity,
       powderBrandSelection: brandSet ? powderBrandSelection : null,
     });
     const sent = await publishDpBatch(setDp, buildMilkStartDpPayload(recipe));
@@ -386,7 +441,7 @@ const HomePage: React.FC = () => {
   const handleWaterTempChange = (next: TempSet) => {
     if (panelDisabled) return;
     setSceneKey("custom");
-    setDp(dpCodes.tempSet, String(next));
+    setDp(dpCodes.tempSet, next);
   };
 
   const handleStartWater = async () => {
@@ -395,9 +450,9 @@ const HomePage: React.FC = () => {
     setAwaitingWorkMode("water");
     const sent = await publishDpBatch(setDp, {
       [dpCodes.volumeMl]: volumeMl,
-      [dpCodes.tempSet]: String(temp),
+      [dpCodes.tempSet]: temp,
       [dpCodes.unitSet]: "mL",
-      [dpCodes.startWater]: true,
+      [dpCodes.workMode]: "water",
     });
     if (!sent) {
       setAwaitingWorkMode(null);
@@ -412,9 +467,13 @@ const HomePage: React.FC = () => {
     setAwaitingWorkMode("powder");
     const sent = await publishDpBatch(setDp, {
       [dpCodes.volumeMl]: volumeMl,
-      [dpCodes.formulaRatio]: formulaRatio,
+      ...buildFormulaSettingDpPayload(
+        formulaWaterMl,
+        formulaRatio / 10,
+        formulaDensity
+      ),
       [dpCodes.unitSet]: "mL",
-      [dpCodes.startPowder]: true,
+      [dpCodes.workMode]: "powder",
     });
     if (!sent) {
       setAwaitingWorkMode(null);
@@ -439,7 +498,7 @@ const HomePage: React.FC = () => {
     if (panelDisabled || stopBusy) return;
     setStopBusy(true);
     setAwaitingWorkMode(null);
-    const sent = await pulseBoolDp(setDp, dpCodes.cancelWork);
+    const sent = await setBoolDp(setDp, dpCodes.workingStatus, false);
     setStopBusy(false);
     if (!sent) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -448,22 +507,15 @@ const HomePage: React.FC = () => {
 
   const handleClean = async () => {
     if (isCleanSession || awaitingWorkMode === "clean") return;
-    if (toastIfBlocked()) return;
+    if (toastIfBlocked(true)) return;
     if (panelDisabled || childLock || !isOnline) return;
     setAwaitingWorkMode("clean");
-    const cleanSent = await setBoolDp(setDp, dpCodes.startClean, true);
-    if (!cleanSent) {
-      setAwaitingWorkMode(null);
-      showToast({ title: t("dp_command_failed"), icon: "none" });
-      return;
-    }
-    const paramsSent = await publishDpBatch(setDp, {
+    const sent = await publishDpBatch(setDp, {
       [dpCodes.volumeMl]: HIGH_TEMP_CLEAN_TOTAL_ML,
-      [dpCodes.tempSet]: String(HIGH_TEMP_CLEAN_TEMP),
       [dpCodes.unitSet]: "mL",
+      [dpCodes.workMode]: "clean",
     });
-    if (!paramsSent) {
-      await setBoolDp(setDp, dpCodes.startClean, false);
+    if (!sent) {
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
     }
@@ -472,7 +524,7 @@ const HomePage: React.FC = () => {
   const handleCleanStop = async () => {
     if (!isCleanSession || panelDisabled || stopBusy) return;
     setStopBusy(true);
-    const sent = await setBoolDp(setDp, dpCodes.startClean, false);
+    const sent = await setBoolDp(setDp, dpCodes.workingStatus, false);
     setStopBusy(false);
     if (!sent) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -925,7 +977,13 @@ const HomePage: React.FC = () => {
               styles.settingsRowCard,
               panelDisabled && styles.disabled
             )}
-            onClick={panelDisabled ? undefined : () => setChildLock((v) => !v)}
+            onClick={
+              panelDisabled
+                ? undefined
+                : () => {
+                    setBoolDp(setDp, dpCodes.childLock, !childLock);
+                  }
+            }
           >
             <Text className={styles.settingsRowLabel}>
               {t("row_child_lock")}
@@ -952,6 +1010,7 @@ const HomePage: React.FC = () => {
       {customModeOpen && (
         <CustomModeSettingsPanel
           ml={volumeMl}
+          formulaWaterMl={formulaWaterMl}
           formulaRatio={formulaRatio}
           temp={temp}
           onSave={handleCustomModeSave}

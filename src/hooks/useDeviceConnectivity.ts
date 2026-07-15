@@ -6,11 +6,7 @@ import {
   offDeviceOnlineStatusUpdate,
 } from "@ray-js/ray";
 import dpCodes from "@/constant/dpCodes";
-import {
-  parseSwitchOn,
-  resolveDeviceOnline,
-  type WifiStatus,
-} from "@/utils/deviceStatus";
+import { parseSwitchOn, resolveDeviceOnline } from "@/utils/deviceStatus";
 
 /**
  * 開關／連網：未知時預設關機、離線；隨 DP 與平台在線事件即時更新。
@@ -26,7 +22,6 @@ const useDeviceConnectivity = () => {
 
   const switchRaw = dpState[dpCodes.switch];
   const switchOn = parseSwitchOn(switchRaw);
-  const wifiStatus = dpState[dpCodes.wifiStatus] as WifiStatus | undefined;
 
   const handleOnlineUpdate = useCallback(
     (data: { deviceId: string; online: boolean }) => {
@@ -62,14 +57,13 @@ const useDeviceConnectivity = () => {
   }, [devId, handleOnlineUpdate]);
 
   const isOnline = useMemo(
-    () => resolveDeviceOnline(wifiStatus, platformOnline),
-    [wifiStatus, platformOnline]
+    () => resolveDeviceOnline(platformOnline),
+    [platformOnline]
   );
 
   return {
     switchOn,
     isOnline,
-    wifiStatus,
     panelDisabled: !switchOn,
   };
 };

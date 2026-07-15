@@ -20,6 +20,7 @@ import {
   TEMP_MAX,
   TEMP_MIN,
   TEMP_SET_OPTIONS,
+  TEMP_STEP,
   type TempSet,
 } from "@/utils/bottleMaker";
 import { CUSTOM_MODE_ICONS } from "./icons";
@@ -27,12 +28,15 @@ import styles from "./index.module.less";
 
 export interface CustomModeDraft {
   ml: number;
+  /** 写入 formula_water */
+  formulaWaterMl: number;
   formulaRatio: number;
   temp: TempSet;
 }
 
 interface Props {
   ml: number;
+  formulaWaterMl: number;
   formulaRatio: number;
   temp: TempSet;
   onSave: (draft: CustomModeDraft) => void;
@@ -43,6 +47,7 @@ interface Props {
 
 const CustomModeSettingsPanel: React.FC<Props> = ({
   ml,
+  formulaWaterMl,
   formulaRatio,
   temp,
   onSave,
@@ -53,36 +58,41 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
     Strings.getLang(key);
 
   const [draftMl, setDraftMl] = useState(ml);
+  const [draftWater, setDraftWater] = useState(formulaWaterMl);
   const [draftRatio, setDraftRatio] = useState(formulaRatio);
   const [draftTemp, setDraftTemp] = useState<TempSet>(temp);
 
   useEffect(() => {
     setDraftMl(clampMl(ml));
+    setDraftWater(formulaWaterMl);
     setDraftRatio(
       Math.min(FORMULA_RATIO_MAX, Math.max(FORMULA_RATIO_MIN, formulaRatio))
     );
     setDraftTemp(parseTemp(temp));
-  }, [ml, formulaRatio, temp]);
+  }, [ml, formulaWaterMl, formulaRatio, temp]);
 
   const draftPowderG = useMemo(
-    () => calcPowderGrams(draftMl, draftRatio),
-    [draftMl, draftRatio]
+    () => calcPowderGrams(draftMl, draftRatio, draftWater),
+    [draftMl, draftRatio, draftWater]
   );
 
   const powderBounds = useMemo(() => {
     const safeMl = Math.max(ML_MIN, draftMl || ML_MIN);
-    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN);
-    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX);
+    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN, draftWater);
+    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX, draftWater);
     return { min, max: Math.max(min + 1, max) };
-  }, [draftMl]);
+  }, [draftMl, draftWater]);
 
   const handlePowderChange = (grams: number) => {
-    setDraftRatio(powderGramsToFormulaRatio(draftMl, grams));
+    // 自訂模式下將「本次水量 + 粉量」同步為配方勺比
+    setDraftWater(clampMl(draftMl));
+    setDraftRatio(powderGramsToFormulaRatio(grams));
   };
 
   const handleSave = () => {
     onSave({
       ml: clampMl(draftMl),
+      formulaWaterMl: clampMl(draftWater),
       formulaRatio: Math.min(
         FORMULA_RATIO_MAX,
         Math.max(FORMULA_RATIO_MIN, draftRatio)
@@ -178,7 +188,7 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
               <CustomModeSlider
                 min={TEMP_MIN}
                 max={TEMP_MAX}
-                step={1}
+                step={TEMP_STEP}
                 value={draftTemp}
                 snapTo={TEMP_SET_OPTIONS}
                 onChange={(v) => setDraftTemp(v as TempSet)}

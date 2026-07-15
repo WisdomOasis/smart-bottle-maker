@@ -48,8 +48,11 @@ import {
 } from "@/redux/modules/powderBrandSlice";
 import { formatFormulaSummary } from "@/i18n/formatters";
 import { formatFormulaEntrySummary } from "@/utils/formulaEntrySearch";
-import { powderGramsToFormulaRatio } from "@/utils/bottleMaker";
-import { createDpSetter } from "@/utils/dpControl";
+import {
+  powderGramsToFormulaRatio,
+  buildFormulaSettingDpPayload,
+} from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import { findDuplicateFormulaEntry } from "@/utils/formulaDuplicate";
 import styles from "./index.module.less";
 
@@ -163,7 +166,7 @@ const CustomizeFormulaRatioPage: React.FC = () => {
       stageLabel: stage?.label ?? stageId,
       waterMl: water,
       powderG: powder,
-      formulaRatio: powderGramsToFormulaRatio(water, powder),
+      formulaRatio: powderGramsToFormulaRatio(powder),
     };
   }, [canSubmit, formulaName, powderG, stageId, stageOptions, waterMl]);
 
@@ -209,12 +212,11 @@ const CustomizeFormulaRatioPage: React.FC = () => {
       if (applyToDevice || isEditMode) {
         dispatch(setPowderBrandSelection(selection));
         dispatch(markBrandBannerEverClicked());
-        const ratioOk = await setDp(
-          dpCodes.formulaRatio,
-          selection.formulaRatio
-        );
-        const mlOk = await setDp(dpCodes.volumeMl, selection.waterMl);
-        if (!ratioOk && !mlOk) {
+        const ok = await publishDpBatch(setDp, {
+          ...buildFormulaSettingDpPayload(selection.waterMl, selection.powderG),
+          [dpCodes.volumeMl]: selection.waterMl,
+        });
+        if (!ok) {
           showToast({ title: t("dp_command_failed"), icon: "none" });
           return;
         }

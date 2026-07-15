@@ -8,8 +8,10 @@ export type ScenePresetKey =
 export interface ScenePreset {
   key: ScenePresetKey;
   ml: number;
-  temp: 37 | 40 | 45;
-  /** formula_ratio raw DP value (scale 1 → display g/100mL = value / 10) */
+  temp: 20 | 25 | 30 | 35 | 40;
+  /** formula_water：每勺对应水量 mL */
+  formulaWaterMl: number;
+  /** formula_ratio raw（每勺克数 * 10，scale 1） */
   formulaRatio: number;
   /** When true, gauge highlights powder amount instead of water */
   powderPrimary?: boolean;
@@ -23,12 +25,14 @@ export const SCENE_PRESETS: Record<
     key: "standard",
     ml: 180,
     temp: 40,
+    formulaWaterMl: 100,
     formulaRatio: 130,
   },
   nighttime: {
     key: "nighttime",
     ml: 120,
-    temp: 37,
+    temp: 35,
+    formulaWaterMl: 100,
     formulaRatio: 130,
     powderPrimary: true,
   },
@@ -36,12 +40,14 @@ export const SCENE_PRESETS: Record<
     key: "goOut",
     ml: 240,
     temp: 40,
+    formulaWaterMl: 100,
     formulaRatio: 130,
   },
   doubleFeeding: {
     key: "doubleFeeding",
     ml: 300,
     temp: 40,
+    formulaWaterMl: 100,
     formulaRatio: 130,
   },
 };

@@ -36,7 +36,8 @@ import {
 } from "@/redux/modules/powderBrandSlice";
 import type { BarcodeFormulaResult } from "@/utils/barcodeLookup";
 import { findDuplicateFormulaEntry } from "@/utils/formulaDuplicate";
-import { createDpSetter } from "@/utils/dpControl";
+import { buildFormulaSettingDpPayload } from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import { useBarcodeScanLauncher } from "@/hooks/useBarcodeScanLauncher";
 import FormulaAlreadySavedToast from "@/components/FormulaAlreadySavedToast";
 import UseFormulaConfirmModal from "@/components/UseFormulaConfirmModal";
@@ -97,12 +98,14 @@ const BarcodeResultPage: React.FC = () => {
       if (applyToDevice) {
         dispatch(setPowderBrandSelection(result.selection));
         dispatch(markBrandBannerEverClicked());
-        const ratioOk = await setDp(
-          dpCodes.formulaRatio,
-          result.selection.formulaRatio
-        );
-        const mlOk = await setDp(dpCodes.volumeMl, result.selection.waterMl);
-        if (!ratioOk && !mlOk) {
+        const ok = await publishDpBatch(setDp, {
+          ...buildFormulaSettingDpPayload(
+            result.selection.waterMl,
+            result.selection.powderG
+          ),
+          [dpCodes.volumeMl]: result.selection.waterMl,
+        });
+        if (!ok) {
           showToast({ title: t("dp_command_failed"), icon: "none" });
           return;
         }
