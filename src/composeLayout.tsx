@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import { Provider } from "react-redux";
 import { getSystemInfoSync } from "@ray-js/ray";
+import { hidePanelFloatingButtons } from "@/utils/panelChrome";
 import { devices, dpKit } from "./devices";
 import { updateThemeType } from "./redux/modules/themeSlice";
 import { initializeSystemInfo } from "./redux/modules/systemInfoSlice";
@@ -35,6 +36,7 @@ const composeLayout = (SubComp: React.ComponentType<any>) => {
 
       dispatch(initializeSystemInfo(systemInfo));
       dispatch(updateThemeType(theme));
+      hidePanelFloatingButtons();
     }
 
     render() {

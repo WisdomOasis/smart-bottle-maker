@@ -51,10 +51,12 @@ const slug = (value: string): string =>
     .replace(/^_|_$/g, "") || "item";
 
 const resolveSeriesLabel = (seriesKey: string): string => {
-  if (seriesKey.startsWith("milk_series_")) {
-    return Strings.getLang(seriesKey as I18nKey);
+  const key = toMilkSeriesI18nKey(seriesKey);
+  if (key.startsWith("milk_series_")) {
+    return Strings.getLang(key as I18nKey);
   }
-  return Strings.getLang(toMilkSeriesI18nKey(seriesKey) as I18nKey);
+  // Vendor sheet series names are stored raw and shown as-is.
+  return key;
 };
 
 const recordToResult = (record: MilkFormulaRecord): BarcodeFormulaResult => {

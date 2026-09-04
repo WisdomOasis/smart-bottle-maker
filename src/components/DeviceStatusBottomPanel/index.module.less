@@ -1,0 +1,125 @@
+.mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.sheet {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 430px;
+  max-height: 88vh;
+  margin: 0 auto;
+  padding: 24px 16px 32px;
+  box-sizing: border-box;
+  border-radius: 24px 24px 0 0;
+  background: linear-gradient(270deg, #f2f7fc 0%, #ecf1f6 100%);
+  box-shadow: 0 -4px 24px rgba(24, 67, 119, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.title {
+  flex: 1;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #2d365f;
+}
+
+.closeBtn {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.divider {
+  width: 100%;
+  height: 0;
+  border-top: 1px dashed rgba(134, 142, 170, 0.45);
+}
+
+.subtitle {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #2d365f;
+}
+
+.list {
+  width: 100%;
+  max-height: 52vh;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.row {
+  width: 100%;
+  height: 48px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  opacity: 1;
+}
+
+.row + .row {
+  margin-top: 12px;
+}
+
+.rowLabel {
+  flex: 1;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+}
+
+.rowIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}

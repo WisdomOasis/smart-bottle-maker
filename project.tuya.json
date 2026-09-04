@@ -8,9 +8,10 @@
   "dependencies": {
     "MiniKit": "3.0.7",
     "DeviceKit": "4.6.1",
-    "BaseKit": "3.0.6"
+    "BaseKit": "3.0.6",
+    "HomeKit": "3.0.2"
   },
-  "baseversion": "2.30.14",
+  "baseversion": "2.30.15",
   "projectname": "SmartBottleMaker",
   "devMode": "ray",
   "compileType": "miniprogram",

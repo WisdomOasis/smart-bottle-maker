@@ -16,6 +16,16 @@
   margin-bottom: 0;
 }
 
+.deviceStatusToastWrap {
+  width: 100%;
+  max-width: 366px;
+  margin: 12px auto 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
 .pageBody {
   flex: 1;
   min-height: 0;
@@ -53,7 +63,7 @@
 }
 
 .titleRow {
-  margin-top: 16rpx;
+  margin-top: 8px;
   min-height: 32rpx;
   display: flex;
   flex-direction: row;
@@ -73,11 +83,13 @@
 
 .appTitle {
   flex-shrink: 1;
-  font-family: "Noto Sans JP", sans-serif;
-  font-size: 22rpx;
-  font-weight: 600;
-  letter-spacing: 2rpx;
-  color: rgba(45, 58, 74, 0.55);
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2d365f;
   text-align: left;
 }
 
@@ -85,30 +97,23 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 12rpx;
+  gap: 6px;
 }
 
-.onlineDot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 50%;
-  background: #c5cdd6;
-}
-
-.onlineDotActive {
-  background: var(--color-background-on, #55a074);
+.onlineIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .onlineText {
-  font-size: 24rpx;
-  color: rgba(45, 58, 74, 0.55);
-}
-
-.headerWifiIcon {
-  width: 28rpx;
-  height: 24rpx;
-  flex-shrink: 0;
-  opacity: 0.85;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: right;
+  color: #55a074;
 }
 
 .powerTap {
@@ -801,15 +806,10 @@
   pointer-events: none;
 }
 
-/* 操作鈕發送指令等待中：圖示 + 文字一併淡化 */
+/* 操作鈕禁用：icon + 文字整區同一層 opacity */
 .actionDisabled {
-  opacity: 0.45;
+  opacity: 0.5;
   pointer-events: none;
-}
-
-.actionLabelDisabled {
-  opacity: 0.45;
-  color: rgba(45, 58, 95, 0.45);
 }
 
 .modalMask {

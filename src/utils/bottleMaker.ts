@@ -187,3 +187,17 @@ export const getVolumeFromDp = (
   const ml = Number(dpState[dpCodes.volumeMl] ?? 180);
   return clampMl(Number.isNaN(ml) ? 180 : ml);
 };
+
+/** drink_record_upload（raw）是否有沖調紀錄 payload */
+export const hasDrinkRecordUpload = (raw: unknown): boolean => {
+  if (raw == null || raw === false) return false;
+  if (typeof raw === "string") return raw.trim().length > 0;
+  if (typeof raw === "object")
+    return Object.keys(raw as Record<string, unknown>).length > 0;
+  return true;
+};
+
+export type SceneFeedRequest = "none" | "hungry_pending";
+
+export const parseSceneFeedRequest = (raw: unknown): SceneFeedRequest =>
+  raw === "hungry_pending" ? "hungry_pending" : "none";

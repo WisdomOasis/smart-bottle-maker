@@ -8,8 +8,10 @@ import React, {
 import clsx from "clsx";
 import { useSelector } from "react-redux";
 import { View, Text, Image, showToast, router } from "@ray-js/ray";
-import { useProps, useActions } from "@ray-js/panel-sdk";
+import { useProps, useActions, useDevice } from "@ray-js/panel-sdk";
 import useDeviceConnectivity from "@/hooks/useDeviceConnectivity";
+import { IC_CONNECTION_OFFLINE_URI } from "@/res/icConnectionOfflineUri";
+import { IC_CONNECTION_ONLINE_URI } from "@/res/icConnectionOnlineUri";
 import Res from "@/res";
 import dpCodes from "@/constant/dpCodes";
 import {
@@ -21,6 +23,15 @@ import AmountGauge from "@/components/AmountGauge";
 import CustomModeSettingsPanel, {
   type CustomModeDraft,
 } from "@/components/CustomModeSettingsPanel";
+import DeviceStatusAlertToast from "@/components/DeviceStatusAlertToast";
+import DeviceStatusBottomPanel from "@/components/DeviceStatusBottomPanel";
+import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
+import FeedRequestModal from "@/components/FeedRequestModal";
+import SmartPrepActivateModal from "@/components/SmartPrepActivateModal";
+import SmartPrepNoCryDeviceModal from "@/components/SmartPrepNoCryDeviceModal";
+import SmartPrepTutorialModal from "@/components/SmartPrepTutorialModal";
+import SmartPrepSetupSnackbar from "@/components/SmartPrepSetupSnackbar";
+import PanelNavBar from "@/components/PanelNavBar";
 import BrandBanner from "@/components/BrandBanner";
 import SceneModeTabs, { type SceneTabItem } from "@/components/SceneModeTabs";
 import MakingModeBar, {
@@ -49,14 +60,16 @@ import {
 } from "@/redux/modules/powderBrandSlice";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
-import { openBabyDiaryPanel } from "@/utils/openBabyDiaryPanel";
 import {
   buildFormulaSettingDpPayload,
   calcPowderGrams,
   clampMl,
   FORMULA_DENSITY_DEFAULT,
   getVolumeFromDp,
+  hasDrinkRecordUpload,
   isActivelyWorking,
+  parseErrorCode,
+  parseSceneFeedRequest,
   parseSensorInstalled,
   parseTemp,
   parseUnit,
@@ -65,16 +78,23 @@ import {
   type TempSet,
   type WorkMode,
 } from "@/utils/bottleMaker";
+import {
+  getAssemblyStatusesForMode,
+  hasAssemblyBlocker,
+} from "@/utils/deviceAssemblyStatus";
 import { createDpSetter, publishDpBatch, setBoolDp } from "@/utils/dpControl";
 import {
   buildMilkStartDpPayload,
   resolveMilkRecipeParams,
 } from "@/utils/milkRecipe";
 import { formatConnectionStatus, parseSwitchOn } from "@/utils/deviceStatus";
+import useSmartPrepSetupGuide from "@/hooks/useSmartPrepSetupGuide";
 import styles from "./index.module.less";
 
 type ActionKind = "milk" | "water" | "powder";
 type CompletionKind = "milk" | "water" | "powder";
+
+const SHOW_SCENE_MODE_TABS = false;
 
 const SCENE_TABS: SceneTabItem[] = [
   {
@@ -103,6 +123,7 @@ const HomePage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
   const { switchOn, isOnline, panelDisabled } = useDeviceConnectivity();
+  const { devInfo } = useDevice((state) => ({ devInfo: state.devInfo }));
   const dpState = useProps() as Record<string, unknown>;
   const actions = useActions();
 
@@ -117,6 +138,8 @@ const HomePage: React.FC = () => {
   const showBrandBanner = !brandSet || Boolean(powderBrandSelection);
   const childLock = parseSwitchOn(dpState[dpCodes.childLock]);
   const [customModeOpen, setCustomModeOpen] = useState(false);
+  const [deviceStatusPanelOpen, setDeviceStatusPanelOpen] = useState(false);
+  const [sensorsSettling, setSensorsSettling] = useState(false);
   const [bottleMadePhase, setBottleMadePhase] = useState(false);
   const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
   const [selectedAction, setSelectedAction] = useState<ActionKind>("milk");
@@ -130,16 +153,51 @@ const HomePage: React.FC = () => {
     null
   );
   const [stopBusy, setStopBusy] = useState(false);
+  const [feedRequestDismissed, setFeedRequestDismissed] = useState(false);
+  const smartPrepGuide = useSmartPrepSetupGuide({
+    // 必須用家庭 homeId；勿用 device.groupId（那是設備群組，不是家庭）
+    deviceId: devInfo?.devId,
+  });
   const prevWorkingStatus = useRef<boolean | null>(null);
   const wasInCleanMode = useRef(false);
+  const prevSwitchOn = useRef<boolean | null>(null);
+  const sensorSnapshotOnPowerOn = useRef<{
+    milkbox: unknown;
+    funnel: unknown;
+    bottle: unknown;
+    watertank: unknown;
+  } | null>(null);
+  const suppressStaleSensorsAfterPowerOn = useRef(false);
+  const lastTrustedSensors = useRef({
+    milkbox: true,
+    funnel: true,
+    bottle: true,
+    watertank: true,
+  });
 
   const workMode = parseWorkMode(dpState[dpCodes.workMode]);
   const workingStatus = parseWorkingStatus(dpState[dpCodes.workingStatus]);
+  const sceneFeedRequest = parseSceneFeedRequest(
+    dpState[dpCodes.sceneFeedRequest]
+  );
   /** 執行中模式：work_mode + working_status；status 為 false 時視為停滯 */
   const isMaking = isActivelyWorking(workMode, workingStatus);
   /** 清潔 UI 僅在 work_mode === clean 且 working_status 為 true 時顯示 */
   const isCleanSession = workMode === "clean" && workingStatus;
   const isMakingUi = isMaking && !isCleanSession;
+
+  useEffect(() => {
+    if (sceneFeedRequest === "hungry_pending") {
+      setFeedRequestDismissed(false);
+    }
+  }, [sceneFeedRequest]);
+
+  const showFeedRequestModal =
+    sceneFeedRequest === "hungry_pending" &&
+    !feedRequestDismissed &&
+    !isMakingUi &&
+    !isCleanSession;
+
   const unit = parseUnit(dpState[dpCodes.unitSet]);
   const temp = parseTemp(dpState[dpCodes.tempSet]);
   const formulaRatio = Number(dpState[dpCodes.formulaRatio] ?? 90);
@@ -164,6 +222,15 @@ const HomePage: React.FC = () => {
       ),
     [actions]
   );
+
+  const resetSceneFeedRequest = useCallback(async () => {
+    await setDp(dpCodes.sceneFeedRequest, "none");
+  }, [setDp]);
+
+  const dismissFeedRequest = useCallback(async () => {
+    setFeedRequestDismissed(true);
+    await resetSceneFeedRequest();
+  }, [resetSceneFeedRequest]);
 
   useEffect(() => {
     if (awaitingWorkMode && workMode === awaitingWorkMode && workingStatus) {
@@ -208,7 +275,6 @@ const HomePage: React.FC = () => {
       if (finished === "milk") {
         setCompletionKind("milk");
         setBottleMadePhase(true);
-        openBabyDiaryPanel();
       } else if (wasWater) {
         setCompletionKind("water");
         setBottleMadePhase(true);
@@ -290,6 +356,15 @@ const HomePage: React.FC = () => {
   const isWaterActionSelected = selectedAction === "water";
   const isPowderActionSelected = selectedAction === "powder";
 
+  /** 沖奶完成且設備上報 drink_record_upload 時，於 Child Lock 列顯示 Baby Diary snackbar */
+  const showBabyDiarySnackbar = useMemo(
+    () =>
+      bottleMadePhase &&
+      completionKind === "milk" &&
+      hasDrinkRecordUpload(dpState[dpCodes.drinkRecordUpload]),
+    [bottleMadePhase, completionKind, dpState]
+  );
+
   const handleCustomModeSave = (draft: CustomModeDraft) => {
     setSceneKey("custom");
     setDp(dpCodes.volumeMl, clampMl(draft.ml));
@@ -338,13 +413,128 @@ const HomePage: React.FC = () => {
     : isPowderActionSelected
     ? awaitingWorkMode === "powder"
     : awaitingWorkMode === "milk";
-  const startDisabled = panelDisabled || startAwaiting;
-  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP;
+  const milkboxRaw = dpState[dpCodes.milkboxSensor];
+  const funnelRaw = dpState[dpCodes.funnelSensor];
+  const bottleRaw = dpState[dpCodes.bottleSensor];
+  const watertankRaw = dpState[dpCodes.watertankSensor];
 
-  const milkboxOk = parseSensorInstalled(dpState[dpCodes.milkboxSensor]);
-  const funnelOk = parseSensorInstalled(dpState[dpCodes.funnelSensor]);
-  const bottleOk = parseSensorInstalled(dpState[dpCodes.bottleSensor]);
-  const watertankOk = parseSensorInstalled(dpState[dpCodes.watertankSensor]);
+  /**
+   * DP 規格：關閉功能等同於正常裝配。
+   * 關機不採信感測器 false；開機後若尚未收到新感測器上報，避免沿用關機殘留 0。
+   */
+  useEffect(() => {
+    const prev = prevSwitchOn.current;
+    prevSwitchOn.current = switchOn;
+
+    if (prev === false && switchOn) {
+      sensorSnapshotOnPowerOn.current = {
+        milkbox: dpState[dpCodes.milkboxSensor],
+        funnel: dpState[dpCodes.funnelSensor],
+        bottle: dpState[dpCodes.bottleSensor],
+        watertank: dpState[dpCodes.watertankSensor],
+      };
+      suppressStaleSensorsAfterPowerOn.current = true;
+      setSensorsSettling(true);
+      const timer = setTimeout(() => setSensorsSettling(false), 3000);
+      return () => clearTimeout(timer);
+    }
+
+    if (!switchOn) {
+      setSensorsSettling(false);
+      sensorSnapshotOnPowerOn.current = null;
+      suppressStaleSensorsAfterPowerOn.current = false;
+    }
+    return undefined;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [switchOn]);
+
+  useEffect(() => {
+    if (!switchOn || !sensorSnapshotOnPowerOn.current) return;
+    const snap = sensorSnapshotOnPowerOn.current;
+    const changed =
+      milkboxRaw !== snap.milkbox ||
+      funnelRaw !== snap.funnel ||
+      bottleRaw !== snap.bottle ||
+      watertankRaw !== snap.watertank;
+    if (changed) {
+      suppressStaleSensorsAfterPowerOn.current = false;
+      setSensorsSettling(false);
+    }
+  }, [switchOn, milkboxRaw, funnelRaw, bottleRaw, watertankRaw]);
+
+  const resolveSensorOk = (
+    raw: unknown,
+    key: keyof typeof lastTrustedSensors.current
+  ) => {
+    if (!switchOn || sensorsSettling) return true;
+    const parsed = parseSensorInstalled(raw);
+    if (parsed) {
+      lastTrustedSensors.current[key] = true;
+      return true;
+    }
+    // 僅在「剛開機且尚未收到新感測器上報」時，沿用開機前可信狀態
+    if (suppressStaleSensorsAfterPowerOn.current) {
+      return lastTrustedSensors.current[key];
+    }
+    lastTrustedSensors.current[key] = false;
+    return false;
+  };
+
+  const milkboxOk = resolveSensorOk(milkboxRaw, "milkbox");
+  const funnelOk = resolveSensorOk(funnelRaw, "funnel");
+  const bottleOk = resolveSensorOk(bottleRaw, "bottle");
+  const watertankOk = resolveSensorOk(watertankRaw, "watertank");
+  const errorCode = parseErrorCode(dpState[dpCodes.errorCode]);
+
+  const assemblyStatuses = useMemo(
+    () =>
+      getAssemblyStatusesForMode(selectedAction, {
+        funnelOk,
+        watertankOk,
+        milkboxOk,
+        bottleOk,
+        errorCode,
+      }),
+    [selectedAction, funnelOk, watertankOk, milkboxOk, bottleOk, errorCode]
+  );
+  const actionBlocked = hasAssemblyBlocker(assemblyStatuses);
+  const tempUnavailable = errorCode === "Hot";
+  const waterLowOnly =
+    !watertankOk &&
+    errorCode === "none" &&
+    (selectedAction === "milk"
+      ? funnelOk && milkboxOk && bottleOk
+      : selectedAction === "water"
+      ? funnelOk && bottleOk
+      : false);
+  const showTempUnavailableToast =
+    !panelDisabled && !isMakingUi && !isCleanSession && tempUnavailable;
+  const showWaterLowToast =
+    !panelDisabled &&
+    !isMakingUi &&
+    !isCleanSession &&
+    !tempUnavailable &&
+    waterLowOnly;
+  const showDeviceStatusToast =
+    !panelDisabled &&
+    !isMakingUi &&
+    !isCleanSession &&
+    actionBlocked &&
+    !showTempUnavailableToast &&
+    !showWaterLowToast;
+  const deviceStatusToastMessage =
+    selectedAction === "water"
+      ? t("device_status_check_toast_water")
+      : selectedAction === "powder"
+      ? t("device_status_check_toast_powder")
+      : t("device_status_check_toast");
+  const startDisabled =
+    panelDisabled ||
+    startAwaiting ||
+    actionBlocked ||
+    tempUnavailable ||
+    waterLowOnly;
+  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP;
 
   const toastIfBlocked = useCallback(
     (forClean = false): boolean => {
@@ -361,27 +551,23 @@ const HomePage: React.FC = () => {
         showToast({ title: t("status_offline"), icon: "none" });
         return true;
       }
-      const checkPowder = forClean
-        ? false
-        : selectedAction === "milk" || selectedAction === "powder";
-      const checkPour = forClean
-        ? true
-        : selectedAction === "milk" || selectedAction === "water";
-      if (checkPowder && !milkboxOk) {
-        showToast({ title: t("sensor_milkbox_missing"), icon: "none" });
+      if (!forClean && actionBlocked && !waterLowOnly && !tempUnavailable) {
+        setDeviceStatusPanelOpen(true);
         return true;
       }
-      if (checkPour && !funnelOk) {
-        showToast({ title: t("sensor_funnel_missing"), icon: "none" });
-        return true;
-      }
-      if (checkPour && !bottleOk) {
-        showToast({ title: t("sensor_bottle_missing"), icon: "none" });
-        return true;
-      }
-      if (checkPour && !watertankOk) {
-        showToast({ title: t("sensor_watertank_missing"), icon: "none" });
-        return true;
+      if (forClean) {
+        if (!funnelOk) {
+          showToast({ title: t("sensor_funnel_missing"), icon: "none" });
+          return true;
+        }
+        if (!bottleOk) {
+          showToast({ title: t("sensor_bottle_missing"), icon: "none" });
+          return true;
+        }
+        if (!watertankOk) {
+          showToast({ title: t("sensor_watertank_missing"), icon: "none" });
+          return true;
+        }
       }
       return false;
     },
@@ -390,8 +576,9 @@ const HomePage: React.FC = () => {
       childLock,
       isMaking,
       isOnline,
-      selectedAction,
-      milkboxOk,
+      actionBlocked,
+      waterLowOnly,
+      tempUnavailable,
       funnelOk,
       bottleOk,
       watertankOk,
@@ -418,6 +605,43 @@ const HomePage: React.FC = () => {
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
     }
+  };
+
+  const handleFeedRequestStart = async (draft: {
+    ml: number;
+    formulaWaterMl: number;
+    formulaRatio: number;
+    temp: TempSet;
+  }) => {
+    if (toastIfBlocked() || panelDisabled || childLock || !isOnline) {
+      await dismissFeedRequest();
+      return;
+    }
+    setFeedRequestDismissed(true);
+    setSceneKey("custom");
+    setSelectedAction("milk");
+    setMilkSessionActive(true);
+    setAwaitingWorkMode("milk");
+    const recipe = resolveMilkRecipeParams({
+      sceneKey: "custom",
+      volumeMl: draft.ml,
+      temp: draft.temp,
+      formulaWaterMl: draft.formulaWaterMl,
+      formulaRatio: draft.formulaRatio,
+      formulaDensity,
+      powderBrandSelection: brandSet ? powderBrandSelection : null,
+    });
+    const sent = await publishDpBatch(setDp, {
+      ...buildMilkStartDpPayload(recipe),
+      [dpCodes.sceneFeedRequest]: "none",
+    });
+    if (!sent) {
+      setMilkSessionActive(false);
+      setAwaitingWorkMode(null);
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+      return;
+    }
+    await resetSceneFeedRequest();
   };
 
   const handleSelectWater = () => {
@@ -554,14 +778,8 @@ const HomePage: React.FC = () => {
 
   return (
     <View className={styles.page}>
+      <PanelNavBar mode="home" deviceId={devInfo?.devId} />
       <View className={styles.header}>
-        <View className={styles.headerTop}>
-          <Image src={Res.maxiCosiLogo} className={styles.logo} />
-          <View className={styles.headerIcons}>
-            <Image src={Res.icNotification} className={styles.headerIcon} />
-            <Image src={Res.icHelp} className={styles.headerIcon} />
-          </View>
-        </View>
         <View className={styles.titleRow}>
           <View className={styles.titleGroup}>
             <Text className={styles.appTitle}>{t("app_title")}</Text>
@@ -578,20 +796,42 @@ const HomePage: React.FC = () => {
             </View>
           </View>
           <View className={styles.onlineRow}>
-            <View
-              className={clsx(
-                styles.onlineDot,
-                isOnline && styles.onlineDotActive
-              )}
-            />
-            <Text className={styles.onlineText}>{statusText}</Text>
             <Image
-              src={isOnline ? Res.icConnected : Res.icOffline}
-              className={styles.headerWifiIcon}
+              src={
+                isOnline ? IC_CONNECTION_ONLINE_URI : IC_CONNECTION_OFFLINE_URI
+              }
+              className={styles.onlineIcon}
             />
+            <Text
+              className={styles.onlineText}
+              style={{ color: isOnline ? "#55A074" : "#BA2F2F" }}
+            >
+              {statusText}
+            </Text>
           </View>
         </View>
       </View>
+
+      {showTempUnavailableToast ? (
+        <View className={styles.deviceStatusToastWrap}>
+          <DeviceStatusAlertToast
+            message={t("device_status_temp_unavailable_toast")}
+          />
+        </View>
+      ) : showWaterLowToast ? (
+        <View className={styles.deviceStatusToastWrap}>
+          <DeviceStatusAlertToast
+            message={t("device_status_water_low_toast")}
+          />
+        </View>
+      ) : showDeviceStatusToast ? (
+        <View className={styles.deviceStatusToastWrap}>
+          <DeviceStatusAlertToast
+            message={deviceStatusToastMessage}
+            onPress={() => setDeviceStatusPanelOpen(true)}
+          />
+        </View>
+      ) : null}
 
       <View className={styles.pageBody}>
         <View
@@ -758,26 +998,30 @@ const HomePage: React.FC = () => {
                         </View>
                       </>
                     ) : null}
-                    <View
-                      className={
-                        showBrandBanner
-                          ? styles.gapBrandToTabs
-                          : styles.gapMiddleToTabs
-                      }
-                    />
-                    <View
-                      className={clsx(
-                        styles.modeTabsSlot,
-                        panelDisabled && styles.panelBlock
-                      )}
-                    >
-                      <SceneModeTabs
-                        tabs={SCENE_TABS}
-                        activeKey={sceneKey}
-                        onChange={applyPreset}
-                        disabled={panelDisabled}
-                      />
-                    </View>
+                    {SHOW_SCENE_MODE_TABS ? (
+                      <>
+                        <View
+                          className={
+                            showBrandBanner
+                              ? styles.gapBrandToTabs
+                              : styles.gapMiddleToTabs
+                          }
+                        />
+                        <View
+                          className={clsx(
+                            styles.modeTabsSlot,
+                            panelDisabled && styles.panelBlock
+                          )}
+                        >
+                          <SceneModeTabs
+                            tabs={SCENE_TABS}
+                            activeKey={sceneKey}
+                            onChange={applyPreset}
+                            disabled={panelDisabled}
+                          />
+                        </View>
+                      </>
+                    ) : null}
                   </View>
                 )}
             </View>
@@ -870,15 +1114,7 @@ const HomePage: React.FC = () => {
                       />
                     </View>
                   </View>
-                  <Text
-                    className={clsx(
-                      styles.startLabel,
-                      (startDisabled || isCleanSession) &&
-                        styles.actionLabelDisabled
-                    )}
-                  >
-                    {t("action_start")}
-                  </Text>
+                  <Text className={styles.startLabel}>{t("action_start")}</Text>
                 </View>
                 <View
                   className={clsx(
@@ -972,38 +1208,44 @@ const HomePage: React.FC = () => {
               </View>
             )}
           </View>
-          <View
-            className={clsx(
-              styles.settingsRowCard,
-              panelDisabled && styles.disabled
-            )}
-            onClick={
-              panelDisabled
-                ? undefined
-                : () => {
-                    setBoolDp(setDp, dpCodes.childLock, !childLock);
-                  }
-            }
-          >
-            <Text className={styles.settingsRowLabel}>
-              {t("row_child_lock")}
-            </Text>
+          {showBabyDiarySnackbar ? (
+            <View className={styles.diaryToastSlot}>
+              <BabyDiarySnackbar />
+            </View>
+          ) : (
             <View
               className={clsx(
-                styles.cleanRowBtn,
-                childLock && styles.cleanRowBtnActive
+                styles.settingsRowCard,
+                panelDisabled && styles.disabled
               )}
+              onClick={
+                panelDisabled
+                  ? undefined
+                  : () => {
+                      setBoolDp(setDp, dpCodes.childLock, !childLock);
+                    }
+              }
             >
-              <Image
-                src={
-                  childLock
-                    ? Res.actionButtonIcons.lockActive
-                    : Res.actionButtonIcons.lock
-                }
-                className={styles.cleanRowIcon}
-              />
+              <Text className={styles.settingsRowLabel}>
+                {t("row_child_lock")}
+              </Text>
+              <View
+                className={clsx(
+                  styles.cleanRowBtn,
+                  childLock && styles.cleanRowBtnActive
+                )}
+              >
+                <Image
+                  src={
+                    childLock
+                      ? Res.actionButtonIcons.lockActive
+                      : Res.actionButtonIcons.lock
+                  }
+                  className={styles.cleanRowIcon}
+                />
+              </View>
             </View>
-          </View>
+          )}
         </View>
       </View>
 
@@ -1018,6 +1260,48 @@ const HomePage: React.FC = () => {
           saveDisabled={panelDisabled || isMaking || childLock}
         />
       )}
+      {deviceStatusPanelOpen ? (
+        <DeviceStatusBottomPanel
+          items={assemblyStatuses}
+          onClose={() => setDeviceStatusPanelOpen(false)}
+        />
+      ) : null}
+
+      <SmartPrepActivateModal
+        visible={smartPrepGuide.showActivateModal}
+        onCancel={smartPrepGuide.dismissActivate}
+        onEnable={smartPrepGuide.enableReminder}
+      />
+      <SmartPrepNoCryDeviceModal
+        visible={smartPrepGuide.showNoCryModal}
+        onOk={smartPrepGuide.dismissNoCryModal}
+      />
+      <SmartPrepTutorialModal
+        visible={smartPrepGuide.showTutorialModal}
+        onLater={smartPrepGuide.dismissTutorialLater}
+        onOpenRoutines={smartPrepGuide.openRoutinesFromTutorial}
+        onMarkDone={smartPrepGuide.markRoutineDone}
+      />
+      <SmartPrepSetupSnackbar
+        visible={
+          smartPrepGuide.showSetupSnackbar &&
+          !showBabyDiarySnackbar &&
+          !smartPrepGuide.showActivateModal &&
+          !smartPrepGuide.showNoCryModal &&
+          !smartPrepGuide.showTutorialModal &&
+          !showFeedRequestModal
+        }
+        onPress={smartPrepGuide.openTutorialFromSnackbar}
+      />
+      <FeedRequestModal
+        visible={showFeedRequestModal}
+        ml={volumeMl}
+        formulaWaterMl={formulaWaterMl}
+        formulaRatio={formulaRatio}
+        temp={temp}
+        onCancel={dismissFeedRequest}
+        onStart={handleFeedRequestStart}
+      />
     </View>
   );
 };
