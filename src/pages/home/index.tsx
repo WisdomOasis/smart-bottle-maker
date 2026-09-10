@@ -7,8 +7,9 @@ import React, {
 } from "react";
 import clsx from "clsx";
 import { useSelector } from "react-redux";
-import { View, Text, Image, showToast, router } from "@ray-js/ray";
+import { View, Text, Image, showToast, router, useAppEvent } from "@ray-js/ray";
 import { useProps, useActions } from "@ray-js/panel-sdk";
+import { devices } from "@/devices";
 import useDeviceConnectivity from "@/hooks/useDeviceConnectivity";
 import Res from "@/res";
 import dpCodes from "@/constant/dpCodes";
@@ -31,11 +32,22 @@ import BottleMadeButton from "@/components/BottleMadeButton";
 import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
 import PowderCautionPanel from "@/components/PowderCautionPanel";
 import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
+import FeedingProfileSheet from "@/components/FeedingProfileSheet";
+import SmartPrepReminderSheet from "@/components/SmartPrepReminderSheet";
 import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
+  getFeedingProfileSelection,
+  saveFeedingProfileSelection,
+  type FeedingProfileSelection,
+} from "@/constant/feedingRecordStorage";
+import { parseFeedingContextValue } from "@/utils/feedingContextValue";
+import {
+  resolveFeedingProfileAvatar,
+  shouldAutoOpenFeedingProfile,
+} from "@/utils/feedingProfilePresentation";
+import {
   HIGH_TEMP_CLEAN_COUNTDOWN_SEC,
-  HIGH_TEMP_CLEAN_TEMP,
   HIGH_TEMP_CLEAN_TOTAL_ML,
 } from "@/constant/highTempClean";
 import { useAppDispatch } from "@/redux";
@@ -61,12 +73,7 @@ import {
   type TempSet,
   type WorkMode,
 } from "@/utils/bottleMaker";
-import {
-  createDpSetter,
-  pulseBoolDp,
-  publishDpBatch,
-  setBoolDp,
-} from "@/utils/dpControl";
+import { createDpSetter, publishDpBatch, setBoolDp } from "@/utils/dpControl";
 import {
   buildMilkStartDpPayload,
   resolveMilkRecipeParams,
@@ -117,7 +124,6 @@ const HomePage: React.FC = () => {
   const hasSavedPowderBrands = powderBrandEntries.length > 0;
   const isCustomBrand = powderBrandSelection?.brandId === CUSTOM_BRAND_ID;
   const showBrandBanner = !brandSet || Boolean(powderBrandSelection);
-  const [childLock, setChildLock] = useState(false);
   const [customModeOpen, setCustomModeOpen] = useState(false);
   const [bottleMadePhase, setBottleMadePhase] = useState(false);
   const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
@@ -133,14 +139,14 @@ const HomePage: React.FC = () => {
     null
   );
   const [stopBusy, setStopBusy] = useState(false);
-  const prevWorkMode = useRef<WorkMode>("idle");
+  const prevWorking = useRef(false);
+  const prevWorkMode = useRef<WorkMode>("milk");
   const wasInCleanMode = useRef(false);
 
   const workMode = parseWorkMode(dpState[dpCodes.workMode]);
-  /** 泡奶 UI 完全由設備 work_mode 驅動 */
-  const isMaking = isWorking(workMode);
-  /** 清潔 UI 僅在設備 work_mode === clean 時顯示 */
-  const isCleanSession = workMode === "clean";
+  const isMaking = isWorking(dpState[dpCodes.workingStatus]);
+  const childLock = isWorking(dpState[dpCodes.childLock]);
+  const isCleanSession = isMaking && workMode === "clean";
   const isMakingUi = isMaking && !isCleanSession;
   const unit = parseUnit(dpState[dpCodes.unitSet]);
   const temp = parseTemp(dpState[dpCodes.tempSet]);
@@ -149,6 +155,74 @@ const HomePage: React.FC = () => {
   const powderG = calcPowderGrams(volumeMl, formulaRatio);
   const preset = SCENE_PRESETS[sceneKey as keyof typeof SCENE_PRESETS];
   const powderPrimary = preset?.powderPrimary ?? false;
+  const feedingDeviceId = String(devices.common?.devInfo?.devId || "");
+  const [feedingProfile, setFeedingProfile] = useState(() =>
+    getFeedingProfileSelection(feedingDeviceId)
+  );
+  const [feedingHomeId, setFeedingHomeId] = useState("");
+  const [feedingProfileSheetOpen, setFeedingProfileSheetOpen] = useState(false);
+  const [feedingProfileBusy, setFeedingProfileBusy] = useState(false);
+  const [smartPrepSheetOpen, setSmartPrepSheetOpen] = useState(false);
+  const [hungryReminderOpen, setHungryReminderOpen] = useState(false);
+  const hungryReminderShown = useRef(false);
+  const feedingAutoOpenAttempted = useRef(false);
+  const feedingContext = useMemo(
+    () => parseFeedingContextValue(dpState[dpCodes.feedingContext]),
+    [dpState]
+  );
+
+  const refreshFeedingRecordStatus = useCallback(() => {
+    setFeedingProfile(getFeedingProfileSelection(feedingDeviceId));
+    ty.home.getCurrentHomeInfo({
+      success: (home: { homeId?: string | number }) =>
+        setFeedingHomeId(String(home.homeId || "")),
+      fail: () => setFeedingHomeId(""),
+    });
+  }, [feedingDeviceId]);
+
+  useEffect(() => {
+    refreshFeedingRecordStatus();
+  }, [refreshFeedingRecordStatus]);
+
+  useAppEvent("onShow", refreshFeedingRecordStatus);
+
+  const hasValidFeedingContext = Boolean(
+    feedingContext && feedingHomeId && feedingContext.homeID === feedingHomeId
+  );
+  const feedingProfileAvatar = resolveFeedingProfileAvatar({
+    isOnline,
+    homeId: feedingHomeId,
+    context: feedingContext,
+    selection: feedingProfile,
+  });
+
+  useEffect(() => {
+    if (!feedingHomeId || !feedingDeviceId) return;
+    if (
+      shouldAutoOpenFeedingProfile({
+        isOnline,
+        hasValidContext: hasValidFeedingContext,
+        attemptedThisSession: feedingAutoOpenAttempted.current,
+      })
+    ) {
+      feedingAutoOpenAttempted.current = true;
+      setFeedingProfileSheetOpen(true);
+    }
+  }, [feedingDeviceId, feedingHomeId, hasValidFeedingContext, isOnline]);
+
+  const openFeedingProfileSheet = useCallback(() => {
+    if (!isOnline) return;
+    feedingAutoOpenAttempted.current = true;
+    setFeedingProfileSheetOpen(true);
+  }, [isOnline]);
+
+  const handleFeedingProfileSelection = useCallback(
+    (selection: FeedingProfileSelection) => {
+      saveFeedingProfileSelection(feedingDeviceId, selection);
+      setFeedingProfile(selection);
+    },
+    [feedingDeviceId]
+  );
 
   const setDp = useMemo(
     () =>
@@ -159,10 +233,10 @@ const HomePage: React.FC = () => {
   );
 
   useEffect(() => {
-    if (awaitingWorkMode && workMode === awaitingWorkMode) {
+    if (awaitingWorkMode && isMaking && workMode === awaitingWorkMode) {
       setAwaitingWorkMode(null);
     }
-  }, [awaitingWorkMode, workMode]);
+  }, [awaitingWorkMode, isMaking, workMode]);
 
   useEffect(() => {
     if (!awaitingWorkMode) return undefined;
@@ -177,7 +251,7 @@ const HomePage: React.FC = () => {
       setSceneKey(key);
       setSelectedAction("milk");
       setDp(dpCodes.volumeMl, p.ml);
-      setDp(dpCodes.tempSet, String(p.temp));
+      setDp(dpCodes.tempSet, p.temp);
       setDp(dpCodes.formulaRatio, p.formulaRatio);
       setDp(dpCodes.unitSet, "mL");
     },
@@ -190,8 +264,11 @@ const HomePage: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (isWorking(prevWorkMode.current) && workMode === "idle") {
+    if (prevWorking.current && !isMaking) {
       setAwaitingWorkMode(null);
+      if (dpState[dpCodes.sceneFeedRequest] === "hungry_pending") {
+        setDp(dpCodes.sceneFeedRequest, "none").catch(() => undefined);
+      }
       const finished = prevWorkMode.current;
       const wasWater = waterSessionActive || finished === "water";
       const wasPowder = powderSessionActive || finished === "powder";
@@ -214,11 +291,21 @@ const HomePage: React.FC = () => {
         setPowderSessionActive(false);
         setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
       }
+      prevWorking.current = isMaking;
       prevWorkMode.current = workMode;
       return;
     }
+    prevWorking.current = isMaking;
     prevWorkMode.current = workMode;
-  }, [workMode, milkSessionActive, waterSessionActive, powderSessionActive]);
+  }, [
+    dpState,
+    isMaking,
+    setDp,
+    workMode,
+    milkSessionActive,
+    waterSessionActive,
+    powderSessionActive,
+  ]);
 
   /** 完成後 3 秒收起 Bottle Made，並關閉 Baby Diary toast */
   useEffect(() => {
@@ -234,21 +321,21 @@ const HomePage: React.FC = () => {
   }, [bottleMadePhase]);
 
   useEffect(() => {
-    const inClean = workMode === "clean";
+    const inClean = isMaking && workMode === "clean";
     if (inClean && !wasInCleanMode.current) {
       setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
     }
     wasInCleanMode.current = inClean;
-  }, [workMode]);
+  }, [isMaking, workMode]);
 
   useEffect(() => {
-    if (workMode !== "clean") return undefined;
+    if (!isMaking || workMode !== "clean") return undefined;
     if (cleanCountdown <= 0) return undefined;
     const timer = setInterval(() => {
       setCleanCountdown((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [workMode, cleanCountdown]);
+  }, [isMaking, workMode, cleanCountdown]);
 
   const gaugeValue = isCleanSession
     ? HIGH_TEMP_CLEAN_TOTAL_ML
@@ -282,7 +369,7 @@ const HomePage: React.FC = () => {
     setSceneKey("custom");
     setDp(dpCodes.volumeMl, clampMl(draft.ml));
     setDp(dpCodes.formulaRatio, draft.formulaRatio);
-    setDp(dpCodes.tempSet, String(draft.temp));
+    setDp(dpCodes.tempSet, draft.temp);
     setDp(dpCodes.unitSet, "mL");
   };
 
@@ -299,11 +386,11 @@ const HomePage: React.FC = () => {
       showToast({ title: t("device_power_off"), icon: "none" });
       return;
     }
-    const order: TempSet[] = [37, 40, 45];
+    const order: TempSet[] = [20, 25, 30, 35, 40];
     const idx = order.indexOf(temp);
     const next = order[(idx + 1) % order.length];
     setSceneKey("custom");
-    setDp(dpCodes.tempSet, String(next));
+    setDp(dpCodes.tempSet, next);
   };
 
   const makingBarVariant: MakingBarVariant =
@@ -322,7 +409,7 @@ const HomePage: React.FC = () => {
     ? awaitingWorkMode === "powder"
     : awaitingWorkMode === "milk";
   const startDisabled = panelDisabled || startAwaiting;
-  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP as TempSet;
+  const cleanDisplayTemp = temp;
 
   const toastIfBlocked = useCallback((): boolean => {
     if (panelDisabled) {
@@ -342,7 +429,7 @@ const HomePage: React.FC = () => {
   }, [panelDisabled, childLock, isMaking, isOnline, t]);
 
   const handleStartMilk = async () => {
-    if (toastIfBlocked() || startDisabled) return;
+    if (toastIfBlocked() || startDisabled) return false;
     setMilkSessionActive(true);
     setAwaitingWorkMode("milk");
     const recipe = resolveMilkRecipeParams({
@@ -352,12 +439,19 @@ const HomePage: React.FC = () => {
       formulaRatio,
       powderBrandSelection: brandSet ? powderBrandSelection : null,
     });
-    const sent = await publishDpBatch(setDp, buildMilkStartDpPayload(recipe));
+    const paramsSent = await publishDpBatch(
+      setDp,
+      buildMilkStartDpPayload(recipe)
+    );
+    const sent =
+      paramsSent && (await setBoolDp(setDp, dpCodes.workingStatus, true));
     if (!sent) {
       setMilkSessionActive(false);
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
+      return false;
     }
+    return true;
   };
 
   const handleSelectWater = () => {
@@ -381,7 +475,7 @@ const HomePage: React.FC = () => {
   const handleWaterTempChange = (next: TempSet) => {
     if (panelDisabled) return;
     setSceneKey("custom");
-    setDp(dpCodes.tempSet, String(next));
+    setDp(dpCodes.tempSet, next);
   };
 
   const handleStartWater = async () => {
@@ -390,11 +484,11 @@ const HomePage: React.FC = () => {
     setAwaitingWorkMode("water");
     const sent = await publishDpBatch(setDp, {
       [dpCodes.volumeMl]: volumeMl,
-      [dpCodes.tempSet]: String(temp),
+      [dpCodes.tempSet]: temp,
       [dpCodes.unitSet]: "mL",
-      [dpCodes.startWater]: true,
+      [dpCodes.workMode]: "water",
     });
-    if (!sent) {
+    if (!sent || !(await setBoolDp(setDp, dpCodes.workingStatus, true))) {
       setAwaitingWorkMode(null);
       setWaterSessionActive(false);
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -407,11 +501,12 @@ const HomePage: React.FC = () => {
     setAwaitingWorkMode("powder");
     const sent = await publishDpBatch(setDp, {
       [dpCodes.volumeMl]: volumeMl,
+      [dpCodes.formulaWater]: 100,
       [dpCodes.formulaRatio]: formulaRatio,
       [dpCodes.unitSet]: "mL",
-      [dpCodes.startPowder]: true,
+      [dpCodes.workMode]: "powder",
     });
-    if (!sent) {
+    if (!sent || !(await setBoolDp(setDp, dpCodes.workingStatus, true))) {
       setAwaitingWorkMode(null);
       setPowderSessionActive(false);
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -434,7 +529,7 @@ const HomePage: React.FC = () => {
     if (panelDisabled || stopBusy) return;
     setStopBusy(true);
     setAwaitingWorkMode(null);
-    const sent = await pulseBoolDp(setDp, dpCodes.cancelWork);
+    const sent = await setBoolDp(setDp, dpCodes.workingStatus, false);
     setStopBusy(false);
     if (!sent) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -442,32 +537,23 @@ const HomePage: React.FC = () => {
   };
 
   const handleClean = async () => {
-    if (workMode === "clean" || awaitingWorkMode === "clean") return;
+    if (isCleanSession || awaitingWorkMode === "clean") return;
     if (toastIfBlocked()) return;
     if (panelDisabled || childLock || !isOnline) return;
     setAwaitingWorkMode("clean");
-    const cleanSent = await setBoolDp(setDp, dpCodes.startClean, true);
-    if (!cleanSent) {
-      setAwaitingWorkMode(null);
-      showToast({ title: t("dp_command_failed"), icon: "none" });
-      return;
-    }
     const paramsSent = await publishDpBatch(setDp, {
-      [dpCodes.volumeMl]: HIGH_TEMP_CLEAN_TOTAL_ML,
-      [dpCodes.tempSet]: String(HIGH_TEMP_CLEAN_TEMP),
-      [dpCodes.unitSet]: "mL",
+      [dpCodes.workMode]: "clean",
     });
-    if (!paramsSent) {
-      await setBoolDp(setDp, dpCodes.startClean, false);
+    if (!paramsSent || !(await setBoolDp(setDp, dpCodes.workingStatus, true))) {
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
     }
   };
 
   const handleCleanStop = async () => {
-    if (workMode !== "clean" || panelDisabled || stopBusy) return;
+    if (!isCleanSession || panelDisabled || stopBusy) return;
     setStopBusy(true);
-    const sent = await setBoolDp(setDp, dpCodes.startClean, false);
+    const sent = await setBoolDp(setDp, dpCodes.workingStatus, false);
     setStopBusy(false);
     if (!sent) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -482,6 +568,40 @@ const HomePage: React.FC = () => {
     const sent = await setDp(dpCodes.switch, !switchOn);
     if (!sent) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const handleChildLockToggle = async () => {
+    if (panelDisabled || !isOnline) return;
+    if (!(await setBoolDp(setDp, dpCodes.childLock, !childLock))) {
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const clearHungryReminder = useCallback(async () => {
+    const sent = await setDp(dpCodes.sceneFeedRequest, "none");
+    if (!sent) showToast({ title: t("dp_command_failed"), icon: "none" });
+    return sent;
+  }, [setDp, t]);
+
+  useEffect(() => {
+    const pending = dpState[dpCodes.sceneFeedRequest] === "hungry_pending";
+    if (pending && !hungryReminderShown.current) {
+      hungryReminderShown.current = true;
+      setHungryReminderOpen(true);
+    }
+    if (!pending) hungryReminderShown.current = false;
+  }, [dpState]);
+
+  const handleHungryNotNow = async () => {
+    setHungryReminderOpen(false);
+    await clearHungryReminder();
+  };
+
+  const handleHungryStartMaking = async () => {
+    setHungryReminderOpen(false);
+    if (await handleStartMilk()) {
+      await clearHungryReminder();
     }
   };
 
@@ -695,6 +815,35 @@ const HomePage: React.FC = () => {
                         </View>
                       </>
                     ) : null}
+                    <View className={styles.gapSmartPrep} />
+                    <View
+                      className={clsx(
+                        styles.smartPrepEntry,
+                        (!isOnline || panelDisabled) && styles.disabled
+                      )}
+                      onClick={
+                        isOnline && !panelDisabled
+                          ? () => setSmartPrepSheetOpen(true)
+                          : undefined
+                      }
+                    >
+                      <Image
+                        src={Res.icNotification}
+                        className={styles.smartPrepIcon}
+                      />
+                      <View className={styles.smartPrepCopy}>
+                        <Text className={styles.smartPrepTitle}>
+                          Smart Prep Reminder
+                        </Text>
+                        <Text className={styles.smartPrepSubtitle}>
+                          Get a reminder when CryAssist detects hunger.
+                        </Text>
+                      </View>
+                      <Image
+                        src={Res.icArrowRight}
+                        className={styles.smartPrepArrow}
+                      />
+                    </View>
                     <View
                       className={
                         showBrandBanner
@@ -925,7 +1074,9 @@ const HomePage: React.FC = () => {
                 panelDisabled && styles.disabled
               )}
               onClick={
-                panelDisabled ? undefined : () => setChildLock((v) => !v)
+                panelDisabled || !isOnline
+                  ? undefined
+                  : () => handleChildLockToggle().catch(() => undefined)
               }
             >
               <Text className={styles.settingsRowLabel}>
@@ -948,6 +1099,30 @@ const HomePage: React.FC = () => {
               </View>
             </View>
           )}
+          <View
+            className={clsx(
+              styles.settingsRowCard,
+              !isOnline && styles.disabled
+            )}
+            onClick={isOnline ? openFeedingProfileSheet : undefined}
+          >
+            <Text className={styles.settingsRowLabel}>Feeding record</Text>
+            <View className={styles.cleanRowBtn}>
+              {feedingProfileBusy ? (
+                <View className={styles.feedingProfileSpinner} />
+              ) : (
+                <Image
+                  src={feedingProfileAvatar || Res.actionButtonIcons.baby}
+                  className={
+                    feedingProfileAvatar
+                      ? styles.feedingProfileAvatar
+                      : styles.cleanRowIcon
+                  }
+                  mode="aspectFill"
+                />
+              )}
+            </View>
+          </View>
         </View>
       </View>
 
@@ -961,6 +1136,53 @@ const HomePage: React.FC = () => {
           saveDisabled={panelDisabled || isMaking || childLock}
         />
       )}
+
+      {feedingProfileSheetOpen ? (
+        <FeedingProfileSheet
+          deviceId={feedingDeviceId}
+          homeId={feedingHomeId}
+          currentChildId={
+            hasValidFeedingContext ? feedingContext?.childID : undefined
+          }
+          onClose={() => setFeedingProfileSheetOpen(false)}
+          onSelectionChange={handleFeedingProfileSelection}
+          onBusyChange={setFeedingProfileBusy}
+        />
+      ) : null}
+
+      {smartPrepSheetOpen ? (
+        <SmartPrepReminderSheet
+          homeId={feedingHomeId}
+          deviceId={feedingDeviceId}
+          onClose={() => setSmartPrepSheetOpen(false)}
+        />
+      ) : null}
+
+      {hungryReminderOpen ? (
+        <View className={styles.modalMask}>
+          <View className={styles.modalCard}>
+            <Text className={styles.modalTitle}>Baby may be hungry</Text>
+            <Text className={styles.modalBody}>
+              CryAssist detected signs of hunger. Would you like to prepare a
+              bottle?
+            </Text>
+            <View className={styles.modalActions}>
+              <Text
+                className={styles.modalBtnGhost}
+                onClick={() => handleHungryNotNow().catch(() => undefined)}
+              >
+                Not now
+              </Text>
+              <Text
+                className={styles.modalBtnPrimary}
+                onClick={() => handleHungryStartMaking().catch(() => undefined)}
+              >
+                Start making
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 };

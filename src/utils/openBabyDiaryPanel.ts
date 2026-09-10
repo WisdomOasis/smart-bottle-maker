@@ -28,12 +28,19 @@ const getTy = (): TyApi | undefined => (globalThis as { ty?: TyApi }).ty;
 /** 解析 Baby Diary 虛擬設備 PID：參數 > 啟動 query > 常量配置 */
 export const resolveBabyDiaryPid = (overridePid?: string): string | null => {
   const query = getLaunchOptionsSync()?.query ?? {};
-  const fromQuery =
-    query.babyDiaryPid ?? query.baby_diary_pid ?? query.diaryPid ?? "";
-  const pid = (overridePid ?? fromQuery ?? BABY_DIARY_VIRTUAL_PID ?? "")
-    .toString()
-    .trim();
-  return pid || null;
+  const candidates = [
+    overridePid,
+    query.babyDiaryPid,
+    query.baby_diary_pid,
+    query.diaryPid,
+    BABY_DIARY_VIRTUAL_PID,
+  ];
+
+  return (
+    candidates
+      .map((candidate) => (candidate ?? "").toString().trim())
+      .find((pid) => Boolean(pid)) || null
+  );
 };
 
 /**
@@ -42,23 +49,25 @@ export const resolveBabyDiaryPid = (overridePid?: string): string | null => {
 export const openBabyDiaryPanel = (options?: {
   pid?: string;
   onBeforeOpen?: () => void;
+  onOpenFailed?: () => void;
+  showErrorToast?: boolean;
 }): void => {
   const tyApi = getTy();
   const pid = resolveBabyDiaryPid(options?.pid);
+  const showError = (title: string, icon: "none" | "error" = "none") => {
+    options?.onOpenFailed?.();
+    if (options?.showErrorToast !== false) {
+      tyApi?.showToast?.({ title, icon });
+    }
+  };
 
   if (!pid) {
-    tyApi?.showToast?.({
-      title: t("baby_diary_pid_missing"),
-      icon: "none",
-    });
+    showError(t("baby_diary_pid_missing"));
     return;
   }
 
   if (!tyApi?.device?.initVirtualDevice || !tyApi.openPanel) {
-    tyApi?.showToast?.({
-      title: t("baby_diary_open_failed"),
-      icon: "none",
-    });
+    showError(t("baby_diary_open_failed"));
     return;
   }
 
@@ -70,27 +79,18 @@ export const openBabyDiaryPanel = (options?: {
     success: (res) => {
       const devId = res?.devId;
       if (!devId) {
-        tyApi.showToast?.({
-          title: t("baby_diary_open_failed"),
-          icon: "none",
-        });
+        showError(t("baby_diary_open_failed"));
         return;
       }
       tyApi.openPanel?.({
         deviceId: devId,
         fail: (err) => {
-          tyApi.showToast?.({
-            title: err?.errorMsg || t("baby_diary_open_failed"),
-            icon: "error",
-          });
+          showError(err?.errorMsg || t("baby_diary_open_failed"), "error");
         },
       });
     },
     fail: (err) => {
-      tyApi.showToast?.({
-        title: err?.errorMsg || t("baby_diary_open_failed"),
-        icon: "error",
-      });
+      showError(err?.errorMsg || t("baby_diary_open_failed"), "error");
     },
     complete: () => {
       tyApi.hideLoading?.();

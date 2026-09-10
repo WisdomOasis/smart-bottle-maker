@@ -8,7 +8,7 @@ export type ScenePresetKey =
 export interface ScenePreset {
   key: ScenePresetKey;
   ml: number;
-  temp: 37 | 40 | 45;
+  temp: 20 | 25 | 30 | 35 | 40;
   /** formula_ratio raw DP value (scale 1 → display g/100mL = value / 10) */
   formulaRatio: number;
   /** When true, gauge highlights powder amount instead of water */
@@ -28,7 +28,7 @@ export const SCENE_PRESETS: Record<
   nighttime: {
     key: "nighttime",
     ml: 120,
-    temp: 37,
+    temp: 35,
     formulaRatio: 130,
     powderPrimary: true,
   },
