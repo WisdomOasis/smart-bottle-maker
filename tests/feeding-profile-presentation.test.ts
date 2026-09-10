@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 import {
   resolveFeedingProfileAvatar,
-  shouldAutoOpenFeedingProfile,
+  shouldStartFeedingProfileCheck,
 } from "../src/utils/feedingProfilePresentation.ts";
 import { parsePreparedChildren } from "../src/utils/feedingProfileChildren.ts";
 
@@ -93,36 +93,25 @@ test("keeps the same-Home cached avatar visible while the device is offline", ()
   );
 });
 
-test("auto-opens once only for an online, unconfigured panel session", () => {
+test("starts profile checking once per online period", () => {
   assert.equal(
-    shouldAutoOpenFeedingProfile({
+    shouldStartFeedingProfileCheck({
+      isOnline: false,
+      startedForOnlinePeriod: false,
+    }),
+    false
+  );
+  assert.equal(
+    shouldStartFeedingProfileCheck({
       isOnline: true,
-      hasValidContext: false,
-      attemptedThisSession: false,
+      startedForOnlinePeriod: false,
     }),
     true
   );
   assert.equal(
-    shouldAutoOpenFeedingProfile({
+    shouldStartFeedingProfileCheck({
       isOnline: true,
-      hasValidContext: false,
-      attemptedThisSession: true,
-    }),
-    false
-  );
-  assert.equal(
-    shouldAutoOpenFeedingProfile({
-      isOnline: false,
-      hasValidContext: false,
-      attemptedThisSession: false,
-    }),
-    false
-  );
-  assert.equal(
-    shouldAutoOpenFeedingProfile({
-      isOnline: true,
-      hasValidContext: true,
-      attemptedThisSession: false,
+      startedForOnlinePeriod: true,
     }),
     false
   );

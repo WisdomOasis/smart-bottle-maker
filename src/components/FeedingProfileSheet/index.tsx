@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Image,
   Text,
@@ -13,10 +7,10 @@ import {
   showToast,
   useAppEvent,
 } from "@ray-js/ray";
-import { useActions, useDevice, useProps } from "@ray-js/panel-sdk";
+import { useDevice, useProps } from "@ray-js/panel-sdk";
+import { devices } from "@/devices";
 import dpCodes from "@/constant/dpCodes";
 import type { FeedingProfileSelection } from "@/constant/feedingRecordStorage";
-import useDeviceConnectivity from "@/hooks/useDeviceConnectivity";
 import Res from "@/res";
 import { POWDER_BRAND_SHEET_ICONS } from "@/components/PowderBrandOptionSheet/icons";
 import {
@@ -24,9 +18,15 @@ import {
   prepareFeedingContext,
   type FeedingChild,
 } from "@/services/feedingContext";
-import { createDpSetter } from "@/utils/dpControl";
 import { parseFeedingContextValue } from "@/utils/feedingContextValue";
+import {
+  FeedingContextSaveError,
+  feedingContextSaveMessage,
+  publishFeedingContext,
+} from "@/utils/feedingContextPublish";
 import { openBabyDiaryPanel } from "@/utils/openBabyDiaryPanel";
+import { resolveFeedingProfileTimezone } from "@/utils/feedingProfileTimezone";
+import { shouldStartFeedingProfileCheck } from "@/utils/feedingProfilePresentation";
 import styles from "./index.module.less";
 
 type Phase =
@@ -36,28 +36,23 @@ type Phase =
   | "no_profiles"
   | "opening_diary"
   | "open_error"
-  | "saving"
+  | "preparing"
+  | "sending"
+  | "confirming"
   | "check_error"
   | "save_error";
 
 interface Props {
   deviceId: string;
   homeId: string;
+  isOnline: boolean;
   currentChildId: number | undefined;
   onClose: () => void;
+  onDismiss: () => void;
+  showBackButton: boolean;
   onSelectionChange: (selection: FeedingProfileSelection) => void;
   onBusyChange: (busy: boolean) => void;
 }
-
-const callback = <T,>(
-  caller: (params: {
-    success?: (result: T) => void;
-    fail?: (error: unknown) => void;
-  }) => void
-) =>
-  new Promise<T>((resolve, reject) =>
-    caller({ success: resolve, fail: reject })
-  );
 
 const errorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;
@@ -81,39 +76,34 @@ const profileCheckMessage = (error: unknown) => {
   return "Couldn’t check Baby Diary profiles. Try again.";
 };
 
-const resolveTimezone = (
-  systemTimezone: unknown,
-  user: { timezoneId?: string; timeZoneId?: string; [key: string]: unknown },
-  deviceTimezone: unknown
-) => {
-  const candidates = [
-    systemTimezone,
-    user.timezoneId || user.timeZoneId || Reflect.get(user, "time_zone_id"),
-    deviceTimezone,
-  ];
-  const timezone = candidates.find(
-    (value) => typeof value === "string" && value.trim()
-  );
-  return typeof timezone === "string" ? timezone.trim() : "";
-};
+const requestMiniAppUserInfo = () =>
+  new Promise<{
+    timezoneId?: string;
+    timeZoneId?: string;
+    [key: string]: unknown;
+  }>((resolve, reject) => {
+    ty.getUserInfo({ success: resolve, failure: reject });
+  });
 
 const FeedingProfileSheet: React.FC<Props> = ({
   deviceId,
   homeId,
+  isOnline,
   currentChildId,
   onClose,
+  onDismiss,
+  showBackButton,
   onSelectionChange,
   onBusyChange,
 }) => {
-  const actions = useActions();
   const { devInfo } = useDevice((state) => ({ devInfo: state.devInfo }));
   const props = useProps() as Record<string, unknown>;
   const propsRef = useRef(props);
   propsRef.current = props;
-  const { isOnline } = useDeviceConnectivity();
   const onlineRef = useRef(isOnline);
   onlineRef.current = isOnline;
   const busyRef = useRef(false);
+  const startedForOnlinePeriodRef = useRef(false);
   const loadProfilesRef = useRef<(fromBabyDiary?: boolean) => Promise<void>>(
     async () => undefined
   );
@@ -123,16 +113,9 @@ const FeedingProfileSheet: React.FC<Props> = ({
   const [children, setChildren] = useState<FeedingChild[]>([]);
   const [session, setSession] = useState("");
   const [errorText, setErrorText] = useState("");
+  const [debugText, setDebugText] = useState("");
   const [failedChild, setFailedChild] = useState<FeedingChild | null>(null);
   const [returnedFromBabyDiary, setReturnedFromBabyDiary] = useState(false);
-  const setDp = useMemo(
-    () =>
-      createDpSetter(
-        actions as Record<string, { set?: (value: unknown) => unknown }>
-      ),
-    [actions]
-  );
-
   const setBusy = useCallback(
     (busy: boolean) => {
       busyRef.current = busy;
@@ -146,20 +129,16 @@ const FeedingProfileSheet: React.FC<Props> = ({
       if (busyRef.current || !onlineRef.current) return;
       setBusy(true);
       setErrorText("");
+      setDebugText("");
       setFailedChild(null);
       setPhase(fromBabyDiary ? "returning" : "checking");
       if (fromBabyDiary) setReturnedFromBabyDiary(true);
       try {
-        const user = await callback<{
-          timezoneId?: string;
-          timeZoneId?: string;
-          [key: string]: unknown;
-        }>((params) => ty.getUserInfo(params)).catch(() => ({}));
-        const timezoneId = resolveTimezone(
-          getSystemInfoSync?.()?.timezoneId,
-          user,
-          devInfo?.devTimezoneId
-        );
+        const timezoneId = await resolveFeedingProfileTimezone({
+          systemTimezone: getSystemInfoSync?.()?.timezoneId,
+          deviceTimezone: devInfo?.devTimezoneId,
+          requestUserInfo: requestMiniAppUserInfo,
+        });
         if (!homeId || !deviceId || !timezoneId) {
           throw new Error("Panel context is unavailable");
         }
@@ -195,8 +174,21 @@ const FeedingProfileSheet: React.FC<Props> = ({
   }, [loadProfiles]);
 
   useEffect(() => {
+    if (!isOnline) {
+      startedForOnlinePeriodRef.current = false;
+      return;
+    }
+    if (
+      !shouldStartFeedingProfileCheck({
+        isOnline,
+        startedForOnlinePeriod: startedForOnlinePeriodRef.current,
+      })
+    ) {
+      return;
+    }
+    startedForOnlinePeriodRef.current = true;
     loadProfiles().catch(() => undefined);
-  }, [loadProfiles]);
+  }, [isOnline, loadProfiles]);
 
   useEffect(
     () => () => {
@@ -261,8 +253,9 @@ const FeedingProfileSheet: React.FC<Props> = ({
       if (!session) return;
       setBusy(true);
       setErrorText("");
+      setDebugText("");
       setFailedChild(null);
-      setPhase("saving");
+      setPhase("preparing");
       try {
         const context = await finalizeFeedingContext(session, child.id);
         const parsedContext = parseFeedingContextValue(context);
@@ -274,9 +267,30 @@ const FeedingProfileSheet: React.FC<Props> = ({
           throw new Error("Provisioning context is invalid");
         }
         if (!onlineRef.current) throw new Error("Device is offline");
-        if (!(await setDp(dpCodes.feedingContext, context))) {
-          throw new Error("DP publish failed");
-        }
+        setPhase("sending");
+        // eslint-disable-next-line no-console
+        console.info("Feeding profile DP publish started", {
+          dpCode: dpCodes.feedingContext,
+          contextLength: context.length,
+          publisher: "devices.common.publishDps",
+        });
+        const publishResult = await publishFeedingContext({
+          context,
+          isOnline: onlineRef.current,
+          publish: async (payload) => {
+            if (!devices.common?.initialized) {
+              throw new Error("Panel device model is unavailable");
+            }
+            return devices.common.publishDps(payload);
+          },
+        });
+        // eslint-disable-next-line no-console
+        console.info("Feeding profile DP publish accepted", {
+          dpCode: dpCodes.feedingContext,
+          contextLength: publishResult.contextLength,
+          accepted: publishResult.result !== false,
+        });
+        setPhase("confirming");
         const didReadBack = await new Promise<boolean>((resolve) => {
           const deadline = Date.now() + 8000;
           const check = () => {
@@ -292,19 +306,35 @@ const FeedingProfileSheet: React.FC<Props> = ({
           };
           check();
         });
-        if (!didReadBack) throw new Error("DP readback timed out");
+        if (!didReadBack) {
+          throw new FeedingContextSaveError("readback");
+        }
         applySelection(child);
         showToast({ title: "Baby profile updated" });
         onClose();
       } catch (error) {
+        const stage =
+          error instanceof FeedingContextSaveError ? error.stage : "validation";
+        const detail =
+          error instanceof FeedingContextSaveError ? error.detail : error;
+        const detailMessage =
+          detail instanceof Error
+            ? detail.message
+            : typeof detail === "string"
+            ? detail
+            : "unknown error";
+        const diagnostic = `${stage} · ${detailMessage}`;
+        // eslint-disable-next-line no-console
+        console.error("Feeding profile save failed", diagnostic);
         setFailedChild(child);
-        setErrorText("Couldn’t save this baby profile. Try again.");
+        setErrorText(feedingContextSaveMessage(error));
+        setDebugText(`Debug: ${diagnostic}`);
         setPhase("save_error");
       } finally {
         setBusy(false);
       }
     },
-    [applySelection, currentChildId, homeId, onClose, session, setBusy, setDp]
+    [applySelection, currentChildId, homeId, onClose, session, setBusy]
   );
 
   const retry = useCallback(() => {
@@ -319,13 +349,15 @@ const FeedingProfileSheet: React.FC<Props> = ({
     loadProfiles().catch(() => undefined);
   }, [failedChild, loadProfiles, openBabyDiary, phase, saveChild]);
 
-  const canClose = phase !== "saving";
+  const saving =
+    phase === "preparing" || phase === "sending" || phase === "confirming";
+  const canClose = !saving;
 
   return (
     <View className={styles.mask}>
       <View
         className={styles.backdrop}
-        onClick={canClose ? onClose : undefined}
+        onClick={canClose ? onDismiss : undefined}
       />
       <View className={styles.sheet}>
         <View className={styles.header}>
@@ -340,8 +372,12 @@ const FeedingProfileSheet: React.FC<Props> = ({
             onClick={canClose ? onClose : undefined}
           >
             <Image
-              src={POWDER_BRAND_SHEET_ICONS.close}
-              className={styles.closeIcon}
+              src={
+                showBackButton
+                  ? Res.icArrowRight
+                  : POWDER_BRAND_SHEET_ICONS.close
+              }
+              className={showBackButton ? styles.backIcon : styles.closeIcon}
             />
           </View>
         </View>
@@ -434,18 +470,29 @@ const FeedingProfileSheet: React.FC<Props> = ({
         {isOnline && (phase === "check_error" || phase === "save_error") ? (
           <View className={styles.stateBlock}>
             <Text className={styles.errorText}>{errorText}</Text>
+            {phase === "save_error" && debugText ? (
+              <Text className={styles.debugText}>{debugText}</Text>
+            ) : null}
             <View className={styles.primaryButton} onClick={retry}>
               <Text className={styles.primaryButtonText}>Try again</Text>
             </View>
           </View>
         ) : null}
 
-        {isOnline && phase === "saving" ? (
+        {isOnline && saving ? (
           <View className={styles.stateBlock}>
             <View className={styles.spinner} />
-            <Text className={styles.stateTitle}>Saving baby profile…</Text>
+            <Text className={styles.stateTitle}>
+              {phase === "preparing"
+                ? "Preparing profile…"
+                : phase === "sending"
+                ? "Sending to device…"
+                : "Waiting for device confirmation…"}
+            </Text>
             <Text className={styles.stateText}>
-              Keep this panel open while the device confirms the setting.
+              {phase === "confirming"
+                ? "Keep this panel open while the device confirms the setting."
+                : "Keep this panel open while the setting is prepared."}
             </Text>
           </View>
         ) : null}

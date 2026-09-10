@@ -1,5 +1,8 @@
-import { login, request } from "@ray-js/ray";
+import { request } from "@ray-js/ray";
 import { FEEDING_CONTEXT_URL } from "@/services/feedingContext";
+import { runWithMiniAppAuthorization } from "@/services/miniAppLogin";
+import { isPanelDeviceContextReady } from "@/utils/panelDeviceContext";
+import { SmartPrepError, asSmartPrepError } from "@/utils/smartPrepError";
 
 export type SmartPrepDevice = {
   id: string;
@@ -10,7 +13,7 @@ export type SmartPrepDevice = {
   error?: string;
 };
 
-type SmartPrepPrepareResponse = {
+export type SmartPrepPreparedContext = {
   session: string;
   expiresAt: number;
   devices: SmartPrepDevice[];
@@ -37,18 +40,31 @@ const responseObject = (value: unknown): Record<string, unknown> => {
 };
 
 const post = async (payload: Record<string, unknown>) => {
-  const response = await callback<{ data: unknown }>((params) =>
-    request({
-      ...params,
-      url: FEEDING_CONTEXT_URL,
-      method: "POST",
-      timeout: 15000,
-      header: { "content-type": "application/json" },
-      data: JSON.stringify(payload),
-    })
-  );
-  const body = responseObject(response.data);
-  if (typeof body.error === "string" && body.error) throw new Error(body.error);
+  let response: { data: unknown };
+  try {
+    response = await callback<{ data: unknown }>((params) =>
+      request({
+        ...params,
+        url: FEEDING_CONTEXT_URL,
+        method: "POST",
+        timeout: 15000,
+        header: { "content-type": "application/json" },
+        data: JSON.stringify(payload),
+      })
+    );
+  } catch (error) {
+    throw asSmartPrepError("request", error);
+  }
+
+  let body: Record<string, unknown>;
+  try {
+    body = responseObject(response.data);
+  } catch (error) {
+    throw asSmartPrepError("response", error);
+  }
+  if (typeof body.error === "string" && body.error) {
+    throw new SmartPrepError("response", { errorMsg: body.error });
+  }
   return body;
 };
 
@@ -78,17 +94,29 @@ const parseDevices = (value: unknown): SmartPrepDevice[] => {
 export const prepareSmartPrep = async (input: {
   homeId: string;
   deviceId: string;
-}): Promise<SmartPrepPrepareResponse> => {
-  const loggedIn = await callback<{ code: string }>((params) => login(params));
-  if (!loggedIn.code) throw new Error("Could not verify the current account");
-  const body = await post({
-    action: "prepare_cryassist_automations",
-    code: loggedIn.code,
-    home_id: input.homeId,
-    device_id: input.deviceId,
-  });
+}): Promise<SmartPrepPreparedContext> => {
+  if (!isPanelDeviceContextReady(input.homeId, input.deviceId)) {
+    throw new SmartPrepError("response", {
+      errorMsg: "Device information is still loading. Try again in a moment.",
+    });
+  }
+  let body: Record<string, unknown>;
+  try {
+    body = await runWithMiniAppAuthorization((code) =>
+      post({
+        action: "prepare_cryassist_automations",
+        code,
+        home_id: input.homeId,
+        device_id: input.deviceId,
+      })
+    );
+  } catch (error) {
+    throw asSmartPrepError("login", error);
+  }
   if (typeof body.session !== "string" || !body.session) {
-    throw new Error("Smart Prep Reminder response is invalid");
+    throw new SmartPrepError("response", {
+      errorMsg: "Smart Prep Reminder response is invalid",
+    });
   }
   return {
     session: body.session,

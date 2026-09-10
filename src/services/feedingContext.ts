@@ -1,8 +1,9 @@
-import { login, request } from "@ray-js/ray";
+import { request } from "@ray-js/ray";
 import {
   parsePreparedChildren,
   type FeedingChild,
 } from "@/utils/feedingProfileChildren";
+import { runWithMiniAppAuthorization } from "@/services/miniAppLogin";
 
 export type { FeedingChild } from "@/utils/feedingProfileChildren";
 
@@ -54,15 +55,15 @@ export const prepareFeedingContext = async (input: {
   deviceId: string;
   timezoneId: string;
 }): Promise<PreparedContext> => {
-  const loggedIn = await callback<{ code: string }>((params) => login(params));
-  if (!loggedIn.code) throw new Error("Could not verify the current account");
-  const body = await post({
-    action: "prepare_feeding_context",
-    code: loggedIn.code,
-    home_id: input.homeId,
-    device_id: input.deviceId,
-    timezone_id: input.timezoneId,
-  });
+  const body = await runWithMiniAppAuthorization((code) =>
+    post({
+      action: "prepare_feeding_context",
+      code,
+      home_id: input.homeId,
+      device_id: input.deviceId,
+      timezone_id: input.timezoneId,
+    })
+  );
   if (typeof body.session !== "string" || !Array.isArray(body.children)) {
     throw new Error("Provisioning response is invalid");
   }

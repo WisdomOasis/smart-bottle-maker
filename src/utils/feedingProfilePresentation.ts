@@ -27,12 +27,10 @@ export const resolveFeedingProfileAvatar = ({
   return selection.imageUrl || null;
 };
 
-export const shouldAutoOpenFeedingProfile = ({
+export const shouldStartFeedingProfileCheck = ({
   isOnline,
-  hasValidContext,
-  attemptedThisSession,
+  startedForOnlinePeriod,
 }: {
   isOnline: boolean;
-  hasValidContext: boolean;
-  attemptedThisSession: boolean;
-}) => isOnline && !hasValidContext && !attemptedThisSession;
+  startedForOnlinePeriod: boolean;
+}) => isOnline && !startedForOnlinePeriod;

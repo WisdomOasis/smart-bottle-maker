@@ -1,11 +1,8 @@
 .page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
   min-height: 100vh;
-  max-height: 100vh;
-  overflow: visible;
-  padding: 48rpx 32rpx 3vh;
+  padding: 48rpx 32rpx 48rpx;
   background: #f0f3f7;
   box-sizing: border-box;
   position: relative;
@@ -17,8 +14,7 @@
 }
 
 .pageBody {
-  flex: 1;
-  min-height: 0;
+  flex: 0 0 auto;
   width: 100%;
   margin-top: 1vh;
   display: flex;
@@ -26,7 +22,6 @@
   align-items: center;
   justify-content: flex-start;
   gap: 12px;
-  overflow: visible;
   background: transparent;
 }
 
@@ -300,61 +295,6 @@
   width: 100%;
   height: 20px;
   flex-shrink: 0;
-}
-
-.gapSmartPrep {
-  width: 100%;
-  height: 12px;
-  flex-shrink: 0;
-}
-
-.smartPrepEntry {
-  width: 100%;
-  min-height: 56px;
-  padding: 10px 12px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.85);
-}
-
-.smartPrepIcon {
-  width: 22px;
-  height: 22px;
-  opacity: 0.72;
-}
-
-.smartPrepCopy {
-  flex: 1;
-  min-width: 0;
-}
-
-.smartPrepTitle,
-.smartPrepSubtitle {
-  display: block;
-}
-
-.smartPrepTitle {
-  color: #2d365f;
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 18px;
-}
-
-.smartPrepSubtitle {
-  margin-top: 2px;
-  color: #6d7898;
-  font-size: 11px;
-  line-height: 15px;
-}
-
-.smartPrepArrow {
-  width: 18px;
-  height: 18px;
-  opacity: 0.48;
 }
 
 .panelGaugeCluster .brandBannerSlot {
@@ -814,6 +754,16 @@
   color: #2d365f;
   opacity: 0.6;
   white-space: nowrap;
+}
+
+.settingsRowSubtext {
+  display: block;
+  width: 100%;
+  color: #6d7898;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
 }
 
 .cleanRowBtn {

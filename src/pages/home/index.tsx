@@ -7,9 +7,16 @@ import React, {
 } from "react";
 import clsx from "clsx";
 import { useSelector } from "react-redux";
-import { View, Text, Image, showToast, router, useAppEvent } from "@ray-js/ray";
-import { useProps, useActions } from "@ray-js/panel-sdk";
-import { devices } from "@/devices";
+import {
+  View,
+  Text,
+  Image,
+  showToast,
+  router,
+  useAppEvent,
+  getLaunchOptionsSync,
+} from "@ray-js/ray";
+import { useProps, useActions, useDevice } from "@ray-js/panel-sdk";
 import useDeviceConnectivity from "@/hooks/useDeviceConnectivity";
 import Res from "@/res";
 import dpCodes from "@/constant/dpCodes";
@@ -32,8 +39,9 @@ import BottleMadeButton from "@/components/BottleMadeButton";
 import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
 import PowderCautionPanel from "@/components/PowderCautionPanel";
 import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
-import FeedingProfileSheet from "@/components/FeedingProfileSheet";
-import SmartPrepReminderSheet from "@/components/SmartPrepReminderSheet";
+import ConnectedFeaturesSetupSheet, {
+  type ConnectedFeaturesSetupView,
+} from "@/components/ConnectedFeaturesSetupSheet";
 import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
@@ -42,10 +50,12 @@ import {
   type FeedingProfileSelection,
 } from "@/constant/feedingRecordStorage";
 import { parseFeedingContextValue } from "@/utils/feedingContextValue";
+import { resolveFeedingProfileAvatar } from "@/utils/feedingProfilePresentation";
 import {
-  resolveFeedingProfileAvatar,
-  shouldAutoOpenFeedingProfile,
-} from "@/utils/feedingProfilePresentation";
+  hasSeenConnectedFeaturesSetup,
+  markConnectedFeaturesSetupSeen,
+  shouldAutoOpenConnectedFeaturesSetup,
+} from "@/utils/connectedFeaturesSetup";
 import {
   HIGH_TEMP_CLEAN_COUNTDOWN_SEC,
   HIGH_TEMP_CLEAN_TOTAL_ML,
@@ -79,6 +89,14 @@ import {
   resolveMilkRecipeParams,
 } from "@/utils/milkRecipe";
 import { formatConnectionStatus } from "@/utils/deviceStatus";
+import {
+  shouldOpenCryAssistReminder,
+  shouldResetCryAssistReminder,
+} from "@/utils/cryassistReminder";
+import {
+  isPanelDeviceContextReady,
+  resolvePanelDeviceId,
+} from "@/utils/panelDeviceContext";
 import styles from "./index.module.less";
 
 type ActionKind = "milk" | "water" | "powder";
@@ -112,6 +130,7 @@ const HomePage: React.FC = () => {
 
   const { switchOn, isOnline, wifiStatus, panelDisabled } =
     useDeviceConnectivity();
+  const { devInfo } = useDevice((state) => ({ devInfo: state.devInfo }));
   const dpState = useProps() as Record<string, unknown>;
   const actions = useActions();
 
@@ -155,17 +174,23 @@ const HomePage: React.FC = () => {
   const powderG = calcPowderGrams(volumeMl, formulaRatio);
   const preset = SCENE_PRESETS[sceneKey as keyof typeof SCENE_PRESETS];
   const powderPrimary = preset?.powderPrimary ?? false;
-  const feedingDeviceId = String(devices.common?.devInfo?.devId || "");
+  const feedingDeviceId = resolvePanelDeviceId(
+    devInfo?.devId,
+    getLaunchOptionsSync()?.query
+  );
   const [feedingProfile, setFeedingProfile] = useState(() =>
     getFeedingProfileSelection(feedingDeviceId)
   );
   const [feedingHomeId, setFeedingHomeId] = useState("");
-  const [feedingProfileSheetOpen, setFeedingProfileSheetOpen] = useState(false);
   const [feedingProfileBusy, setFeedingProfileBusy] = useState(false);
-  const [smartPrepSheetOpen, setSmartPrepSheetOpen] = useState(false);
+  const [smartPrepBusy, setSmartPrepBusy] = useState(false);
+  const [connectedSetupOpen, setConnectedSetupOpen] = useState(false);
+  const [connectedSetupInitialView, setConnectedSetupInitialView] =
+    useState<ConnectedFeaturesSetupView>("hub");
+  const [connectedSetupKey, setConnectedSetupKey] = useState(0);
   const [hungryReminderOpen, setHungryReminderOpen] = useState(false);
   const hungryReminderShown = useRef(false);
-  const feedingAutoOpenAttempted = useRef(false);
+  const connectedSetupAutoOpenAttempted = useRef(false);
   const feedingContext = useMemo(
     () => parseFeedingContextValue(dpState[dpCodes.feedingContext]),
     [dpState]
@@ -197,24 +222,61 @@ const HomePage: React.FC = () => {
   });
 
   useEffect(() => {
-    if (!feedingHomeId || !feedingDeviceId) return;
+    if (connectedSetupAutoOpenAttempted.current) return;
+    const hasSeen = hasSeenConnectedFeaturesSetup(
+      feedingHomeId,
+      feedingDeviceId
+    );
     if (
-      shouldAutoOpenFeedingProfile({
+      !shouldAutoOpenConnectedFeaturesSetup({
         isOnline,
-        hasValidContext: hasValidFeedingContext,
-        attemptedThisSession: feedingAutoOpenAttempted.current,
+        homeId: feedingHomeId,
+        deviceId: feedingDeviceId,
+        hasSeen,
       })
     ) {
-      feedingAutoOpenAttempted.current = true;
-      setFeedingProfileSheetOpen(true);
+      return;
     }
-  }, [feedingDeviceId, feedingHomeId, hasValidFeedingContext, isOnline]);
+    connectedSetupAutoOpenAttempted.current = true;
+    markConnectedFeaturesSetupSeen(feedingHomeId, feedingDeviceId);
+    setConnectedSetupInitialView("hub");
+    setConnectedSetupKey((value) => value + 1);
+    setConnectedSetupOpen(true);
+  }, [feedingDeviceId, feedingHomeId, isOnline]);
+
+  const openConnectedSetup = useCallback(
+    (view: ConnectedFeaturesSetupView) => {
+      if (!isOnline) return;
+      if (!isPanelDeviceContextReady(feedingHomeId, feedingDeviceId)) {
+        showToast({
+          title: "Device information is still loading. Try again in a moment.",
+          icon: "none",
+        });
+        return;
+      }
+      connectedSetupAutoOpenAttempted.current = true;
+      markConnectedFeaturesSetupSeen(feedingHomeId, feedingDeviceId);
+      setConnectedSetupInitialView(view);
+      setConnectedSetupKey((value) => value + 1);
+      setConnectedSetupOpen(true);
+    },
+    [feedingDeviceId, feedingHomeId, isOnline]
+  );
 
   const openFeedingProfileSheet = useCallback(() => {
-    if (!isOnline) return;
-    feedingAutoOpenAttempted.current = true;
-    setFeedingProfileSheetOpen(true);
-  }, [isOnline]);
+    openConnectedSetup("feeding");
+  }, [openConnectedSetup]);
+
+  const openSmartPrepSheet = useCallback(() => {
+    if (!isPanelDeviceContextReady(feedingHomeId, feedingDeviceId)) {
+      showToast({
+        title: "Device information is still loading. Try again in a moment.",
+        icon: "none",
+      });
+      return;
+    }
+    openConnectedSetup("smartPrep");
+  }, [feedingDeviceId, feedingHomeId, openConnectedSetup]);
 
   const handleFeedingProfileSelection = useCallback(
     (selection: FeedingProfileSelection) => {
@@ -585,12 +647,16 @@ const HomePage: React.FC = () => {
   }, [setDp, t]);
 
   useEffect(() => {
-    const pending = dpState[dpCodes.sceneFeedRequest] === "hungry_pending";
-    if (pending && !hungryReminderShown.current) {
+    const sceneFeedRequest = dpState[dpCodes.sceneFeedRequest];
+    if (
+      shouldOpenCryAssistReminder(sceneFeedRequest, hungryReminderShown.current)
+    ) {
       hungryReminderShown.current = true;
       setHungryReminderOpen(true);
     }
-    if (!pending) hungryReminderShown.current = false;
+    if (shouldResetCryAssistReminder(sceneFeedRequest)) {
+      hungryReminderShown.current = false;
+    }
   }, [dpState]);
 
   const handleHungryNotNow = async () => {
@@ -815,35 +881,6 @@ const HomePage: React.FC = () => {
                         </View>
                       </>
                     ) : null}
-                    <View className={styles.gapSmartPrep} />
-                    <View
-                      className={clsx(
-                        styles.smartPrepEntry,
-                        (!isOnline || panelDisabled) && styles.disabled
-                      )}
-                      onClick={
-                        isOnline && !panelDisabled
-                          ? () => setSmartPrepSheetOpen(true)
-                          : undefined
-                      }
-                    >
-                      <Image
-                        src={Res.icNotification}
-                        className={styles.smartPrepIcon}
-                      />
-                      <View className={styles.smartPrepCopy}>
-                        <Text className={styles.smartPrepTitle}>
-                          Smart Prep Reminder
-                        </Text>
-                        <Text className={styles.smartPrepSubtitle}>
-                          Get a reminder when CryAssist detects hunger.
-                        </Text>
-                      </View>
-                      <Image
-                        src={Res.icArrowRight}
-                        className={styles.smartPrepArrow}
-                      />
-                    </View>
                     <View
                       className={
                         showBrandBanner
@@ -1007,12 +1044,7 @@ const HomePage: React.FC = () => {
           </View>
         </View>
 
-        <View
-          className={clsx(
-            styles.secondaryList,
-            panelDisabled && styles.panelBlock
-          )}
-        >
+        <View className={styles.secondaryList}>
           <View
             className={clsx(
               styles.settingsRowCard,
@@ -1106,7 +1138,14 @@ const HomePage: React.FC = () => {
             )}
             onClick={isOnline ? openFeedingProfileSheet : undefined}
           >
-            <Text className={styles.settingsRowLabel}>Feeding record</Text>
+            <View className={styles.cleanRowTextCol}>
+              <Text className={styles.settingsRowLabel}>Feeding record</Text>
+              <Text className={styles.settingsRowSubtext}>
+                {hasValidFeedingContext && feedingProfile?.childName
+                  ? feedingProfile.childName
+                  : "Choose baby profile"}
+              </Text>
+            </View>
             <View className={styles.cleanRowBtn}>
               {feedingProfileBusy ? (
                 <View className={styles.feedingProfileSpinner} />
@@ -1119,6 +1158,32 @@ const HomePage: React.FC = () => {
                       : styles.cleanRowIcon
                   }
                   mode="aspectFill"
+                />
+              )}
+            </View>
+          </View>
+          <View
+            className={clsx(
+              styles.settingsRowCard,
+              !isOnline && styles.disabled
+            )}
+            onClick={isOnline ? openSmartPrepSheet : undefined}
+          >
+            <View className={styles.cleanRowTextCol}>
+              <Text className={styles.settingsRowLabel}>
+                Smart Prep Reminder
+              </Text>
+              <Text className={styles.settingsRowSubtext}>
+                Choose CryAssist devices
+              </Text>
+            </View>
+            <View className={styles.cleanRowBtn}>
+              {smartPrepBusy ? (
+                <View className={styles.feedingProfileSpinner} />
+              ) : (
+                <Image
+                  src={Res.icNotification}
+                  className={styles.cleanRowIcon}
                 />
               )}
             </View>
@@ -1137,24 +1202,22 @@ const HomePage: React.FC = () => {
         />
       )}
 
-      {feedingProfileSheetOpen ? (
-        <FeedingProfileSheet
+      {connectedSetupOpen ? (
+        <ConnectedFeaturesSetupSheet
+          key={connectedSetupKey}
+          initialView={connectedSetupInitialView}
           deviceId={feedingDeviceId}
           homeId={feedingHomeId}
+          isOnline={isOnline}
           currentChildId={
             hasValidFeedingContext ? feedingContext?.childID : undefined
           }
-          onClose={() => setFeedingProfileSheetOpen(false)}
-          onSelectionChange={handleFeedingProfileSelection}
-          onBusyChange={setFeedingProfileBusy}
-        />
-      ) : null}
-
-      {smartPrepSheetOpen ? (
-        <SmartPrepReminderSheet
-          homeId={feedingHomeId}
-          deviceId={feedingDeviceId}
-          onClose={() => setSmartPrepSheetOpen(false)}
+          feedingProfile={feedingProfile}
+          hasValidFeedingContext={hasValidFeedingContext}
+          onClose={() => setConnectedSetupOpen(false)}
+          onFeedingSelectionChange={handleFeedingProfileSelection}
+          onFeedingBusyChange={setFeedingProfileBusy}
+          onSmartPrepBusyChange={setSmartPrepBusy}
         />
       ) : null}
 
