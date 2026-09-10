@@ -12,6 +12,7 @@ import {
 export interface MilkRecipeParams {
   volumeMl: number;
   temp: TempSet;
+  formulaWater: number;
   formulaRatio: number;
   unitSet: "mL";
 }
@@ -43,16 +44,18 @@ export const resolveMilkRecipeParams = (
     formulaRatio = presetFormulaRatio;
   }
 
+  let formulaWater = 100;
   if (input.powderBrandSelection) {
-    const { waterMl, formulaRatio: brandFormulaRatio } =
-      input.powderBrandSelection;
+    const { waterMl, powderG } = input.powderBrandSelection;
     volumeMl = waterMl;
-    formulaRatio = brandFormulaRatio;
+    formulaWater = waterMl;
+    formulaRatio = powderG * 10;
   }
 
   return {
     volumeMl: clampMl(volumeMl),
     temp: parseTemp(temp),
+    formulaWater,
     formulaRatio: Math.min(
       FORMULA_RATIO_MAX,
       Math.max(FORMULA_RATIO_MIN, Math.round(formulaRatio))
@@ -61,13 +64,14 @@ export const resolveMilkRecipeParams = (
   };
 };
 
-/** 泡奶啟動前一次下發：配方 DP + start_milk（配方欄位在前） */
+/** 泡奶啟動前一次下發：配方 DP + work_mode；呼叫方再下發 working_status=true。 */
 export const buildMilkStartDpPayload = (
   recipe: MilkRecipeParams
 ): Record<string, unknown> => ({
   [dpCodes.volumeMl]: recipe.volumeMl,
-  [dpCodes.tempSet]: String(recipe.temp),
+  [dpCodes.tempSet]: recipe.temp,
+  [dpCodes.formulaWater]: recipe.formulaWater,
   [dpCodes.formulaRatio]: recipe.formulaRatio,
   [dpCodes.unitSet]: recipe.unitSet,
-  [dpCodes.startMilk]: true,
+  [dpCodes.workMode]: "milk",
 });

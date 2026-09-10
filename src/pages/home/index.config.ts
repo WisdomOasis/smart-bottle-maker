@@ -4,5 +4,5 @@ export default {
   navigationBarTextStyle: "@navTxtStyle",
   navigationBarTitleText: "Smart Fan",
   navigationStyle: "custom",
-  disableScroll: true,
+  disableScroll: false,
 };
