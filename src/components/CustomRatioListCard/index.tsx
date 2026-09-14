@@ -4,6 +4,7 @@ import { View, Text, Image } from "@ray-js/ray";
 import BrandRadio from "@/components/BrandRadio";
 import { IC_BRAND_EDIT_URI } from "@/res/icBrandEditUri";
 import type { PowderBrandEntry } from "@/constant/powderBrandListStorage";
+import { formatCustomRatioDisplay } from "@/i18n/formatters";
 import Strings from "@/i18n";
 import brandListStyles from "@/components/BrandListCard/index.module.less";
 
@@ -26,7 +27,7 @@ const CustomRatioListCard: React.FC<Props> = ({
     <View className={brandListStyles.card}>
       <View className={brandListStyles.textCol}>
         <Text className={brandListStyles.brandName}>
-          {`${entry.waterMl}ml / ${entry.powderG}g`}
+          {formatCustomRatioDisplay(entry.waterMl, entry.powderG)}
         </Text>
         <Text className={brandListStyles.seriesStage}>{customLabel}</Text>
       </View>

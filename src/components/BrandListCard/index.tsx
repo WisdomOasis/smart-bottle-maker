@@ -4,6 +4,7 @@ import { View, Text, Image } from "@ray-js/ray";
 import BrandRadio from "@/components/BrandRadio";
 import { IC_BRAND_EDIT_URI } from "@/res/icBrandEditUri";
 import type { PowderBrandEntry } from "@/constant/powderBrandListStorage";
+import { formatBrandSeriesStage } from "@/i18n/formatters";
 import styles from "./index.module.less";
 
 interface Props {
@@ -23,7 +24,7 @@ const BrandListCard: React.FC<Props> = ({
     <View className={styles.textCol}>
       <Text className={styles.brandName}>{entry.brandLabel}</Text>
       <Text className={styles.seriesStage}>
-        {`${entry.seriesLabel} / ${entry.stageLabel}`}
+        {formatBrandSeriesStage(entry.seriesLabel, entry.stageLabel)}
       </Text>
     </View>
     <View className={styles.actions}>

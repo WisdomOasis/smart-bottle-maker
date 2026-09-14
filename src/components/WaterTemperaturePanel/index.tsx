@@ -4,6 +4,7 @@ import clsx from "clsx";
 import { View, Text, Image } from "@ray-js/ray";
 import CustomModeSlider from "@/components/CustomModeSlider";
 import Strings from "@/i18n";
+import { formatUnitValueCelsius } from "@/i18n/formatters";
 import {
   TEMP_MAX,
   TEMP_MIN,
@@ -17,8 +18,8 @@ interface Props {
   temp: TempSet;
   disabled?: boolean;
   onChange: (temp: TempSet) => void;
-  /** 高溫清潔等固定溫度：滑桿鎖在單一值 */
-  fixedTemp?: TempSet;
+  /** 高溫清潔等固定溫度：滑桿鎖在單一值（可超出 temp DP 範圍，僅 UI） */
+  fixedTemp?: number;
 }
 
 const WaterTemperaturePanel: React.FC<Props> = ({
@@ -41,7 +42,9 @@ const WaterTemperaturePanel: React.FC<Props> = ({
           <Image src={WATER_TEMP_ICON_URI} className={styles.icon} />
           <Text className={styles.label}>{t("water_temperature_label")}</Text>
         </View>
-        <Text className={styles.value}>{displayTemp}°C</Text>
+        <Text className={styles.value}>
+          {formatUnitValueCelsius(displayTemp)}
+        </Text>
       </View>
       <View className={styles.sliderWrap}>
         <CustomModeSlider

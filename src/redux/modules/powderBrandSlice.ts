@@ -69,6 +69,12 @@ const powderBrandSlice = createSlice({
       state.activeId = store.activeId;
       syncConfigured(state);
     },
+    addPowderBrandEntry(state, action: PayloadAction<PowderBrandSelection>) {
+      upsertPowderBrandEntry(action.payload, null, { activate: false });
+      const store = readPowderBrandListStore();
+      state.entries = store.entries;
+      syncConfigured(state);
+    },
     hydratePowderBrandFromStorage(state) {
       const store = readPowderBrandListStore();
       state.entries = store.entries;
@@ -116,6 +122,7 @@ const powderBrandSlice = createSlice({
 
 export const {
   setPowderBrandSelection,
+  addPowderBrandEntry,
   hydratePowderBrandFromStorage,
   setPowderBrandListState,
   setActiveBrandId,

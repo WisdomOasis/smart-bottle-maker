@@ -45,7 +45,15 @@ const BrandBanner: React.FC<Props> = ({
   const t = (key: I18nKey) => Strings.getLang(key);
 
   const hintRow = (label: string) => (
-    <View className={clsx(styles.banner, styles.bannerHint)} onClick={onClick}>
+    <View
+      className={clsx(styles.banner, styles.bannerHint)}
+      style={{
+        background:
+          "linear-gradient(270deg, #FFFFFF 0%, rgba(255, 255, 255, 0.6) 100%)",
+        border: "0.4px solid #CBDEEF",
+      }}
+      onClick={onClick}
+    >
       <Text className={styles.hintText}>{label}</Text>
       <View className={styles.hintNavBtn}>
         <Image src={Res.icBrandHintChevronUri} className={styles.hintNavIcon} />

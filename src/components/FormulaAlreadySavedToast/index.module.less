@@ -1,0 +1,59 @@
+.toastFixed {
+  position: fixed;
+  top: 102px;
+  left: 12px;
+  width: 366px;
+  max-width: calc(100vw - 24px);
+  min-height: 44px;
+  box-sizing: border-box;
+  z-index: 1000;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px 16px 12px;
+  border-radius: 32px;
+  background: linear-gradient(270deg, #f5fff9 0%, #daede0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    8px 4px 12px 0 rgba(5, 151, 56, 0.08),
+    -8px -4px 12px 0 #ffffff,
+    inset -4px -4px 20px 0 rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+}
+
+.toastInline {
+  width: 366px;
+  max-width: 100%;
+  min-height: 44px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px 16px 12px;
+  border-radius: 32px;
+  background: linear-gradient(270deg, #f5fff9 0%, #daede0 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    8px 4px 12px 0 rgba(5, 151, 56, 0.08),
+    -8px -4px 12px 0 #ffffff,
+    inset -4px -4px 20px 0 rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.text {
+  flex: 1;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 100%;
+  letter-spacing: 0;
+  color: #55a074;
+}

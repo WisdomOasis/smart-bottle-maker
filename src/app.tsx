@@ -7,6 +7,7 @@ import { SdmProvider } from "@ray-js/panel-sdk";
 import { Text, View, initPanelEnvironment } from "@ray-js/ray";
 import RayErrorCatch from "@ray-js/ray-error-catch";
 import { devices } from "@/devices";
+import { hidePanelFloatingButtons } from "@/utils/panelChrome";
 import composeLayout from "./composeLayout";
 
 initPanelEnvironment({ useDefaultOffline: true });

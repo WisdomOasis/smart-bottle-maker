@@ -59,6 +59,37 @@ export const ozToMl = (oz: number) => Math.round(oz * 29.57);
 
 export const mlToOz = (ml: number) => Math.round(ml / 29.57);
 
+/** formula_water：每勺对应水量 mL */
+export const FORMULA_WATER_MIN = 30;
+export const FORMULA_WATER_MAX = 300;
+export const FORMULA_DENSITY_MIN = 5;
+export const FORMULA_DENSITY_MAX = 15;
+export const FORMULA_DENSITY_DEFAULT = 10;
+
+export const clampFormulaWater = (ml: number): number =>
+  Math.min(FORMULA_WATER_MAX, Math.max(FORMULA_WATER_MIN, Math.round(ml)));
+
+export const clampFormulaDensity = (raw: number): number =>
+  Math.min(FORMULA_DENSITY_MAX, Math.max(FORMULA_DENSITY_MIN, Math.round(raw)));
+
+/** Scoop model: powder grams per scoop → formula_ratio raw (×10) */
+export const scoopPowderGramsToFormulaRatio = (grams: number): number =>
+  Math.min(
+    FORMULA_RATIO_MAX,
+    Math.max(FORMULA_RATIO_MIN, Math.round(grams * 10))
+  );
+
+/** 配方 DP 批次（formula pages / powder brand 使用 scoop 模型） */
+export const buildFormulaSettingDpPayload = (
+  waterMl: number,
+  powderG: number,
+  densityRaw: number = FORMULA_DENSITY_DEFAULT
+): Record<string, number> => ({
+  [dpCodes.formulaWater]: clampFormulaWater(waterMl),
+  [dpCodes.formulaRatio]: scoopPowderGramsToFormulaRatio(powderG),
+  [dpCodes.formulaDensity]: clampFormulaDensity(densityRaw),
+});
+
 export const getVolumeFromDp = (
   dpState: Record<string, unknown>,
   unit: UnitSet

@@ -8,6 +8,7 @@ import CustomRatioListCard from "@/components/CustomRatioListCard";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import dpCodes from "@/constant/dpCodes";
 import { entryToSelection } from "@/constant/powderBrandListStorage";
+import { writeFormulaDetailEntryId } from "@/constant/formulaDetailStorage";
 import { IC_BACK_URI } from "@/res/icBackUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
@@ -18,7 +19,8 @@ import {
   setActiveBrandId,
   setEditingBrandId,
 } from "@/redux/modules/powderBrandSlice";
-import { createDpSetter } from "@/utils/dpControl";
+import { buildFormulaSettingDpPayload } from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
 
 const PowderBrandSettingsPage: React.FC = () => {
@@ -56,8 +58,10 @@ const PowderBrandSettingsPage: React.FC = () => {
       const entry = entries.find((e) => e.id === id);
       if (!entry) return;
       const selection = entryToSelection(entry);
-      await setDp(dpCodes.formulaRatio, selection.formulaRatio);
-      await setDp(dpCodes.volumeMl, selection.waterMl);
+      await publishDpBatch(setDp, {
+        ...buildFormulaSettingDpPayload(selection.waterMl, selection.powderG),
+        [dpCodes.volumeMl]: selection.waterMl,
+      });
     },
     [dispatch, entries, setDp]
   );
@@ -73,7 +77,8 @@ const PowderBrandSettingsPage: React.FC = () => {
   const handleEditBrand = useCallback(
     (id: string) => {
       dispatch(setEditingBrandId(id));
-      router.push("/powder-brand");
+      writeFormulaDetailEntryId(id);
+      router.push("/formula-details");
     },
     [dispatch]
   );
@@ -88,7 +93,7 @@ const PowderBrandSettingsPage: React.FC = () => {
 
   const handleAdd = useCallback(() => {
     dispatch(setEditingBrandId(null));
-    router.push("/powder-brand");
+    router.push("/search-brand");
   }, [dispatch]);
 
   const handleBatchDelete = useCallback(() => {

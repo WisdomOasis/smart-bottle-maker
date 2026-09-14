@@ -36,8 +36,11 @@ import {
   setEditingBrandId,
   setPowderBrandSelection,
 } from "@/redux/modules/powderBrandSlice";
-import { powderGramsToFormulaRatio } from "@/utils/bottleMaker";
-import { createDpSetter } from "@/utils/dpControl";
+import {
+  buildFormulaSettingDpPayload,
+  scoopPowderGramsToFormulaRatio,
+} from "@/utils/bottleMaker";
+import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
 
 type ActiveField = "water" | "powder" | null;
@@ -108,7 +111,7 @@ const CustomMixRatioPage: React.FC = () => {
 
     const water = clampCustomWaterMl(waterMl as number);
     const powder = clampCustomPowderG(powderG as number);
-    const formulaRatio = powderGramsToFormulaRatio(water, powder);
+    const formulaRatio = scoopPowderGramsToFormulaRatio(powder);
 
     const selection = {
       brandId: CUSTOM_BRAND_ID,
@@ -126,9 +129,11 @@ const CustomMixRatioPage: React.FC = () => {
     dispatch(setPowderBrandSelection(selection));
     dispatch(markBrandBannerEverClicked());
 
-    const ratioOk = await setDp(dpCodes.formulaRatio, formulaRatio);
-    const mlOk = await setDp(dpCodes.volumeMl, water);
-    if (!ratioOk && !mlOk) {
+    const ok = await publishDpBatch(setDp, {
+      ...buildFormulaSettingDpPayload(water, powder),
+      [dpCodes.volumeMl]: water,
+    });
+    if (!ok) {
       showToast({ title: t("dp_command_failed"), icon: "none" });
       return;
     }
@@ -189,8 +194,8 @@ const CustomMixRatioPage: React.FC = () => {
           <EditableRatioMetricCard
             label={t("powder_brand_ratio_water")}
             value={waterMl}
-            unit="ml"
-            placeholder="--"
+            unit={t("unit_ml_lower")}
+            placeholder={t("common_empty_placeholder")}
             active={activeField === "water"}
             min={CUSTOM_MIX_WATER_MIN}
             onActivate={() => setActiveField("water")}
@@ -200,8 +205,8 @@ const CustomMixRatioPage: React.FC = () => {
           <EditableRatioMetricCard
             label={t("powder_brand_ratio_powder")}
             value={powderG}
-            unit="g"
-            placeholder="--"
+            unit={t("unit_g")}
+            placeholder={t("common_empty_placeholder")}
             active={activeField === "powder"}
             min={CUSTOM_MIX_POWDER_MIN}
             max={CUSTOM_MIX_POWDER_MAX}

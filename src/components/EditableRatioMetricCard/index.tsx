@@ -3,6 +3,7 @@ import React from "react";
 import clsx from "clsx";
 import { View, Text } from "@ray-js/ray";
 import { Input } from "@ray-js/components";
+import Strings from "@/i18n";
 import styles from "./index.module.less";
 
 interface Props {
@@ -32,7 +33,7 @@ const EditableRatioMetricCard: React.FC<Props> = ({
   label,
   value,
   unit,
-  placeholder = "--",
+  placeholder = Strings.getLang("common_empty_placeholder"),
   active,
   min,
   max,

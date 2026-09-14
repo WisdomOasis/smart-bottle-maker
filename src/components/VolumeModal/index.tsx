@@ -4,6 +4,7 @@ import { View, Text } from "@ray-js/ray";
 import { Slider } from "@ray-js/components";
 import ControlModal from "@/components/ControlModal";
 import Strings from "@/i18n";
+import { formatUnitValueMl } from "@/i18n/formatters";
 import { ML_MIN, ML_MAX, ML_STEP } from "@/constant/presets";
 import styles from "./index.module.less";
 
@@ -33,7 +34,7 @@ const VolumeModal: React.FC<Props> = ({
       hideToggle
     >
       <View className={styles.body}>
-        <Text className={styles.value}>{value} mL</Text>
+        <Text className={styles.value}>{formatUnitValueMl(value)}</Text>
         <Slider
           min={0}
           max={steps}
@@ -46,8 +47,8 @@ const VolumeModal: React.FC<Props> = ({
           }}
         />
         <View className={styles.range}>
-          <Text>{ML_MIN} mL</Text>
-          <Text>{ML_MAX} mL</Text>
+          <Text>{formatUnitValueMl(ML_MIN)}</Text>
+          <Text>{formatUnitValueMl(ML_MAX)}</Text>
         </View>
       </View>
     </ControlModal>

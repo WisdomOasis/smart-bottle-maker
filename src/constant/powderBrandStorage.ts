@@ -1,9 +1,11 @@
 import type { PowderStage } from "@/constant/powderBrands";
+import { formatFormulaStageLabelFromId } from "@/i18n/formatters";
 import {
   entryToSelection,
   getActivePowderBrandEntry,
   upsertPowderBrandEntry,
 } from "@/constant/powderBrandListStorage";
+import { scoopPowderGramsToFormulaRatio } from "@/utils/bottleMaker";
 
 export const POWDER_BRAND_STORAGE_KEY = "smart_bottle_powder_brand";
 
@@ -17,6 +19,7 @@ export interface PowderBrandSelection {
   waterMl: number;
   powderG: number;
   formulaRatio: number;
+  barcode?: string;
 }
 
 export const selectionFromStage = (
@@ -31,10 +34,10 @@ export const selectionFromStage = (
   seriesId,
   seriesLabel,
   stageId: stage.id,
-  stageLabel: stage.label,
+  stageLabel: formatFormulaStageLabelFromId(stage.id),
   waterMl: stage.waterMl,
   powderG: stage.powderG,
-  formulaRatio: stage.formulaRatio,
+  formulaRatio: scoopPowderGramsToFormulaRatio(stage.powderG),
 });
 
 export const readPowderBrandSelection = (): PowderBrandSelection | null => {
