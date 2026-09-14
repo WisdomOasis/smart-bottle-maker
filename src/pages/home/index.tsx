@@ -39,6 +39,7 @@ import BottleMadeButton from "@/components/BottleMadeButton";
 import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
 import PowderCautionPanel from "@/components/PowderCautionPanel";
 import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
+import FeedingRecordConfirmationModal from "@/components/FeedingRecordConfirmationModal";
 import ConnectedFeaturesSetupSheet, {
   type ConnectedFeaturesSetupView,
 } from "@/components/ConnectedFeaturesSetupSheet";
@@ -50,6 +51,7 @@ import {
   type FeedingProfileSelection,
 } from "@/constant/feedingRecordStorage";
 import { parseFeedingContextValue } from "@/utils/feedingContextValue";
+import { parseFeedingRecordConfirmation } from "@/utils/feedingRecordConfirmation";
 import { resolveFeedingProfileAvatar } from "@/utils/feedingProfilePresentation";
 import {
   hasSeenConnectedFeaturesSetup,
@@ -214,6 +216,18 @@ const HomePage: React.FC = () => {
   const hasValidFeedingContext = Boolean(
     feedingContext && feedingHomeId && feedingContext.homeID === feedingHomeId
   );
+  const feedingConfirmationPending =
+    dpState[dpCodes.feedingRecordConfirmation] === "pending";
+  const feedingConfirmationRecord = useMemo(
+    () =>
+      hasValidFeedingContext && feedingContext
+        ? parseFeedingRecordConfirmation(
+            dpState[dpCodes.drinkRecordUpload],
+            feedingContext
+          )
+        : null,
+    [dpState, feedingContext, hasValidFeedingContext]
+  );
   const feedingProfileAvatar = resolveFeedingProfileAvatar({
     isOnline,
     homeId: feedingHomeId,
@@ -292,6 +306,11 @@ const HomePage: React.FC = () => {
         actions as Record<string, { set?: (v: unknown) => unknown }> | undefined
       ),
     [actions]
+  );
+
+  const clearFeedingConfirmation = useCallback(
+    () => setDp(dpCodes.feedingRecordConfirmation, "none"),
+    [setDp]
   );
 
   useEffect(() => {
@@ -1218,6 +1237,15 @@ const HomePage: React.FC = () => {
           onFeedingSelectionChange={handleFeedingProfileSelection}
           onFeedingBusyChange={setFeedingProfileBusy}
           onSmartPrepBusyChange={setSmartPrepBusy}
+        />
+      ) : null}
+
+      {feedingConfirmationPending ? (
+        <FeedingRecordConfirmationModal
+          context={hasValidFeedingContext ? feedingContext : null}
+          record={feedingConfirmationRecord}
+          isOnline={isOnline}
+          clearConfirmation={clearFeedingConfirmation}
         />
       ) : null}
 

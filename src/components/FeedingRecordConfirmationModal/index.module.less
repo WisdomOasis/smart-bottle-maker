@@ -1,0 +1,126 @@
+.mask {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  box-sizing: border-box;
+  background: rgba(22, 33, 52, 0.46);
+}
+
+.card {
+  width: 100%;
+  max-width: 620rpx;
+  overflow: hidden;
+  border-radius: 16rpx;
+  background: #ffffff;
+  box-shadow: 0 16rpx 48rpx rgba(24, 50, 82, 0.18);
+}
+
+.title {
+  display: block;
+  padding: 36rpx 36rpx 0;
+  color: #2d3a5f;
+  font-size: 31rpx;
+  font-weight: 700;
+  line-height: 42rpx;
+  text-align: center;
+}
+
+.body {
+  display: block;
+  padding: 20rpx 44rpx 28rpx;
+  color: #66718e;
+  font-size: 25rpx;
+  line-height: 36rpx;
+  text-align: center;
+}
+
+.amountPanel {
+  margin: 0 36rpx 28rpx;
+  padding: 28rpx;
+  border-radius: 16rpx;
+  background: #eef4fa;
+}
+
+.amountHeader,
+.rangeLabels,
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.amountHeader {
+  margin-bottom: 20rpx;
+}
+
+.amountLabel,
+.amountValue {
+  color: #3f6084;
+  font-size: 25rpx;
+  line-height: 34rpx;
+}
+
+.amountValue {
+  color: #2d3a5f;
+  font-weight: 600;
+}
+
+.rangeLabels {
+  margin-top: 12rpx;
+}
+
+.rangeText {
+  color: #8792aa;
+  font-size: 20rpx;
+}
+
+.errorText {
+  display: block;
+  padding: 0 36rpx 24rpx;
+  color: #b55d5d;
+  font-size: 23rpx;
+  line-height: 32rpx;
+  text-align: center;
+}
+
+.actions {
+  border-top: 1px solid #e3e8ef;
+}
+
+.action,
+.singleAction {
+  width: 50%;
+  min-height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.action + .action {
+  border-left: 1px solid #e3e8ef;
+}
+
+.singleAction {
+  width: 100%;
+  border-top: 1px solid #e3e8ef;
+}
+
+.ghostText,
+.primaryText {
+  font-size: 25rpx;
+  line-height: 34rpx;
+}
+
+.ghostText {
+  color: #78839c;
+}
+
+.primaryText {
+  color: #4d7294;
+  font-weight: 600;
+}

@@ -16,6 +16,7 @@ export default {
   sceneFeedRequest: "scene_feed_request",
   remindFunnelClean: "remind_funnel_clean",
   feedingContext: "feeding_record_context",
+  feedingRecordConfirmation: "feeding_record_confir",
   drinkRecordUpload: "drink_record_upload",
   errorCode: "error_code",
   childLock: "child_lock",
