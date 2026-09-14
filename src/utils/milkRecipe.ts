@@ -2,20 +2,18 @@ import dpCodes from "@/constant/dpCodes";
 import type { PowderBrandSelection } from "@/constant/powderBrandStorage";
 import { SCENE_PRESETS, type ScenePresetKey } from "@/constant/presets";
 import {
-  buildFormulaSettingDpPayload,
   clampMl,
-  FORMULA_DENSITY_DEFAULT,
+  FORMULA_RATIO_MAX,
+  FORMULA_RATIO_MIN,
   parseTemp,
-  powderGramsToFormulaRatio,
   type TempSet,
 } from "@/utils/bottleMaker";
 
 export interface MilkRecipeParams {
   volumeMl: number;
   temp: TempSet;
-  formulaWaterMl: number;
+  formulaWater: number;
   formulaRatio: number;
-  formulaDensity: number;
   unitSet: "mL";
 }
 
@@ -23,9 +21,7 @@ export interface ResolveMilkRecipeInput {
   sceneKey: ScenePresetKey;
   volumeMl: number;
   temp: TempSet;
-  formulaWaterMl: number;
   formulaRatio: number;
-  formulaDensity?: number;
   powderBrandSelection: PowderBrandSelection | null;
 }
 
@@ -35,51 +31,47 @@ export const resolveMilkRecipeParams = (
 ): MilkRecipeParams => {
   let { volumeMl } = input;
   let { temp } = input;
-  let { formulaWaterMl } = input;
   let { formulaRatio } = input;
-  const formulaDensity = input.formulaDensity ?? FORMULA_DENSITY_DEFAULT;
 
   if (input.sceneKey !== "custom") {
     const {
       ml,
       temp: presetTemp,
-      formulaWaterMl: presetWater,
       formulaRatio: presetFormulaRatio,
     } = SCENE_PRESETS[input.sceneKey];
     volumeMl = ml;
     temp = presetTemp;
-    formulaWaterMl = presetWater;
     formulaRatio = presetFormulaRatio;
   }
 
+  let formulaWater = 100;
   if (input.powderBrandSelection) {
     const { waterMl, powderG } = input.powderBrandSelection;
     volumeMl = waterMl;
-    formulaWaterMl = waterMl;
-    formulaRatio = powderGramsToFormulaRatio(powderG);
+    formulaWater = waterMl;
+    formulaRatio = powderG * 10;
   }
 
   return {
     volumeMl: clampMl(volumeMl),
     temp: parseTemp(temp),
-    formulaWaterMl,
-    formulaRatio,
-    formulaDensity,
+    formulaWater,
+    formulaRatio: Math.min(
+      FORMULA_RATIO_MAX,
+      Math.max(FORMULA_RATIO_MIN, Math.round(formulaRatio))
+    ),
     unitSet: "mL",
   };
 };
 
-/** 泡奶啟動：配方 DP + work_mode=milk（已移除獨立 milk bool DP） */
+/** 泡奶啟動前一次下發：配方 DP + work_mode；呼叫方再下發 working_status=true。 */
 export const buildMilkStartDpPayload = (
   recipe: MilkRecipeParams
 ): Record<string, unknown> => ({
   [dpCodes.volumeMl]: recipe.volumeMl,
   [dpCodes.tempSet]: recipe.temp,
-  ...buildFormulaSettingDpPayload(
-    recipe.formulaWaterMl,
-    recipe.formulaRatio / 10,
-    recipe.formulaDensity
-  ),
+  [dpCodes.formulaWater]: recipe.formulaWater,
+  [dpCodes.formulaRatio]: recipe.formulaRatio,
   [dpCodes.unitSet]: recipe.unitSet,
   [dpCodes.workMode]: "milk",
 });

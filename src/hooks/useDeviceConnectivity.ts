@@ -22,6 +22,7 @@ const useDeviceConnectivity = () => {
 
   const switchRaw = dpState[dpCodes.switch];
   const switchOn = parseSwitchOn(switchRaw);
+  const wifiStatus = undefined;
 
   const handleOnlineUpdate = useCallback(
     (data: { deviceId: string; online: boolean }) => {
@@ -57,13 +58,14 @@ const useDeviceConnectivity = () => {
   }, [devId, handleOnlineUpdate]);
 
   const isOnline = useMemo(
-    () => resolveDeviceOnline(platformOnline),
-    [platformOnline]
+    () => resolveDeviceOnline(wifiStatus, platformOnline),
+    [wifiStatus, platformOnline]
   );
 
   return {
     switchOn,
     isOnline,
+    wifiStatus,
     panelDisabled: !switchOn,
   };
 };

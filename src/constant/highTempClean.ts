@@ -1,10 +1,8 @@
-/** 高溫清潔：200mL 熱水 + 100mL 常溫水（temp DP 僅適用 milk/water，清潔不寫 temp） */
+/** 清潔流程由設備 firmware 的 clean mode 執行；面板僅顯示預估水量與倒數。 */
 export const HIGH_TEMP_CLEAN_HOT_ML = 200;
 export const HIGH_TEMP_CLEAN_ROOM_ML = 100;
 export const HIGH_TEMP_CLEAN_TOTAL_ML =
   HIGH_TEMP_CLEAN_HOT_ML + HIGH_TEMP_CLEAN_ROOM_ML;
-/** UI 展示用參考溫度（不在 temp DP 範圍 20–40 內，不寫入設備） */
-export const HIGH_TEMP_CLEAN_TEMP = 70;
 export const HIGH_TEMP_CLEAN_COUNTDOWN_SEC = 120;
 
 export const formatCleanCountdown = (seconds: number): string => {

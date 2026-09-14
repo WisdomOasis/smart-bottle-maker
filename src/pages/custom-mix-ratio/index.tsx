@@ -37,8 +37,8 @@ import {
   setPowderBrandSelection,
 } from "@/redux/modules/powderBrandSlice";
 import {
-  powderGramsToFormulaRatio,
   buildFormulaSettingDpPayload,
+  scoopPowderGramsToFormulaRatio,
 } from "@/utils/bottleMaker";
 import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
@@ -111,7 +111,7 @@ const CustomMixRatioPage: React.FC = () => {
 
     const water = clampCustomWaterMl(waterMl as number);
     const powder = clampCustomPowderG(powderG as number);
-    const formulaRatio = powderGramsToFormulaRatio(powder);
+    const formulaRatio = scoopPowderGramsToFormulaRatio(powder);
 
     const selection = {
       brandId: CUSTOM_BRAND_ID,

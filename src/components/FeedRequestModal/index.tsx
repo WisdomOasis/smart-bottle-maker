@@ -21,10 +21,11 @@ import {
   TEMP_MAX,
   TEMP_MIN,
   TEMP_SET_OPTIONS,
-  TEMP_STEP,
   type TempSet,
 } from "@/utils/bottleMaker";
 import styles from "./index.module.less";
+
+const TEMP_STEP = 5;
 
 interface Props {
   visible: boolean;
@@ -67,20 +68,20 @@ const FeedRequestModal: React.FC<Props> = ({
   }, [visible, ml, formulaWaterMl, formulaRatio, temp]);
 
   const draftPowderG = useMemo(
-    () => calcPowderGrams(draftMl, draftRatio, draftWater),
-    [draftMl, draftRatio, draftWater]
+    () => calcPowderGrams(draftMl, draftRatio),
+    [draftMl, draftRatio]
   );
 
   const powderBounds = useMemo(() => {
     const safeMl = Math.max(ML_MIN, draftMl || ML_MIN);
-    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN, draftWater);
-    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX, draftWater);
+    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN);
+    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX);
     return { min, max: Math.max(min + 1, max) };
-  }, [draftMl, draftWater]);
+  }, [draftMl]);
 
   const handlePowderChange = (grams: number) => {
     setDraftWater(clampMl(draftMl));
-    setDraftRatio(powderGramsToFormulaRatio(grams));
+    setDraftRatio(powderGramsToFormulaRatio(draftMl, grams));
   };
 
   if (!visible) return null;

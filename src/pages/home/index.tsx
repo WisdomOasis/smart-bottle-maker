@@ -7,11 +7,17 @@ import React, {
 } from "react";
 import clsx from "clsx";
 import { useSelector } from "react-redux";
-import { View, Text, Image, showToast, router } from "@ray-js/ray";
+import {
+  View,
+  Text,
+  Image,
+  showToast,
+  router,
+  useAppEvent,
+  getLaunchOptionsSync,
+} from "@ray-js/ray";
 import { useProps, useActions, useDevice } from "@ray-js/panel-sdk";
 import useDeviceConnectivity from "@/hooks/useDeviceConnectivity";
-import { IC_CONNECTION_OFFLINE_URI } from "@/res/icConnectionOfflineUri";
-import { IC_CONNECTION_ONLINE_URI } from "@/res/icConnectionOnlineUri";
 import Res from "@/res";
 import dpCodes from "@/constant/dpCodes";
 import {
@@ -23,15 +29,6 @@ import AmountGauge from "@/components/AmountGauge";
 import CustomModeSettingsPanel, {
   type CustomModeDraft,
 } from "@/components/CustomModeSettingsPanel";
-import DeviceStatusAlertToast from "@/components/DeviceStatusAlertToast";
-import DeviceStatusBottomPanel from "@/components/DeviceStatusBottomPanel";
-import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
-import FeedRequestModal from "@/components/FeedRequestModal";
-import SmartPrepActivateModal from "@/components/SmartPrepActivateModal";
-import SmartPrepNoCryDeviceModal from "@/components/SmartPrepNoCryDeviceModal";
-import SmartPrepTutorialModal from "@/components/SmartPrepTutorialModal";
-import SmartPrepSetupSnackbar from "@/components/SmartPrepSetupSnackbar";
-import PanelNavBar from "@/components/PanelNavBar";
 import BrandBanner from "@/components/BrandBanner";
 import SceneModeTabs, { type SceneTabItem } from "@/components/SceneModeTabs";
 import MakingModeBar, {
@@ -41,11 +38,26 @@ import MakingActionsPanel from "@/components/MakingActionsPanel";
 import BottleMadeButton from "@/components/BottleMadeButton";
 import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
 import PowderCautionPanel from "@/components/PowderCautionPanel";
+import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
+import ConnectedFeaturesSetupSheet, {
+  type ConnectedFeaturesSetupView,
+} from "@/components/ConnectedFeaturesSetupSheet";
 import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
+  getFeedingProfileSelection,
+  saveFeedingProfileSelection,
+  type FeedingProfileSelection,
+} from "@/constant/feedingRecordStorage";
+import { parseFeedingContextValue } from "@/utils/feedingContextValue";
+import { resolveFeedingProfileAvatar } from "@/utils/feedingProfilePresentation";
+import {
+  hasSeenConnectedFeaturesSetup,
+  markConnectedFeaturesSetupSeen,
+  shouldAutoOpenConnectedFeaturesSetup,
+} from "@/utils/connectedFeaturesSetup";
+import {
   HIGH_TEMP_CLEAN_COUNTDOWN_SEC,
-  HIGH_TEMP_CLEAN_TEMP,
   HIGH_TEMP_CLEAN_TOTAL_ML,
 } from "@/constant/highTempClean";
 import { useAppDispatch } from "@/redux";
@@ -61,40 +73,34 @@ import {
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import {
-  buildFormulaSettingDpPayload,
   calcPowderGrams,
   clampMl,
-  FORMULA_DENSITY_DEFAULT,
   getVolumeFromDp,
-  hasDrinkRecordUpload,
-  isActivelyWorking,
-  parseErrorCode,
-  parseSceneFeedRequest,
-  parseSensorInstalled,
+  isWorking,
   parseTemp,
   parseUnit,
   parseWorkMode,
-  parseWorkingStatus,
   type TempSet,
   type WorkMode,
 } from "@/utils/bottleMaker";
-import {
-  getAssemblyStatusesForMode,
-  hasAssemblyBlocker,
-} from "@/utils/deviceAssemblyStatus";
 import { createDpSetter, publishDpBatch, setBoolDp } from "@/utils/dpControl";
 import {
   buildMilkStartDpPayload,
   resolveMilkRecipeParams,
 } from "@/utils/milkRecipe";
-import { formatConnectionStatus, parseSwitchOn } from "@/utils/deviceStatus";
-import useSmartPrepSetupGuide from "@/hooks/useSmartPrepSetupGuide";
+import { formatConnectionStatus } from "@/utils/deviceStatus";
+import {
+  shouldOpenCryAssistReminder,
+  shouldResetCryAssistReminder,
+} from "@/utils/cryassistReminder";
+import {
+  isPanelDeviceContextReady,
+  resolvePanelDeviceId,
+} from "@/utils/panelDeviceContext";
 import styles from "./index.module.less";
 
 type ActionKind = "milk" | "water" | "powder";
 type CompletionKind = "milk" | "water" | "powder";
-
-const SHOW_SCENE_MODE_TABS = false;
 
 const SCENE_TABS: SceneTabItem[] = [
   {
@@ -122,7 +128,8 @@ const SCENE_TABS: SceneTabItem[] = [
 const HomePage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
-  const { switchOn, isOnline, panelDisabled } = useDeviceConnectivity();
+  const { switchOn, isOnline, wifiStatus, panelDisabled } =
+    useDeviceConnectivity();
   const { devInfo } = useDevice((state) => ({ devInfo: state.devInfo }));
   const dpState = useProps() as Record<string, unknown>;
   const actions = useActions();
@@ -136,14 +143,12 @@ const HomePage: React.FC = () => {
   const hasSavedPowderBrands = powderBrandEntries.length > 0;
   const isCustomBrand = powderBrandSelection?.brandId === CUSTOM_BRAND_ID;
   const showBrandBanner = !brandSet || Boolean(powderBrandSelection);
-  const childLock = parseSwitchOn(dpState[dpCodes.childLock]);
   const [customModeOpen, setCustomModeOpen] = useState(false);
-  const [deviceStatusPanelOpen, setDeviceStatusPanelOpen] = useState(false);
-  const [sensorsSettling, setSensorsSettling] = useState(false);
   const [bottleMadePhase, setBottleMadePhase] = useState(false);
   const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
   const [selectedAction, setSelectedAction] = useState<ActionKind>("milk");
   const [milkSessionActive, setMilkSessionActive] = useState(false);
+  const [babyDiaryToastVisible, setBabyDiaryToastVisible] = useState(false);
   const [waterSessionActive, setWaterSessionActive] = useState(false);
   const [powderSessionActive, setPowderSessionActive] = useState(false);
   const [cleanCountdown, setCleanCountdown] = useState(
@@ -153,67 +158,133 @@ const HomePage: React.FC = () => {
     null
   );
   const [stopBusy, setStopBusy] = useState(false);
-  const [feedRequestDismissed, setFeedRequestDismissed] = useState(false);
-  const smartPrepGuide = useSmartPrepSetupGuide({
-    // 必須用家庭 homeId；勿用 device.groupId（那是設備群組，不是家庭）
-    deviceId: devInfo?.devId,
-  });
-  const prevWorkingStatus = useRef<boolean | null>(null);
+  const prevWorking = useRef(false);
+  const prevWorkMode = useRef<WorkMode>("milk");
   const wasInCleanMode = useRef(false);
-  const prevSwitchOn = useRef<boolean | null>(null);
-  const sensorSnapshotOnPowerOn = useRef<{
-    milkbox: unknown;
-    funnel: unknown;
-    bottle: unknown;
-    watertank: unknown;
-  } | null>(null);
-  const suppressStaleSensorsAfterPowerOn = useRef(false);
-  const lastTrustedSensors = useRef({
-    milkbox: true,
-    funnel: true,
-    bottle: true,
-    watertank: true,
-  });
 
   const workMode = parseWorkMode(dpState[dpCodes.workMode]);
-  const workingStatus = parseWorkingStatus(dpState[dpCodes.workingStatus]);
-  const sceneFeedRequest = parseSceneFeedRequest(
-    dpState[dpCodes.sceneFeedRequest]
-  );
-  /** 執行中模式：work_mode + working_status；status 為 false 時視為停滯 */
-  const isMaking = isActivelyWorking(workMode, workingStatus);
-  /** 清潔 UI 僅在 work_mode === clean 且 working_status 為 true 時顯示 */
-  const isCleanSession = workMode === "clean" && workingStatus;
+  const isMaking = isWorking(dpState[dpCodes.workingStatus]);
+  const childLock = isWorking(dpState[dpCodes.childLock]);
+  const isCleanSession = isMaking && workMode === "clean";
   const isMakingUi = isMaking && !isCleanSession;
-
-  useEffect(() => {
-    if (sceneFeedRequest === "hungry_pending") {
-      setFeedRequestDismissed(false);
-    }
-  }, [sceneFeedRequest]);
-
-  const showFeedRequestModal =
-    sceneFeedRequest === "hungry_pending" &&
-    !feedRequestDismissed &&
-    !isMakingUi &&
-    !isCleanSession;
-
   const unit = parseUnit(dpState[dpCodes.unitSet]);
   const temp = parseTemp(dpState[dpCodes.tempSet]);
-  const formulaRatio = Number(dpState[dpCodes.formulaRatio] ?? 90);
-  const formulaWaterMl = Number(dpState[dpCodes.formulaWater] ?? 100);
-  const formulaDensity = Number(
-    dpState[dpCodes.formulaDensity] ?? FORMULA_DENSITY_DEFAULT
-  );
+  const formulaRatio = Number(dpState[dpCodes.formulaRatio] ?? 130);
   const volumeMl = getVolumeFromDp(dpState, unit);
-  const powderG = calcPowderGrams(
-    volumeMl,
-    formulaRatio,
-    formulaWaterMl,
-    formulaDensity
-  );
+  const powderG = calcPowderGrams(volumeMl, formulaRatio);
   const preset = SCENE_PRESETS[sceneKey as keyof typeof SCENE_PRESETS];
   const powderPrimary = preset?.powderPrimary ?? false;
+  const feedingDeviceId = resolvePanelDeviceId(
+    devInfo?.devId,
+    getLaunchOptionsSync()?.query
+  );
+  const [feedingProfile, setFeedingProfile] = useState(() =>
+    getFeedingProfileSelection(feedingDeviceId)
+  );
+  const [feedingHomeId, setFeedingHomeId] = useState("");
+  const [feedingProfileBusy, setFeedingProfileBusy] = useState(false);
+  const [smartPrepBusy, setSmartPrepBusy] = useState(false);
+  const [connectedSetupOpen, setConnectedSetupOpen] = useState(false);
+  const [connectedSetupInitialView, setConnectedSetupInitialView] =
+    useState<ConnectedFeaturesSetupView>("hub");
+  const [connectedSetupKey, setConnectedSetupKey] = useState(0);
+  const [hungryReminderOpen, setHungryReminderOpen] = useState(false);
+  const hungryReminderShown = useRef(false);
+  const connectedSetupAutoOpenAttempted = useRef(false);
+  const feedingContext = useMemo(
+    () => parseFeedingContextValue(dpState[dpCodes.feedingContext]),
+    [dpState]
+  );
+
+  const refreshFeedingRecordStatus = useCallback(() => {
+    setFeedingProfile(getFeedingProfileSelection(feedingDeviceId));
+    ty.home.getCurrentHomeInfo({
+      success: (home: { homeId?: string | number }) =>
+        setFeedingHomeId(String(home.homeId || "")),
+      fail: () => setFeedingHomeId(""),
+    });
+  }, [feedingDeviceId]);
+
+  useEffect(() => {
+    refreshFeedingRecordStatus();
+  }, [refreshFeedingRecordStatus]);
+
+  useAppEvent("onShow", refreshFeedingRecordStatus);
+
+  const hasValidFeedingContext = Boolean(
+    feedingContext && feedingHomeId && feedingContext.homeID === feedingHomeId
+  );
+  const feedingProfileAvatar = resolveFeedingProfileAvatar({
+    isOnline,
+    homeId: feedingHomeId,
+    context: feedingContext,
+    selection: feedingProfile,
+  });
+
+  useEffect(() => {
+    if (connectedSetupAutoOpenAttempted.current) return;
+    const hasSeen = hasSeenConnectedFeaturesSetup(
+      feedingHomeId,
+      feedingDeviceId
+    );
+    if (
+      !shouldAutoOpenConnectedFeaturesSetup({
+        isOnline,
+        homeId: feedingHomeId,
+        deviceId: feedingDeviceId,
+        hasSeen,
+      })
+    ) {
+      return;
+    }
+    connectedSetupAutoOpenAttempted.current = true;
+    markConnectedFeaturesSetupSeen(feedingHomeId, feedingDeviceId);
+    setConnectedSetupInitialView("hub");
+    setConnectedSetupKey((value) => value + 1);
+    setConnectedSetupOpen(true);
+  }, [feedingDeviceId, feedingHomeId, isOnline]);
+
+  const openConnectedSetup = useCallback(
+    (view: ConnectedFeaturesSetupView) => {
+      if (!isOnline) return;
+      if (!isPanelDeviceContextReady(feedingHomeId, feedingDeviceId)) {
+        showToast({
+          title: "Device information is still loading. Try again in a moment.",
+          icon: "none",
+        });
+        return;
+      }
+      connectedSetupAutoOpenAttempted.current = true;
+      markConnectedFeaturesSetupSeen(feedingHomeId, feedingDeviceId);
+      setConnectedSetupInitialView(view);
+      setConnectedSetupKey((value) => value + 1);
+      setConnectedSetupOpen(true);
+    },
+    [feedingDeviceId, feedingHomeId, isOnline]
+  );
+
+  const openFeedingProfileSheet = useCallback(() => {
+    openConnectedSetup("feeding");
+  }, [openConnectedSetup]);
+
+  const openSmartPrepSheet = useCallback(() => {
+    if (!isPanelDeviceContextReady(feedingHomeId, feedingDeviceId)) {
+      showToast({
+        title: "Device information is still loading. Try again in a moment.",
+        icon: "none",
+      });
+      return;
+    }
+    openConnectedSetup("smartPrep");
+  }, [feedingDeviceId, feedingHomeId, openConnectedSetup]);
+
+  const handleFeedingProfileSelection = useCallback(
+    (selection: FeedingProfileSelection) => {
+      saveFeedingProfileSelection(feedingDeviceId, selection);
+      setFeedingProfile(selection);
+    },
+    [feedingDeviceId]
+  );
 
   const setDp = useMemo(
     () =>
@@ -223,20 +294,11 @@ const HomePage: React.FC = () => {
     [actions]
   );
 
-  const resetSceneFeedRequest = useCallback(async () => {
-    await setDp(dpCodes.sceneFeedRequest, "none");
-  }, [setDp]);
-
-  const dismissFeedRequest = useCallback(async () => {
-    setFeedRequestDismissed(true);
-    await resetSceneFeedRequest();
-  }, [resetSceneFeedRequest]);
-
   useEffect(() => {
-    if (awaitingWorkMode && workMode === awaitingWorkMode && workingStatus) {
+    if (awaitingWorkMode && isMaking && workMode === awaitingWorkMode) {
       setAwaitingWorkMode(null);
     }
-  }, [awaitingWorkMode, workMode, workingStatus]);
+  }, [awaitingWorkMode, isMaking, workMode]);
 
   useEffect(() => {
     if (!awaitingWorkMode) return undefined;
@@ -252,7 +314,6 @@ const HomePage: React.FC = () => {
       setSelectedAction("milk");
       setDp(dpCodes.volumeMl, p.ml);
       setDp(dpCodes.tempSet, p.temp);
-      setDp(dpCodes.formulaWater, p.formulaWaterMl);
       setDp(dpCodes.formulaRatio, p.formulaRatio);
       setDp(dpCodes.unitSet, "mL");
     },
@@ -265,16 +326,19 @@ const HomePage: React.FC = () => {
   }, [dispatch]);
 
   useEffect(() => {
-    const prev = prevWorkingStatus.current;
-    if (prev === true && !workingStatus) {
+    if (prevWorking.current && !isMaking) {
       setAwaitingWorkMode(null);
-      const finished = workMode;
+      if (dpState[dpCodes.sceneFeedRequest] === "hungry_pending") {
+        setDp(dpCodes.sceneFeedRequest, "none").catch(() => undefined);
+      }
+      const finished = prevWorkMode.current;
       const wasWater = waterSessionActive || finished === "water";
       const wasPowder = powderSessionActive || finished === "powder";
       const wasClean = finished === "clean";
       if (finished === "milk") {
         setCompletionKind("milk");
         setBottleMadePhase(true);
+        setBabyDiaryToastVisible(true);
       } else if (wasWater) {
         setCompletionKind("water");
         setBottleMadePhase(true);
@@ -289,21 +353,28 @@ const HomePage: React.FC = () => {
         setPowderSessionActive(false);
         setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
       }
+      prevWorking.current = isMaking;
+      prevWorkMode.current = workMode;
+      return;
     }
-    prevWorkingStatus.current = workingStatus;
+    prevWorking.current = isMaking;
+    prevWorkMode.current = workMode;
   }, [
+    dpState,
+    isMaking,
+    setDp,
     workMode,
-    workingStatus,
     milkSessionActive,
     waterSessionActive,
     powderSessionActive,
   ]);
 
-  /** 完成後 3 秒收起 Bottle Made */
+  /** 完成後 3 秒收起 Bottle Made，並關閉 Baby Diary toast */
   useEffect(() => {
     if (!bottleMadePhase) return undefined;
     const timer = setTimeout(() => {
       setBottleMadePhase(false);
+      setBabyDiaryToastVisible(false);
       setMilkSessionActive(false);
       setWaterSessionActive(false);
       setPowderSessionActive(false);
@@ -312,40 +383,40 @@ const HomePage: React.FC = () => {
   }, [bottleMadePhase]);
 
   useEffect(() => {
-    const inClean = workMode === "clean" && workingStatus;
+    const inClean = isMaking && workMode === "clean";
     if (inClean && !wasInCleanMode.current) {
       setCleanCountdown(HIGH_TEMP_CLEAN_COUNTDOWN_SEC);
     }
     wasInCleanMode.current = inClean;
-  }, [workMode, workingStatus]);
+  }, [isMaking, workMode]);
 
   useEffect(() => {
-    if (workMode !== "clean" || !workingStatus) return undefined;
+    if (!isMaking || workMode !== "clean") return undefined;
     if (cleanCountdown <= 0) return undefined;
     const timer = setInterval(() => {
       setCleanCountdown((s) => (s <= 1 ? 0 : s - 1));
     }, 1000);
     return () => clearInterval(timer);
-  }, [workMode, workingStatus, cleanCountdown]);
+  }, [isMaking, workMode, cleanCountdown]);
 
   const gaugeValue = isCleanSession
     ? HIGH_TEMP_CLEAN_TOTAL_ML
     : powderPrimary
     ? powderG
     : volumeMl;
-  const gaugeUnit = powderPrimary ? t("unit_g") : t("unit_ml");
+  const gaugeUnit = powderPrimary ? "g" : "mL";
   const gaugeLabel = powderPrimary
     ? t("gauge_powder_amount")
     : t("gauge_water_amount");
 
   const statusText = useMemo(
     () =>
-      formatConnectionStatus(isOnline, {
+      formatConnectionStatus(isOnline, wifiStatus, {
         online: t("status_online"),
         offline: t("status_offline"),
         connecting: t("status_connecting"),
       }),
-    [isOnline, t]
+    [isOnline, wifiStatus, t]
   );
 
   const activeSceneTab = useMemo(
@@ -356,26 +427,12 @@ const HomePage: React.FC = () => {
   const isWaterActionSelected = selectedAction === "water";
   const isPowderActionSelected = selectedAction === "powder";
 
-  /** 沖奶完成且設備上報 drink_record_upload 時，於 Child Lock 列顯示 Baby Diary snackbar */
-  const showBabyDiarySnackbar = useMemo(
-    () =>
-      bottleMadePhase &&
-      completionKind === "milk" &&
-      hasDrinkRecordUpload(dpState[dpCodes.drinkRecordUpload]),
-    [bottleMadePhase, completionKind, dpState]
-  );
-
   const handleCustomModeSave = (draft: CustomModeDraft) => {
     setSceneKey("custom");
     setDp(dpCodes.volumeMl, clampMl(draft.ml));
-    publishDpBatch(setDp, {
-      ...buildFormulaSettingDpPayload(
-        draft.formulaWaterMl,
-        draft.formulaRatio / 10
-      ),
-      [dpCodes.tempSet]: draft.temp,
-      [dpCodes.unitSet]: "mL",
-    });
+    setDp(dpCodes.formulaRatio, draft.formulaRatio);
+    setDp(dpCodes.tempSet, draft.temp);
+    setDp(dpCodes.unitSet, "mL");
   };
 
   const openCustomMode = () => {
@@ -413,235 +470,50 @@ const HomePage: React.FC = () => {
     : isPowderActionSelected
     ? awaitingWorkMode === "powder"
     : awaitingWorkMode === "milk";
-  const milkboxRaw = dpState[dpCodes.milkboxSensor];
-  const funnelRaw = dpState[dpCodes.funnelSensor];
-  const bottleRaw = dpState[dpCodes.bottleSensor];
-  const watertankRaw = dpState[dpCodes.watertankSensor];
+  const startDisabled = panelDisabled || startAwaiting;
+  const cleanDisplayTemp = temp;
 
-  /**
-   * DP 規格：關閉功能等同於正常裝配。
-   * 關機不採信感測器 false；開機後若尚未收到新感測器上報，避免沿用關機殘留 0。
-   */
-  useEffect(() => {
-    const prev = prevSwitchOn.current;
-    prevSwitchOn.current = switchOn;
-
-    if (prev === false && switchOn) {
-      sensorSnapshotOnPowerOn.current = {
-        milkbox: dpState[dpCodes.milkboxSensor],
-        funnel: dpState[dpCodes.funnelSensor],
-        bottle: dpState[dpCodes.bottleSensor],
-        watertank: dpState[dpCodes.watertankSensor],
-      };
-      suppressStaleSensorsAfterPowerOn.current = true;
-      setSensorsSettling(true);
-      const timer = setTimeout(() => setSensorsSettling(false), 3000);
-      return () => clearTimeout(timer);
-    }
-
-    if (!switchOn) {
-      setSensorsSettling(false);
-      sensorSnapshotOnPowerOn.current = null;
-      suppressStaleSensorsAfterPowerOn.current = false;
-    }
-    return undefined;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [switchOn]);
-
-  useEffect(() => {
-    if (!switchOn || !sensorSnapshotOnPowerOn.current) return;
-    const snap = sensorSnapshotOnPowerOn.current;
-    const changed =
-      milkboxRaw !== snap.milkbox ||
-      funnelRaw !== snap.funnel ||
-      bottleRaw !== snap.bottle ||
-      watertankRaw !== snap.watertank;
-    if (changed) {
-      suppressStaleSensorsAfterPowerOn.current = false;
-      setSensorsSettling(false);
-    }
-  }, [switchOn, milkboxRaw, funnelRaw, bottleRaw, watertankRaw]);
-
-  const resolveSensorOk = (
-    raw: unknown,
-    key: keyof typeof lastTrustedSensors.current
-  ) => {
-    if (!switchOn || sensorsSettling) return true;
-    const parsed = parseSensorInstalled(raw);
-    if (parsed) {
-      lastTrustedSensors.current[key] = true;
+  const toastIfBlocked = useCallback((): boolean => {
+    if (panelDisabled) {
+      showToast({ title: t("device_power_off"), icon: "none" });
       return true;
     }
-    // 僅在「剛開機且尚未收到新感測器上報」時，沿用開機前可信狀態
-    if (suppressStaleSensorsAfterPowerOn.current) {
-      return lastTrustedSensors.current[key];
+    if (childLock) {
+      showToast({ title: t("child_lock_on"), icon: "none" });
+      return true;
     }
-    lastTrustedSensors.current[key] = false;
+    if (isMaking) return true;
+    if (!isOnline) {
+      showToast({ title: t("status_offline"), icon: "none" });
+      return true;
+    }
     return false;
-  };
-
-  const milkboxOk = resolveSensorOk(milkboxRaw, "milkbox");
-  const funnelOk = resolveSensorOk(funnelRaw, "funnel");
-  const bottleOk = resolveSensorOk(bottleRaw, "bottle");
-  const watertankOk = resolveSensorOk(watertankRaw, "watertank");
-  const errorCode = parseErrorCode(dpState[dpCodes.errorCode]);
-
-  const assemblyStatuses = useMemo(
-    () =>
-      getAssemblyStatusesForMode(selectedAction, {
-        funnelOk,
-        watertankOk,
-        milkboxOk,
-        bottleOk,
-        errorCode,
-      }),
-    [selectedAction, funnelOk, watertankOk, milkboxOk, bottleOk, errorCode]
-  );
-  const actionBlocked = hasAssemblyBlocker(assemblyStatuses);
-  const tempUnavailable = errorCode === "Hot";
-  const waterLowOnly =
-    !watertankOk &&
-    errorCode === "none" &&
-    (selectedAction === "milk"
-      ? funnelOk && milkboxOk && bottleOk
-      : selectedAction === "water"
-      ? funnelOk && bottleOk
-      : false);
-  const showTempUnavailableToast =
-    !panelDisabled && !isMakingUi && !isCleanSession && tempUnavailable;
-  const showWaterLowToast =
-    !panelDisabled &&
-    !isMakingUi &&
-    !isCleanSession &&
-    !tempUnavailable &&
-    waterLowOnly;
-  const showDeviceStatusToast =
-    !panelDisabled &&
-    !isMakingUi &&
-    !isCleanSession &&
-    actionBlocked &&
-    !showTempUnavailableToast &&
-    !showWaterLowToast;
-  const deviceStatusToastMessage =
-    selectedAction === "water"
-      ? t("device_status_check_toast_water")
-      : selectedAction === "powder"
-      ? t("device_status_check_toast_powder")
-      : t("device_status_check_toast");
-  const startDisabled =
-    panelDisabled ||
-    startAwaiting ||
-    actionBlocked ||
-    tempUnavailable ||
-    waterLowOnly;
-  const cleanDisplayTemp = HIGH_TEMP_CLEAN_TEMP;
-
-  const toastIfBlocked = useCallback(
-    (forClean = false): boolean => {
-      if (panelDisabled) {
-        showToast({ title: t("device_power_off"), icon: "none" });
-        return true;
-      }
-      if (childLock) {
-        showToast({ title: t("child_lock_on"), icon: "none" });
-        return true;
-      }
-      if (isMaking) return true;
-      if (!isOnline) {
-        showToast({ title: t("status_offline"), icon: "none" });
-        return true;
-      }
-      if (!forClean && actionBlocked && !waterLowOnly && !tempUnavailable) {
-        setDeviceStatusPanelOpen(true);
-        return true;
-      }
-      if (forClean) {
-        if (!funnelOk) {
-          showToast({ title: t("sensor_funnel_missing"), icon: "none" });
-          return true;
-        }
-        if (!bottleOk) {
-          showToast({ title: t("sensor_bottle_missing"), icon: "none" });
-          return true;
-        }
-        if (!watertankOk) {
-          showToast({ title: t("sensor_watertank_missing"), icon: "none" });
-          return true;
-        }
-      }
-      return false;
-    },
-    [
-      panelDisabled,
-      childLock,
-      isMaking,
-      isOnline,
-      actionBlocked,
-      waterLowOnly,
-      tempUnavailable,
-      funnelOk,
-      bottleOk,
-      watertankOk,
-      t,
-    ]
-  );
+  }, [panelDisabled, childLock, isMaking, isOnline, t]);
 
   const handleStartMilk = async () => {
-    if (toastIfBlocked() || startDisabled) return;
+    if (toastIfBlocked() || startDisabled) return false;
     setMilkSessionActive(true);
     setAwaitingWorkMode("milk");
     const recipe = resolveMilkRecipeParams({
       sceneKey,
       volumeMl,
       temp,
-      formulaWaterMl,
       formulaRatio,
-      formulaDensity,
       powderBrandSelection: brandSet ? powderBrandSelection : null,
     });
-    const sent = await publishDpBatch(setDp, buildMilkStartDpPayload(recipe));
+    const paramsSent = await publishDpBatch(
+      setDp,
+      buildMilkStartDpPayload(recipe)
+    );
+    const sent =
+      paramsSent && (await setBoolDp(setDp, dpCodes.workingStatus, true));
     if (!sent) {
       setMilkSessionActive(false);
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
+      return false;
     }
-  };
-
-  const handleFeedRequestStart = async (draft: {
-    ml: number;
-    formulaWaterMl: number;
-    formulaRatio: number;
-    temp: TempSet;
-  }) => {
-    if (toastIfBlocked() || panelDisabled || childLock || !isOnline) {
-      await dismissFeedRequest();
-      return;
-    }
-    setFeedRequestDismissed(true);
-    setSceneKey("custom");
-    setSelectedAction("milk");
-    setMilkSessionActive(true);
-    setAwaitingWorkMode("milk");
-    const recipe = resolveMilkRecipeParams({
-      sceneKey: "custom",
-      volumeMl: draft.ml,
-      temp: draft.temp,
-      formulaWaterMl: draft.formulaWaterMl,
-      formulaRatio: draft.formulaRatio,
-      formulaDensity,
-      powderBrandSelection: brandSet ? powderBrandSelection : null,
-    });
-    const sent = await publishDpBatch(setDp, {
-      ...buildMilkStartDpPayload(recipe),
-      [dpCodes.sceneFeedRequest]: "none",
-    });
-    if (!sent) {
-      setMilkSessionActive(false);
-      setAwaitingWorkMode(null);
-      showToast({ title: t("dp_command_failed"), icon: "none" });
-      return;
-    }
-    await resetSceneFeedRequest();
+    return true;
   };
 
   const handleSelectWater = () => {
@@ -678,7 +550,7 @@ const HomePage: React.FC = () => {
       [dpCodes.unitSet]: "mL",
       [dpCodes.workMode]: "water",
     });
-    if (!sent) {
+    if (!sent || !(await setBoolDp(setDp, dpCodes.workingStatus, true))) {
       setAwaitingWorkMode(null);
       setWaterSessionActive(false);
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -691,15 +563,12 @@ const HomePage: React.FC = () => {
     setAwaitingWorkMode("powder");
     const sent = await publishDpBatch(setDp, {
       [dpCodes.volumeMl]: volumeMl,
-      ...buildFormulaSettingDpPayload(
-        formulaWaterMl,
-        formulaRatio / 10,
-        formulaDensity
-      ),
+      [dpCodes.formulaWater]: 100,
+      [dpCodes.formulaRatio]: formulaRatio,
       [dpCodes.unitSet]: "mL",
       [dpCodes.workMode]: "powder",
     });
-    if (!sent) {
+    if (!sent || !(await setBoolDp(setDp, dpCodes.workingStatus, true))) {
       setAwaitingWorkMode(null);
       setPowderSessionActive(false);
       showToast({ title: t("dp_command_failed"), icon: "none" });
@@ -731,15 +600,13 @@ const HomePage: React.FC = () => {
 
   const handleClean = async () => {
     if (isCleanSession || awaitingWorkMode === "clean") return;
-    if (toastIfBlocked(true)) return;
+    if (toastIfBlocked()) return;
     if (panelDisabled || childLock || !isOnline) return;
     setAwaitingWorkMode("clean");
-    const sent = await publishDpBatch(setDp, {
-      [dpCodes.volumeMl]: HIGH_TEMP_CLEAN_TOTAL_ML,
-      [dpCodes.unitSet]: "mL",
+    const paramsSent = await publishDpBatch(setDp, {
       [dpCodes.workMode]: "clean",
     });
-    if (!sent) {
+    if (!paramsSent || !(await setBoolDp(setDp, dpCodes.workingStatus, true))) {
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
     }
@@ -766,20 +633,64 @@ const HomePage: React.FC = () => {
     }
   };
 
+  const handleChildLockToggle = async () => {
+    if (panelDisabled || !isOnline) return;
+    if (!(await setBoolDp(setDp, dpCodes.childLock, !childLock))) {
+      showToast({ title: t("dp_command_failed"), icon: "none" });
+    }
+  };
+
+  const clearHungryReminder = useCallback(async () => {
+    const sent = await setDp(dpCodes.sceneFeedRequest, "none");
+    if (!sent) showToast({ title: t("dp_command_failed"), icon: "none" });
+    return sent;
+  }, [setDp, t]);
+
+  useEffect(() => {
+    const sceneFeedRequest = dpState[dpCodes.sceneFeedRequest];
+    if (
+      shouldOpenCryAssistReminder(sceneFeedRequest, hungryReminderShown.current)
+    ) {
+      hungryReminderShown.current = true;
+      setHungryReminderOpen(true);
+    }
+    if (shouldResetCryAssistReminder(sceneFeedRequest)) {
+      hungryReminderShown.current = false;
+    }
+  }, [dpState]);
+
+  const handleHungryNotNow = async () => {
+    setHungryReminderOpen(false);
+    await clearHungryReminder();
+  };
+
+  const handleHungryStartMaking = async () => {
+    setHungryReminderOpen(false);
+    if (await handleStartMilk()) {
+      await clearHungryReminder();
+    }
+  };
+
   const handleBrandBanner = () => {
     if (panelDisabled) return;
     dispatch(markBrandBannerEverClicked());
     if (hasSavedPowderBrands) {
-      router.push("/formula");
+      router.push("/powder-brand-settings");
       return;
     }
-    router.push("/formula");
+    router.push("/powder-brand");
   };
 
   return (
     <View className={styles.page}>
-      <PanelNavBar mode="home" deviceId={devInfo?.devId} />
       <View className={styles.header}>
+        <View className={styles.headerTop}>
+          <Image src={Res.maxiCosiLogo} className={styles.logo} />
+          <View className={styles.headerIcons}>
+            <Image src={Res.icNotification} className={styles.headerIcon} />
+            <Image src={Res.icHelp} className={styles.headerIcon} />
+          </View>
+        </View>
         <View className={styles.titleRow}>
           <View className={styles.titleGroup}>
             <Text className={styles.appTitle}>{t("app_title")}</Text>
@@ -796,42 +707,20 @@ const HomePage: React.FC = () => {
             </View>
           </View>
           <View className={styles.onlineRow}>
-            <Image
-              src={
-                isOnline ? IC_CONNECTION_ONLINE_URI : IC_CONNECTION_OFFLINE_URI
-              }
-              className={styles.onlineIcon}
+            <View
+              className={clsx(
+                styles.onlineDot,
+                isOnline && styles.onlineDotActive
+              )}
             />
-            <Text
-              className={styles.onlineText}
-              style={{ color: isOnline ? "#55A074" : "#BA2F2F" }}
-            >
-              {statusText}
-            </Text>
+            <Text className={styles.onlineText}>{statusText}</Text>
+            <Image
+              src={isOnline ? Res.icConnected : Res.icOffline}
+              className={styles.headerWifiIcon}
+            />
           </View>
         </View>
       </View>
-
-      {showTempUnavailableToast ? (
-        <View className={styles.deviceStatusToastWrap}>
-          <DeviceStatusAlertToast
-            message={t("device_status_temp_unavailable_toast")}
-          />
-        </View>
-      ) : showWaterLowToast ? (
-        <View className={styles.deviceStatusToastWrap}>
-          <DeviceStatusAlertToast
-            message={t("device_status_water_low_toast")}
-          />
-        </View>
-      ) : showDeviceStatusToast ? (
-        <View className={styles.deviceStatusToastWrap}>
-          <DeviceStatusAlertToast
-            message={deviceStatusToastMessage}
-            onPress={() => setDeviceStatusPanelOpen(true)}
-          />
-        </View>
-      ) : null}
 
       <View className={styles.pageBody}>
         <View
@@ -891,9 +780,7 @@ const HomePage: React.FC = () => {
                             <Text className={styles.metricValueNum}>
                               {volumeMl}
                             </Text>
-                            <Text className={styles.metricValueSuffix}>
-                              {t("unit_ml")}
-                            </Text>
+                            <Text className={styles.metricValueSuffix}>mL</Text>
                           </View>
                           <Text className={styles.metricLabel}>
                             {t("metric_water")}
@@ -904,9 +791,7 @@ const HomePage: React.FC = () => {
                             <Text className={styles.metricValueNum}>
                               {powderG}
                             </Text>
-                            <Text className={styles.metricValueSuffix}>
-                              {t("unit_g")}
-                            </Text>
+                            <Text className={styles.metricValueSuffix}>g</Text>
                           </View>
                           <Text className={styles.metricLabel}>
                             {t("metric_powder")}
@@ -923,9 +808,7 @@ const HomePage: React.FC = () => {
                             <Text className={styles.metricValueNum}>
                               {temp}
                             </Text>
-                            <Text className={styles.metricValueSuffix}>
-                              {t("unit_celsius")}
-                            </Text>
+                            <Text className={styles.metricValueSuffix}>°C</Text>
                           </View>
                           <Text className={styles.metricLabel}>
                             {t("metric_temp")}
@@ -998,30 +881,26 @@ const HomePage: React.FC = () => {
                         </View>
                       </>
                     ) : null}
-                    {SHOW_SCENE_MODE_TABS ? (
-                      <>
-                        <View
-                          className={
-                            showBrandBanner
-                              ? styles.gapBrandToTabs
-                              : styles.gapMiddleToTabs
-                          }
-                        />
-                        <View
-                          className={clsx(
-                            styles.modeTabsSlot,
-                            panelDisabled && styles.panelBlock
-                          )}
-                        >
-                          <SceneModeTabs
-                            tabs={SCENE_TABS}
-                            activeKey={sceneKey}
-                            onChange={applyPreset}
-                            disabled={panelDisabled}
-                          />
-                        </View>
-                      </>
-                    ) : null}
+                    <View
+                      className={
+                        showBrandBanner
+                          ? styles.gapBrandToTabs
+                          : styles.gapMiddleToTabs
+                      }
+                    />
+                    <View
+                      className={clsx(
+                        styles.modeTabsSlot,
+                        panelDisabled && styles.panelBlock
+                      )}
+                    >
+                      <SceneModeTabs
+                        tabs={SCENE_TABS}
+                        activeKey={sceneKey}
+                        onChange={applyPreset}
+                        disabled={panelDisabled}
+                      />
+                    </View>
                   </View>
                 )}
             </View>
@@ -1114,7 +993,15 @@ const HomePage: React.FC = () => {
                       />
                     </View>
                   </View>
-                  <Text className={styles.startLabel}>{t("action_start")}</Text>
+                  <Text
+                    className={clsx(
+                      styles.startLabel,
+                      (startDisabled || isCleanSession) &&
+                        styles.actionLabelDisabled
+                    )}
+                  >
+                    {t("action_start")}
+                  </Text>
                 </View>
                 <View
                   className={clsx(
@@ -1157,12 +1044,7 @@ const HomePage: React.FC = () => {
           </View>
         </View>
 
-        <View
-          className={clsx(
-            styles.secondaryList,
-            panelDisabled && styles.panelBlock
-          )}
-        >
+        <View className={styles.secondaryList}>
           <View
             className={clsx(
               styles.settingsRowCard,
@@ -1208,9 +1090,14 @@ const HomePage: React.FC = () => {
               </View>
             )}
           </View>
-          {showBabyDiarySnackbar ? (
+          {babyDiaryToastVisible ? (
             <View className={styles.diaryToastSlot}>
-              <BabyDiarySnackbar />
+              <BabyDiarySnackbar
+                onClose={() => {
+                  setBabyDiaryToastVisible(false);
+                  setMilkSessionActive(false);
+                }}
+              />
             </View>
           ) : (
             <View
@@ -1219,11 +1106,9 @@ const HomePage: React.FC = () => {
                 panelDisabled && styles.disabled
               )}
               onClick={
-                panelDisabled
+                panelDisabled || !isOnline
                   ? undefined
-                  : () => {
-                      setBoolDp(setDp, dpCodes.childLock, !childLock);
-                    }
+                  : () => handleChildLockToggle().catch(() => undefined)
               }
             >
               <Text className={styles.settingsRowLabel}>
@@ -1246,13 +1131,69 @@ const HomePage: React.FC = () => {
               </View>
             </View>
           )}
+          <View
+            className={clsx(
+              styles.settingsRowCard,
+              !isOnline && styles.disabled
+            )}
+            onClick={isOnline ? openFeedingProfileSheet : undefined}
+          >
+            <View className={styles.cleanRowTextCol}>
+              <Text className={styles.settingsRowLabel}>Feeding record</Text>
+              <Text className={styles.settingsRowSubtext}>
+                {hasValidFeedingContext && feedingProfile?.childName
+                  ? feedingProfile.childName
+                  : "Choose baby profile"}
+              </Text>
+            </View>
+            <View className={styles.cleanRowBtn}>
+              {feedingProfileBusy ? (
+                <View className={styles.feedingProfileSpinner} />
+              ) : (
+                <Image
+                  src={feedingProfileAvatar || Res.actionButtonIcons.baby}
+                  className={
+                    feedingProfileAvatar
+                      ? styles.feedingProfileAvatar
+                      : styles.cleanRowIcon
+                  }
+                  mode="aspectFill"
+                />
+              )}
+            </View>
+          </View>
+          <View
+            className={clsx(
+              styles.settingsRowCard,
+              !isOnline && styles.disabled
+            )}
+            onClick={isOnline ? openSmartPrepSheet : undefined}
+          >
+            <View className={styles.cleanRowTextCol}>
+              <Text className={styles.settingsRowLabel}>
+                Smart Prep Reminder
+              </Text>
+              <Text className={styles.settingsRowSubtext}>
+                Choose CryAssist devices
+              </Text>
+            </View>
+            <View className={styles.cleanRowBtn}>
+              {smartPrepBusy ? (
+                <View className={styles.feedingProfileSpinner} />
+              ) : (
+                <Image
+                  src={Res.icNotification}
+                  className={styles.cleanRowIcon}
+                />
+              )}
+            </View>
+          </View>
         </View>
       </View>
 
       {customModeOpen && (
         <CustomModeSettingsPanel
           ml={volumeMl}
-          formulaWaterMl={formulaWaterMl}
           formulaRatio={formulaRatio}
           temp={temp}
           onSave={handleCustomModeSave}
@@ -1260,48 +1201,51 @@ const HomePage: React.FC = () => {
           saveDisabled={panelDisabled || isMaking || childLock}
         />
       )}
-      {deviceStatusPanelOpen ? (
-        <DeviceStatusBottomPanel
-          items={assemblyStatuses}
-          onClose={() => setDeviceStatusPanelOpen(false)}
+
+      {connectedSetupOpen ? (
+        <ConnectedFeaturesSetupSheet
+          key={connectedSetupKey}
+          initialView={connectedSetupInitialView}
+          deviceId={feedingDeviceId}
+          homeId={feedingHomeId}
+          isOnline={isOnline}
+          currentChildId={
+            hasValidFeedingContext ? feedingContext?.childID : undefined
+          }
+          feedingProfile={feedingProfile}
+          hasValidFeedingContext={hasValidFeedingContext}
+          onClose={() => setConnectedSetupOpen(false)}
+          onFeedingSelectionChange={handleFeedingProfileSelection}
+          onFeedingBusyChange={setFeedingProfileBusy}
+          onSmartPrepBusyChange={setSmartPrepBusy}
         />
       ) : null}
 
-      <SmartPrepActivateModal
-        visible={smartPrepGuide.showActivateModal}
-        onCancel={smartPrepGuide.dismissActivate}
-        onEnable={smartPrepGuide.enableReminder}
-      />
-      <SmartPrepNoCryDeviceModal
-        visible={smartPrepGuide.showNoCryModal}
-        onOk={smartPrepGuide.dismissNoCryModal}
-      />
-      <SmartPrepTutorialModal
-        visible={smartPrepGuide.showTutorialModal}
-        onLater={smartPrepGuide.dismissTutorialLater}
-        onOpenRoutines={smartPrepGuide.openRoutinesFromTutorial}
-        onMarkDone={smartPrepGuide.markRoutineDone}
-      />
-      <SmartPrepSetupSnackbar
-        visible={
-          smartPrepGuide.showSetupSnackbar &&
-          !showBabyDiarySnackbar &&
-          !smartPrepGuide.showActivateModal &&
-          !smartPrepGuide.showNoCryModal &&
-          !smartPrepGuide.showTutorialModal &&
-          !showFeedRequestModal
-        }
-        onPress={smartPrepGuide.openTutorialFromSnackbar}
-      />
-      <FeedRequestModal
-        visible={showFeedRequestModal}
-        ml={volumeMl}
-        formulaWaterMl={formulaWaterMl}
-        formulaRatio={formulaRatio}
-        temp={temp}
-        onCancel={dismissFeedRequest}
-        onStart={handleFeedRequestStart}
-      />
+      {hungryReminderOpen ? (
+        <View className={styles.modalMask}>
+          <View className={styles.modalCard}>
+            <Text className={styles.modalTitle}>Baby may be hungry</Text>
+            <Text className={styles.modalBody}>
+              CryAssist detected signs of hunger. Would you like to prepare a
+              bottle?
+            </Text>
+            <View className={styles.modalActions}>
+              <Text
+                className={styles.modalBtnGhost}
+                onClick={() => handleHungryNotNow().catch(() => undefined)}
+              >
+                Not now
+              </Text>
+              <Text
+                className={styles.modalBtnPrimary}
+                onClick={() => handleHungryStartMaking().catch(() => undefined)}
+              >
+                Start making
+              </Text>
+            </View>
+          </View>
+        </View>
+      ) : null}
     </View>
   );
 };

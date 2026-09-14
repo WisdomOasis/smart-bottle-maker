@@ -5,7 +5,7 @@ import {
   getActivePowderBrandEntry,
   upsertPowderBrandEntry,
 } from "@/constant/powderBrandListStorage";
-import { powderGramsToFormulaRatio } from "@/utils/bottleMaker";
+import { scoopPowderGramsToFormulaRatio } from "@/utils/bottleMaker";
 
 export const POWDER_BRAND_STORAGE_KEY = "smart_bottle_powder_brand";
 
@@ -37,7 +37,7 @@ export const selectionFromStage = (
   stageLabel: formatFormulaStageLabelFromId(stage.id),
   waterMl: stage.waterMl,
   powderG: stage.powderG,
-  formulaRatio: powderGramsToFormulaRatio(stage.powderG),
+  formulaRatio: scoopPowderGramsToFormulaRatio(stage.powderG),
 });
 
 export const readPowderBrandSelection = (): PowderBrandSelection | null => {

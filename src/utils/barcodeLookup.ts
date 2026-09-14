@@ -8,7 +8,7 @@ import {
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import type { PowderBrandSelection } from "@/constant/powderBrandStorage";
-import { powderGramsToFormulaRatio } from "@/utils/bottleMaker";
+import { scoopPowderGramsToFormulaRatio } from "@/utils/bottleMaker";
 
 export { formatFormulaRatioDisplay } from "@/i18n/formatters";
 
@@ -62,7 +62,7 @@ const resolveSeriesLabel = (seriesKey: string): string => {
 const recordToResult = (record: MilkFormulaRecord): BarcodeFormulaResult => {
   const waterMl = Math.round(record.waterMl);
   const powderG = Math.round(record.powderG * 10) / 10;
-  const formulaRatio = powderGramsToFormulaRatio(powderG);
+  const formulaRatio = scoopPowderGramsToFormulaRatio(powderG);
   const seriesKey = toMilkSeriesI18nKey(record.series);
   const seriesLabel = resolveSeriesLabel(seriesKey);
   const brandLabel = formatMilkBrandLabel(record.brand);

@@ -1,6 +1,5 @@
 export default {
   switch: "switch",
-  childLock: "child_lock",
   workMode: "work_mode",
   workingStatus: "working_status",
   milkboxSensor: "milkbox_sensor",
@@ -8,16 +7,18 @@ export default {
   bottleSensor: "bottle_sensor",
   watertankSensor: "watertank_sensor",
   tempSet: "temp",
-  unitSet: "unit_set",
   volumeMl: "ml",
   volumeOz: "oz",
+  unitSet: "unit_set",
   formulaWater: "formula_water",
   formulaRatio: "formula_ratio",
   formulaDensity: "formula_density",
+  sceneFeedRequest: "scene_feed_request",
   remindFunnelClean: "remind_funnel_clean",
+  feedingContext: "feeding_record_context",
   drinkRecordUpload: "drink_record_upload",
   errorCode: "error_code",
-  sceneFeedRequest: "scene_feed_request",
+  childLock: "child_lock",
 } as const;
 
 export type DpCode = (typeof dpCodes)[keyof typeof dpCodes];

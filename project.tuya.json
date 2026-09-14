@@ -6,12 +6,13 @@
   "description": "",
   "miniprogramRoot": "./dist/tuya",
   "dependencies": {
-    "MiniKit": "3.0.7",
+    "MiniKit": "3.2.0",
     "DeviceKit": "4.6.1",
     "BaseKit": "3.0.6",
-    "HomeKit": "3.0.2"
+    "HomeKit": "3.1.4",
+    "BizKit": "3.4.2"
   },
-  "baseversion": "2.30.15",
+  "baseversion": "2.30.14",
   "projectname": "SmartBottleMaker",
   "devMode": "ray",
   "compileType": "miniprogram",

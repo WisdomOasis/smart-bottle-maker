@@ -3,11 +3,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import clsx from "clsx";
 import { View, Text, Image } from "@ray-js/ray";
 import Strings from "@/i18n";
-import {
-  formatUnitValueCelsius,
-  formatUnitValueG,
-  formatUnitValueMlUpper,
-} from "@/i18n/formatters";
 import CustomModeSlider from "@/components/CustomModeSlider";
 import { ML_MIN, ML_MAX, ML_STEP } from "@/constant/presets";
 import {
@@ -20,7 +15,6 @@ import {
   TEMP_MAX,
   TEMP_MIN,
   TEMP_SET_OPTIONS,
-  TEMP_STEP,
   type TempSet,
 } from "@/utils/bottleMaker";
 import { CUSTOM_MODE_ICONS } from "./icons";
@@ -28,15 +22,12 @@ import styles from "./index.module.less";
 
 export interface CustomModeDraft {
   ml: number;
-  /** 写入 formula_water */
-  formulaWaterMl: number;
   formulaRatio: number;
   temp: TempSet;
 }
 
 interface Props {
   ml: number;
-  formulaWaterMl: number;
   formulaRatio: number;
   temp: TempSet;
   onSave: (draft: CustomModeDraft) => void;
@@ -47,7 +38,6 @@ interface Props {
 
 const CustomModeSettingsPanel: React.FC<Props> = ({
   ml,
-  formulaWaterMl,
   formulaRatio,
   temp,
   onSave,
@@ -58,41 +48,36 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
     Strings.getLang(key);
 
   const [draftMl, setDraftMl] = useState(ml);
-  const [draftWater, setDraftWater] = useState(formulaWaterMl);
   const [draftRatio, setDraftRatio] = useState(formulaRatio);
   const [draftTemp, setDraftTemp] = useState<TempSet>(temp);
 
   useEffect(() => {
     setDraftMl(clampMl(ml));
-    setDraftWater(formulaWaterMl);
     setDraftRatio(
       Math.min(FORMULA_RATIO_MAX, Math.max(FORMULA_RATIO_MIN, formulaRatio))
     );
     setDraftTemp(parseTemp(temp));
-  }, [ml, formulaWaterMl, formulaRatio, temp]);
+  }, [ml, formulaRatio, temp]);
 
   const draftPowderG = useMemo(
-    () => calcPowderGrams(draftMl, draftRatio, draftWater),
-    [draftMl, draftRatio, draftWater]
+    () => calcPowderGrams(draftMl, draftRatio),
+    [draftMl, draftRatio]
   );
 
   const powderBounds = useMemo(() => {
     const safeMl = Math.max(ML_MIN, draftMl || ML_MIN);
-    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN, draftWater);
-    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX, draftWater);
+    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN);
+    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX);
     return { min, max: Math.max(min + 1, max) };
-  }, [draftMl, draftWater]);
+  }, [draftMl]);
 
   const handlePowderChange = (grams: number) => {
-    // 自訂模式下將「本次水量 + 粉量」同步為配方勺比
-    setDraftWater(clampMl(draftMl));
-    setDraftRatio(powderGramsToFormulaRatio(grams));
+    setDraftRatio(powderGramsToFormulaRatio(draftMl, grams));
   };
 
   const handleSave = () => {
     onSave({
       ml: clampMl(draftMl),
-      formulaWaterMl: clampMl(draftWater),
       formulaRatio: Math.min(
         FORMULA_RATIO_MAX,
         Math.max(FORMULA_RATIO_MIN, draftRatio)
@@ -128,9 +113,7 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_water")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>
-                {formatUnitValueMlUpper(draftMl)}
-              </Text>
+              <Text className={styles.settingValue}>{draftMl}ML</Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
@@ -154,9 +137,7 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_powder")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>
-                {formatUnitValueG(draftPowderG)}
-              </Text>
+              <Text className={styles.settingValue}>{draftPowderG}g</Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
@@ -180,15 +161,13 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_temperature")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>
-                {formatUnitValueCelsius(draftTemp)}
-              </Text>
+              <Text className={styles.settingValue}>{draftTemp}°C</Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
                 min={TEMP_MIN}
                 max={TEMP_MAX}
-                step={TEMP_STEP}
+                step={1}
                 value={draftTemp}
                 snapTo={TEMP_SET_OPTIONS}
                 onChange={(v) => setDraftTemp(v as TempSet)}

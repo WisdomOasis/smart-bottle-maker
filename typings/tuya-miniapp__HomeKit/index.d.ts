@@ -91,6 +91,84 @@ declare namespace ty.home {
   }): void
 
   
+  export function getGroupRoomInfo(params: {
+    
+    groupId: string
+    complete?: () => void
+    success?: (params: {
+      
+      roomId: number
+      
+      name: string
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function getDeviceIdList(params: {
+    
+    ownerId: number
+    complete?: () => void
+    success?: (params: {
+      
+      devIds: string[]
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function getRoomList(params: {
+    
+    ownerId: number
+    complete?: () => void
+    success?: (params: {
+      
+      roomDatas: RoomData[]
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
+  export function onTicketSuccess(params?: {
+    
+    map?: Record<string, string>
+    complete?: () => void
+    success?: (params: {
+      
+      map?: Record<string, string>
+    }) => void
+    fail?: (params: {
+      errorMsg: string
+      errorCode: string | number
+      innerError: {
+        errorCode: string | number
+        errorMsg: string
+      }
+    }) => void
+  }): void
+
+  
   export function openRecommendSceneDetail(params: {
     
     source: string
@@ -133,6 +211,15 @@ declare namespace ty.home {
     }) => void
   }): void
 
+  export type RoomData = {
+    
+    roomId: number
+    
+    name: string
+    
+    deviceIds: string[]
+  }
+
   export type HomeInfoData = {
     
     homeName: string
@@ -158,6 +245,38 @@ declare namespace ty.home {
     roomId: number
     
     name: string
+  }
+
+  export type GroupRoomInfoParams = {
+    
+    groupId: string
+  }
+
+  export type GroupRoomInfoResponse = {
+    
+    roomId: number
+    
+    name: string
+  }
+
+  export type OwnerId = {
+    
+    ownerId: number
+  }
+
+  export type DeviceIdList = {
+    
+    devIds: string[]
+  }
+
+  export type RoomList = {
+    
+    roomDatas: RoomData[]
+  }
+
+  export type TicketModel = {
+    
+    map?: Record<string, string>
   }
 
   export type RecommendSceneParams = {

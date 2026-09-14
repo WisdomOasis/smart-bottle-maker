@@ -49,7 +49,7 @@ import {
 import { formatFormulaSummary } from "@/i18n/formatters";
 import { formatFormulaEntrySummary } from "@/utils/formulaEntrySearch";
 import {
-  powderGramsToFormulaRatio,
+  scoopPowderGramsToFormulaRatio,
   buildFormulaSettingDpPayload,
 } from "@/utils/bottleMaker";
 import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
@@ -166,7 +166,7 @@ const CustomizeFormulaRatioPage: React.FC = () => {
       stageLabel: stage?.label ?? stageId,
       waterMl: water,
       powderG: powder,
-      formulaRatio: powderGramsToFormulaRatio(powder),
+      formulaRatio: scoopPowderGramsToFormulaRatio(powder),
     };
   }, [canSubmit, formulaName, powderG, stageId, stageOptions, waterMl]);
 
