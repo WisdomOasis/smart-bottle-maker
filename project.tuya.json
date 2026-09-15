@@ -1,12 +1,12 @@
 {
-  "name": "通用SDM模板",
+  "name": "Smart Bottle Maker",
   "type": "panel-app",
   "ownerType": "tuya-official",
   "i18n": false,
-  "description": "",
+  "description": "Maxi-Cosi Smart Bottle Maker panel",
   "miniprogramRoot": "./dist/tuya",
   "dependencies": {
-    "MiniKit": "3.2.0",
+    "MiniKit": "3.0.7",
     "DeviceKit": "4.6.1",
     "BaseKit": "3.0.6",
     "HomeKit": "3.1.4",

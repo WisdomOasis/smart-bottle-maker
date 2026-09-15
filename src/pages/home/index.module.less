@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  padding: 48rpx 32rpx 48rpx;
+  padding: var(--page-safe-area-top) 32rpx 48rpx;
   background: #f0f3f7;
   box-sizing: border-box;
   position: relative;
@@ -25,30 +25,8 @@
   background: transparent;
 }
 
-.headerTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  width: 200rpx;
-  height: 40rpx;
-}
-
-.headerIcons {
-  display: flex;
-  gap: 24rpx;
-}
-
-.headerIcon {
-  width: 40rpx;
-  height: 40rpx;
-  opacity: 0.7;
-}
-
 .titleRow {
-  margin-top: 16rpx;
+  margin-top: 8px;
   min-height: 32rpx;
   display: flex;
   flex-direction: row;
@@ -68,11 +46,13 @@
 
 .appTitle {
   flex-shrink: 1;
-  font-family: "Noto Sans JP", sans-serif;
-  font-size: 22rpx;
-  font-weight: 600;
-  letter-spacing: 2rpx;
-  color: rgba(45, 58, 74, 0.55);
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2d365f;
   text-align: left;
 }
 
@@ -80,30 +60,23 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 12rpx;
+  gap: 6px;
 }
 
-.onlineDot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 50%;
-  background: #c5cdd6;
-}
-
-.onlineDotActive {
-  background: var(--color-background-on, #55a074);
+.onlineIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .onlineText {
-  font-size: 24rpx;
-  color: rgba(45, 58, 74, 0.55);
-}
-
-.headerWifiIcon {
-  width: 28rpx;
-  height: 24rpx;
-  flex-shrink: 0;
-  opacity: 0.85;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: right;
+  color: #55a074;
 }
 
 .powerTap {
@@ -756,16 +729,6 @@
   white-space: nowrap;
 }
 
-.settingsRowSubtext {
-  display: block;
-  width: 100%;
-  color: #6d7898;
-  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
-}
-
 .cleanRowBtn {
   width: 48px;
   height: 48px;
@@ -792,28 +755,6 @@
   height: 24px;
 }
 
-.feedingProfileAvatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
-
-.feedingProfileSpinner {
-  width: 22px;
-  height: 22px;
-  box-sizing: border-box;
-  border: 3px solid rgba(77, 114, 148, 0.2);
-  border-top-color: #4d7294;
-  border-radius: 50%;
-  animation: feedingProfileSpin 0.8s linear infinite;
-}
-
-@keyframes feedingProfileSpin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 .diaryToastSlot {
   width: 100%;
   max-width: 100%;
@@ -837,58 +778,4 @@
 .actionLabelDisabled {
   opacity: 0.45;
   color: rgba(45, 58, 95, 0.45);
-}
-
-.modalMask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 200;
-  padding: 48rpx;
-}
-
-.modalCard {
-  width: 100%;
-  max-width: 600rpx;
-  padding: 40rpx 32rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
-}
-
-.modalTitle {
-  font-size: 32rpx;
-  font-weight: 700;
-  color: #2d3a4a;
-  margin-bottom: 16rpx;
-}
-
-.modalBody {
-  font-size: 26rpx;
-  color: rgba(45, 58, 74, 0.7);
-  line-height: 1.5;
-  margin-bottom: 32rpx;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 24rpx;
-}
-
-.modalBtnGhost {
-  font-size: 28rpx;
-  color: rgba(45, 58, 74, 0.55);
-  padding: 12rpx 20rpx;
-}
-
-.modalBtnPrimary {
-  font-size: 28rpx;
-  font-weight: 600;
-  color: #ffffff;
-  background: var(--color-background-on, #55a074);
-  padding: 12rpx 28rpx;
-  border-radius: 12rpx;
 }

@@ -4,13 +4,51 @@
   margin-left: -32rpx;
   margin-right: -32rpx;
   min-height: 44px;
-  padding: 0;
+  padding: 0 4px;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   flex-shrink: 0;
+  position: relative;
+  z-index: 20;
+}
+
+.left,
+.right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-shrink: 0;
+  /* Keep side hit areas clear of the centered logo column */
+  width: 96px;
+  z-index: 2;
+  position: relative;
+}
+
+.left {
+  justify-content: flex-start;
+}
+
+.right {
+  justify-content: flex-end;
+}
+
+.center {
+  flex: 1;
+  min-width: 0;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.logo {
+  width: 156px;
+  max-width: 100%;
+  height: 29px;
 }
 
 .sideBtn {
@@ -20,23 +58,12 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  position: relative;
+  z-index: 3;
 }
 
 .sideIcon {
   width: 24px;
   height: 24px;
-}
-
-.logoWrap {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 4px;
-}
-
-.logo {
-  width: 156px;
-  height: 29px;
+  pointer-events: none;
 }

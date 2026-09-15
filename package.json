@@ -1,7 +1,7 @@
 {
-  "name": "public-sdm-template",
+  "name": "smart-bottle-maker",
   "version": "1.0.2",
-  "description": "Panel SDM Template",
+  "description": "Maxi-Cosi Smart Bottle Maker Ray panel",
   "main": "index.js",
   "private": true,
   "author": "Tuya.inc",
@@ -21,7 +21,6 @@
     "@ray-js/ray-error-catch": "^0.0.23",
     "@ray-js/smart-ui": "^2.0.0",
     "@ray-js/svg": "^0.2.0",
-    "@ray-js/ty-outdoor-utils": "^1.0.1",
     "@reduxjs/toolkit": "^1.9.3",
     "@zxing/library": "0.21.3",
     "clsx": "^1.2.1",

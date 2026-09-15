@@ -187,54 +187,11 @@ const bottleStrings = {
   baby_diary_pid_missing:
     "Baby Diary product ID is not configured. Set BABY_DIARY_VIRTUAL_PID.",
   baby_diary_open_failed: "Could not open Baby Diary.",
-  volume_modal_title: "Water amount",
-  temp_modal_title: "Temperature",
   feed_request_title: "Baby may be hungry!",
   feed_request_subtitle:
     "CryAssist detected your baby may be hungry. Start preparing a bottle with these settings, or adjust them first.",
-  feed_request_body:
-    "A Maxi-Cosi CryAssist device reported Hungry. Confirm water, powder, and temperature on Smart Bottle Maker, then start making.",
   feed_request_start: "Start Making",
-  smart_prep_activate_title: "Enable Smart Prep reminder",
-  smart_prep_activate_body:
-    "When a Maxi-Cosi CryAssist device detects your baby may be hungry, Smart Bottle Maker can remind you to prepare a bottle.",
-  smart_prep_enable_reminder: "Enable Reminder",
-  smart_prep_cry_detected_title: "CryAssist device detected",
-  smart_prep_cry_detected_body:
-    "A Maxi-Cosi CryAssist device was found. Remind you to prepare a bottle when CryAssist Result is Hungry. Enable now?",
-  smart_prep_enable_now: "Enable",
-  smart_prep_later: "Later",
-  smart_prep_no_cry_device_title: "No CryAssist device found",
-  smart_prep_no_cry_device:
-    "No Maxi-Cosi CryAssist device found in this home. You can set this up later in Routines.",
-  smart_prep_setup_page_title: "Recommend Routine",
-  smart_prep_setup_title: "Turn on Smart Prep reminder",
-  smart_prep_setup_desc:
-    "When a Maxi-Cosi CryAssist device reports Hungry, Smart Bottle Maker can remind you to prepare a bottle.",
-  smart_prep_setup_if_label: "If",
-  smart_prep_setup_then_label: "Then",
-  smart_prep_setup_if_detail: "Maxi-Cosi CryAssist device",
-  smart_prep_setup_if_sub: "CryAssist Result: Hungry",
-  smart_prep_setup_then_detail: "Smart Bottle Maker",
-  smart_prep_setup_then_sub: "Milk prep reminder",
-  smart_prep_setup_add: "Add",
-  smart_prep_setup_added: "Smart Prep reminder enabled",
-  smart_prep_opened_routines:
-    "Opened Routines. Follow the steps to finish setup.",
-  smart_prep_setup_failed: "Could not open Routines. Try again from the App.",
-  smart_prep_tutorial_title: "Set up Smart Prep Routine",
-  smart_prep_tutorial_intro:
-    "Create this Routine once in the App. Use these exact steps:",
-  smart_prep_tutorial_step_1: "1. Create Routine → When device status changes",
-  smart_prep_tutorial_step_2:
-    "2. If: Maxi-Cosi CryAssist device → CryAssist Result → Hungry",
-  smart_prep_tutorial_step_3:
-    "3. Then: Smart Bottle Maker → scene_feed_request → hungry_pending",
-  smart_prep_tutorial_step_4: "4. Name: Milk Prep Reminder → Save",
-  smart_prep_tutorial_done: "I've finished setup",
-  smart_prep_open_routines: "Open Routines",
   smart_prep_snackbar_setup: "Finish Smart Prep setup",
-  smart_prep_marked_done: "Smart Prep reminder marked as set up",
   block_none: "",
   block_water_tank_missing: "Water tank is not installed.",
   block_low_water: "Water level is too low.",
@@ -517,56 +474,11 @@ const locales = {
     baby_diary_pid_missing:
       "ベビーダイアリーの製品 ID が未設定です。BABY_DIARY_VIRTUAL_PID を設定してください。",
     baby_diary_open_failed: "ベビーダイアリーを開けませんでした。",
-    volume_modal_title: "水量設定",
-    temp_modal_title: "温度設定",
     feed_request_title: "お腹がすいているかもしれません",
     feed_request_subtitle:
       "CryAssist が赤ちゃんの空腹を検知しました。この設定で調乳を開始するか、先に調整してください。",
-    feed_request_body:
-      "Maxi-Cosi CryAssist 対応デバイスが Hungry を報告しました。Smart Bottle Maker で水量・粉量・温度を確認してから調乳を開始してください。",
     feed_request_start: "調乳を開始",
-    smart_prep_activate_title: "Smart Prep リマインダーを有効にする",
-    smart_prep_activate_body:
-      "Maxi-Cosi CryAssist 対応デバイスが赤ちゃんの空腹を検知したとき、Smart Bottle Maker が調乳をお知らせできます。",
-    smart_prep_enable_reminder: "リマインダーを有効にする",
-    smart_prep_cry_detected_title: "CryAssist デバイスを検出しました",
-    smart_prep_cry_detected_body:
-      "Maxi-Cosi CryAssist 対応デバイスが見つかりました。CryAssist Result が Hungry のときに調乳をお知らせします。今すぐ有効にしますか？",
-    smart_prep_enable_now: "有効にする",
-    smart_prep_later: "後で",
-    smart_prep_no_cry_device_title: "CryAssist デバイスが見つかりません",
-    smart_prep_no_cry_device:
-      "このホームに Maxi-Cosi CryAssist 対応デバイスが見つかりません。後でルーティンから設定できます。",
-    smart_prep_setup_page_title: "おすすめルーティン",
-    smart_prep_setup_title: "Smart Prep リマインダーをオンにする",
-    smart_prep_setup_desc:
-      "Maxi-Cosi CryAssist 対応デバイスが Hungry を報告すると、Smart Bottle Maker が調乳をお知らせできます。",
-    smart_prep_setup_if_label: "条件",
-    smart_prep_setup_then_label: "実行",
-    smart_prep_setup_if_detail: "Maxi-Cosi CryAssist 対応デバイス",
-    smart_prep_setup_if_sub: "CryAssist Result: Hungry",
-    smart_prep_setup_then_detail: "Smart Bottle Maker",
-    smart_prep_setup_then_sub: "調乳リマインダー",
-    smart_prep_setup_add: "追加",
-    smart_prep_setup_added: "Smart Prep リマインダーを有効にしました",
-    smart_prep_opened_routines:
-      "ルーティンを開きました。手順に沿って設定を完了してください。",
-    smart_prep_setup_failed:
-      "ルーティンを開けませんでした。App から再試行してください。",
-    smart_prep_tutorial_title: "Smart Prep ルーティンを設定",
-    smart_prep_tutorial_intro:
-      "App のルーティンで一度だけ設定します。次の手順に従ってください：",
-    smart_prep_tutorial_step_1:
-      "1. Create Routine → When device status changes",
-    smart_prep_tutorial_step_2:
-      "2. If: Maxi-Cosi CryAssist device → CryAssist Result → Hungry",
-    smart_prep_tutorial_step_3:
-      "3. Then: Smart Bottle Maker → scene_feed_request → hungry_pending",
-    smart_prep_tutorial_step_4: "4. Name: Milk Prep Reminder → Save",
-    smart_prep_tutorial_done: "設定済みにする",
-    smart_prep_open_routines: "ルーティンを開く",
     smart_prep_snackbar_setup: "Smart Prep の設定を完了",
-    smart_prep_marked_done: "Smart Prep リマインダーを設定済みにしました",
     block_water_tank_missing: "水箱が装着されていません。",
     block_low_water: "水量が不足しています。",
     block_powder_box_missing: "粉ミルクボックスが装着されていません。",
@@ -833,52 +745,11 @@ const locales = {
     baby_diary_pid_missing:
       "未配置宝宝日记产品 ID，请设置 BABY_DIARY_VIRTUAL_PID。",
     baby_diary_open_failed: "无法打开宝宝日记。",
-    volume_modal_title: "水量设置",
-    temp_modal_title: "温度设置",
     feed_request_title: "宝宝可能饿了",
     feed_request_subtitle:
       "CryAssist 检测到宝宝可能饿了。可用以下设置开始冲奶，或先自行调整。",
-    feed_request_body:
-      "Maxi-Cosi CryAssist 设备回报 Hungry。请在 Smart Bottle Maker 确认水量、粉量和温度后开始冲奶。",
     feed_request_start: "开始冲奶",
-    smart_prep_activate_title: "开启 Smart Prep 提醒",
-    smart_prep_activate_body:
-      "当 Maxi-Cosi CryAssist 设备检测到宝宝可能饿了时，Smart Bottle Maker 可提醒您准备奶瓶。",
-    smart_prep_enable_reminder: "开启提醒",
-    smart_prep_cry_detected_title: "检测到 CryAssist 设备",
-    smart_prep_cry_detected_body:
-      "已找到 Maxi-Cosi CryAssist 设备。当 CryAssist Result 为 Hungry 时可提醒冲奶。是否现在开启？",
-    smart_prep_enable_now: "开启",
-    smart_prep_later: "稍后",
-    smart_prep_no_cry_device_title: "未找到 CryAssist 设备",
-    smart_prep_no_cry_device:
-      "当前家庭未找到 Maxi-Cosi CryAssist 设备，可稍后在智能场景中设置。",
-    smart_prep_setup_page_title: "推荐场景",
-    smart_prep_setup_title: "开启 Smart Prep 提醒",
-    smart_prep_setup_desc:
-      "当 Maxi-Cosi CryAssist 设备回报 Hungry 时，Smart Bottle Maker 可提醒您准备奶瓶。",
-    smart_prep_setup_if_label: "如果",
-    smart_prep_setup_then_label: "那么",
-    smart_prep_setup_if_detail: "Maxi-Cosi CryAssist 设备",
-    smart_prep_setup_if_sub: "CryAssist Result: Hungry",
-    smart_prep_setup_then_detail: "Smart Bottle Maker",
-    smart_prep_setup_then_sub: "冲奶提醒",
-    smart_prep_setup_add: "添加",
-    smart_prep_setup_added: "Smart Prep 提醒已开启",
-    smart_prep_opened_routines: "已打开智能场景，请按步骤完成设置。",
-    smart_prep_setup_failed: "无法打开智能场景，请从 App 重试。",
-    smart_prep_tutorial_title: "设置 Smart Prep 智能场景",
-    smart_prep_tutorial_intro: "请在 App 的智能场景中完成一次设置，步骤如下：",
-    smart_prep_tutorial_step_1: "1. 创建智能场景 → 当设备状态变化时",
-    smart_prep_tutorial_step_2:
-      "2. 如果：Maxi-Cosi CryAssist 设备 → CryAssist 结果 → 饿了",
-    smart_prep_tutorial_step_3:
-      "3. 那么：Smart Bottle Maker → scene_feed_request → hungry_pending",
-    smart_prep_tutorial_step_4: "4. 名称：Milk Prep Reminder → 保存",
-    smart_prep_tutorial_done: "我已完成设置",
-    smart_prep_open_routines: "打开智能场景",
     smart_prep_snackbar_setup: "请完成 Smart Prep 设置",
-    smart_prep_marked_done: "已标记 Smart Prep 提醒设置完成",
     block_water_tank_missing: "水箱未安装。",
     block_low_water: "水量不足。",
     block_powder_box_missing: "奶粉盒未安装。",
@@ -1139,52 +1010,11 @@ const locales = {
     baby_diary_pid_missing:
       "未設定寶寶日記產品 ID，請設定 BABY_DIARY_VIRTUAL_PID。",
     baby_diary_open_failed: "無法開啟寶寶日記。",
-    volume_modal_title: "水量設定",
-    temp_modal_title: "溫度設定",
     feed_request_title: "寶寶可能餓了",
     feed_request_subtitle:
       "哭聲翻譯偵測到寶寶可能飢餓。可用以下設定開始沖奶，或先自行調整。",
-    feed_request_body:
-      "Maxi-Cosi 哭聲翻譯設備回報飢餓。請在 Smart Bottle Maker 確認水量、粉量與溫度後開始沖奶。",
     feed_request_start: "開始沖奶",
-    smart_prep_activate_title: "啟用 Smart Prep 提醒",
-    smart_prep_activate_body:
-      "當 Maxi-Cosi 哭聲翻譯設備偵測到寶寶可能飢餓時，Smart Bottle Maker 可提醒您準備奶瓶。",
-    smart_prep_enable_reminder: "啟用提醒",
-    smart_prep_cry_detected_title: "偵測到哭聲翻譯設備",
-    smart_prep_cry_detected_body:
-      "已找到 Maxi-Cosi 哭聲翻譯設備。當哭聲翻譯結果為飢餓時可提醒沖奶。是否現在開啟？",
-    smart_prep_enable_now: "開啟",
-    smart_prep_later: "稍後",
-    smart_prep_no_cry_device_title: "未找到哭聲翻譯設備",
-    smart_prep_no_cry_device:
-      "目前家庭未找到 Maxi-Cosi 哭聲翻譯設備，可稍後在智慧場景中設定。",
-    smart_prep_setup_page_title: "推薦場景",
-    smart_prep_setup_title: "開啟 Smart Prep 提醒",
-    smart_prep_setup_desc:
-      "當 Maxi-Cosi 哭聲翻譯設備回報飢餓時，Smart Bottle Maker 可提醒您準備奶瓶。",
-    smart_prep_setup_if_label: "如果",
-    smart_prep_setup_then_label: "執行",
-    smart_prep_setup_if_detail: "Maxi-Cosi 哭聲翻譯設備",
-    smart_prep_setup_if_sub: "哭聲翻譯結果：飢餓",
-    smart_prep_setup_then_detail: "Smart Bottle Maker",
-    smart_prep_setup_then_sub: "沖奶提醒",
-    smart_prep_setup_add: "新增",
-    smart_prep_setup_added: "Smart Prep 提醒已啟用",
-    smart_prep_opened_routines: "已開啟智慧場景，請依步驟完成設定。",
-    smart_prep_setup_failed: "無法開啟智慧場景，請從 App 重試。",
-    smart_prep_tutorial_title: "設定 Smart Prep 智慧場景",
-    smart_prep_tutorial_intro: "請在 App 的智慧場景中完成一次設定，步驟如下：",
-    smart_prep_tutorial_step_1: "1. 建立智慧場景 → 當設備狀態改變時",
-    smart_prep_tutorial_step_2:
-      "2. 如果：Maxi-Cosi 哭聲翻譯設備 → 哭聲翻譯結果 → 飢餓",
-    smart_prep_tutorial_step_3:
-      "3. 執行：Smart Bottle Maker → scene_feed_request → hungry_pending",
-    smart_prep_tutorial_step_4: "4. 名稱：Milk Prep Reminder → 儲存",
-    smart_prep_tutorial_done: "我已完成設定",
-    smart_prep_open_routines: "開啟智慧場景",
     smart_prep_snackbar_setup: "請完成 Smart Prep 設定",
-    smart_prep_marked_done: "已標記 Smart Prep 提醒設定完成",
     block_water_tank_missing: "水箱未安裝。",
     block_low_water: "水量不足。",
     block_powder_box_missing: "奶粉盒未安裝。",
