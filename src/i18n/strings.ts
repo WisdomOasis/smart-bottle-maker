@@ -194,6 +194,11 @@ const bottleStrings = {
   baby_diary_pid_missing:
     "Baby Diary product ID is not configured. Set BABY_DIARY_VIRTUAL_PID.",
   baby_diary_open_failed: "Could not open Baby Diary.",
+  feed_request_title: "Baby may be hungry!",
+  feed_request_subtitle:
+    "CryAssist detected your baby may be hungry. Start preparing a bottle with these settings, or adjust them first.",
+  feed_request_start: "Start Making",
+  smart_prep_snackbar_setup: "Finish Smart Prep setup",
   volume_modal_title: "Water amount",
   temp_modal_title: "Temperature",
   feeding_confirmation_title: "Milk Feeding Record Confirmation!",
@@ -496,6 +501,11 @@ const locales = {
     baby_diary_pid_missing:
       "ベビーダイアリーの製品 ID が未設定です。BABY_DIARY_VIRTUAL_PID を設定してください。",
     baby_diary_open_failed: "ベビーダイアリーを開けませんでした。",
+    feed_request_title: "お腹がすいているかもしれません",
+    feed_request_subtitle:
+      "CryAssist が赤ちゃんの空腹を検知しました。この設定で調乳を開始するか、先に調整してください。",
+    feed_request_start: "調乳を開始",
+    smart_prep_snackbar_setup: "Smart Prep の設定を完了",
     volume_modal_title: "水量設定",
     temp_modal_title: "温度設定",
     block_water_tank_missing: "水箱が装着されていません。",
@@ -778,6 +788,11 @@ const locales = {
     baby_diary_pid_missing:
       "未配置宝宝日记产品 ID，请设置 BABY_DIARY_VIRTUAL_PID。",
     baby_diary_open_failed: "无法打开宝宝日记。",
+    feed_request_title: "宝宝可能饿了",
+    feed_request_subtitle:
+      "CryAssist 检测到宝宝可能饿了。可用以下设置开始冲奶，或先自行调整。",
+    feed_request_start: "开始冲奶",
+    smart_prep_snackbar_setup: "请完成 Smart Prep 设置",
     volume_modal_title: "水量设置",
     temp_modal_title: "温度设置",
     block_water_tank_missing: "水箱未安装。",
@@ -1045,6 +1060,11 @@ const locales = {
     baby_diary_pid_missing:
       "未設定寶寶日記產品 ID，請設定 BABY_DIARY_VIRTUAL_PID。",
     baby_diary_open_failed: "無法開啟寶寶日記。",
+    feed_request_title: "寶寶可能餓了",
+    feed_request_subtitle:
+      "哭聲翻譯偵測到寶寶可能飢餓。可用以下設定開始沖奶，或先自行調整。",
+    feed_request_start: "開始沖奶",
+    smart_prep_snackbar_setup: "請完成 Smart Prep 設定",
     volume_modal_title: "水量設定",
     temp_modal_title: "溫度設定",
     block_water_tank_missing: "水箱未安裝。",

@@ -1,11 +1,21 @@
+.root {
+  position: relative;
+  height: 100vh;
+  max-height: 100vh;
+  background: #f0f3f7;
+  overflow: visible;
+}
+
 .page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  padding: 48rpx 32rpx 48rpx;
+  height: 100%;
+  max-height: 100%;
+  padding: 0 32rpx 24rpx;
   background: #f0f3f7;
   box-sizing: border-box;
   position: relative;
+  overflow: hidden;
 }
 
 .header {
@@ -14,41 +24,21 @@
 }
 
 .pageBody {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
   width: 100%;
-  margin-top: 1vh;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 12px;
+  gap: 8px;
   background: transparent;
-}
-
-.headerTop {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.logo {
-  width: 200rpx;
-  height: 40rpx;
-}
-
-.headerIcons {
-  display: flex;
-  gap: 24rpx;
-}
-
-.headerIcon {
-  width: 40rpx;
-  height: 40rpx;
-  opacity: 0.7;
+  overflow: hidden;
 }
 
 .titleRow {
-  margin-top: 16rpx;
+  margin-top: 4px;
   min-height: 32rpx;
   display: flex;
   flex-direction: row;
@@ -68,11 +58,13 @@
 
 .appTitle {
   flex-shrink: 1;
-  font-family: "Noto Sans JP", sans-serif;
-  font-size: 22rpx;
-  font-weight: 600;
-  letter-spacing: 2rpx;
-  color: rgba(45, 58, 74, 0.55);
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 100%;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #2d365f;
   text-align: left;
 }
 
@@ -80,30 +72,23 @@
   display: flex;
   flex-shrink: 0;
   align-items: center;
-  gap: 12rpx;
+  gap: 6px;
 }
 
-.onlineDot {
-  width: 14rpx;
-  height: 14rpx;
-  border-radius: 50%;
-  background: #c5cdd6;
-}
-
-.onlineDotActive {
-  background: var(--color-background-on, #55a074);
+.onlineIcon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
 }
 
 .onlineText {
-  font-size: 24rpx;
-  color: rgba(45, 58, 74, 0.55);
-}
-
-.headerWifiIcon {
-  width: 28rpx;
-  height: 24rpx;
-  flex-shrink: 0;
-  opacity: 0.85;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  line-height: 100%;
+  letter-spacing: 0;
+  text-align: right;
+  color: #55a074;
 }
 
 .powerTap {
@@ -216,7 +201,7 @@
 .gaugeDivider {
   width: 100%;
   height: 0;
-  margin: 14px 0 0;
+  margin: 8px 0 0;
   border: none;
   border-top: 1px dashed #cbdeef;
   flex-shrink: 0;
@@ -287,13 +272,13 @@
 
 .gapMiddleToTabs {
   width: 100%;
-  height: 28px;
+  height: 16px;
   flex-shrink: 0;
 }
 
 .gapBrandToTabs {
   width: 100%;
-  height: 20px;
+  height: 12px;
   flex-shrink: 0;
 }
 
@@ -756,16 +741,6 @@
   white-space: nowrap;
 }
 
-.settingsRowSubtext {
-  display: block;
-  width: 100%;
-  color: #6d7898;
-  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 16px;
-}
-
 .cleanRowBtn {
   width: 48px;
   height: 48px;
@@ -790,28 +765,6 @@
 .cleanRowIcon {
   width: 24px;
   height: 24px;
-}
-
-.feedingProfileAvatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-}
-
-.feedingProfileSpinner {
-  width: 22px;
-  height: 22px;
-  box-sizing: border-box;
-  border: 3px solid rgba(77, 114, 148, 0.2);
-  border-top-color: #4d7294;
-  border-radius: 50%;
-  animation: feedingProfileSpin 0.8s linear infinite;
-}
-
-@keyframes feedingProfileSpin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .diaryToastSlot {

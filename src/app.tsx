@@ -7,7 +7,6 @@ import { SdmProvider } from "@ray-js/panel-sdk";
 import { Text, View, initPanelEnvironment } from "@ray-js/ray";
 import RayErrorCatch from "@ray-js/ray-error-catch";
 import { devices } from "@/devices";
-import { hidePanelFloatingButtons } from "@/utils/panelChrome";
 import composeLayout from "./composeLayout";
 
 initPanelEnvironment({ useDefaultOffline: true });
@@ -37,8 +36,27 @@ class App extends React.Component<Props> {
     this.fallbackTimer = null;
   }
 
+  clearReadyWatchers = () => {
+    if (this.initListener != null) {
+      devices.common.offInitialized(this.initListener);
+      this.initListener = null;
+    }
+    if (this.readyPoll != null) {
+      clearInterval(this.readyPoll);
+      this.readyPoll = null;
+    }
+    if (this.fallbackTimer != null) {
+      clearTimeout(this.fallbackTimer);
+      this.fallbackTimer = null;
+    }
+  };
+
   markDeviceReady = () => {
-    if (this.state.deviceReady) return;
+    if (this.state.deviceReady) {
+      this.clearReadyWatchers();
+      return;
+    }
+    this.clearReadyWatchers();
     this.setState({ deviceReady: true });
   };
 
@@ -52,7 +70,6 @@ class App extends React.Component<Props> {
       this.markDeviceReady();
     });
 
-    /** onLaunch 的 init 可能早於此處註冊監聽，輪詢補上 */
     this.readyPoll = setInterval(() => {
       if (devices.common?.initialized) {
         this.markDeviceReady();
@@ -65,26 +82,17 @@ class App extends React.Component<Props> {
   }
 
   componentWillUnmount() {
-    if (this.initListener != null) {
-      devices.common.offInitialized(this.initListener);
-    }
-    if (this.readyPoll != null) {
-      clearInterval(this.readyPoll);
-    }
-    if (this.fallbackTimer != null) {
-      clearTimeout(this.fallbackTimer);
-    }
+    this.clearReadyWatchers();
   }
 
   render() {
     const { children } = this.props;
     const { deviceReady } = this.state;
 
-    return (
-      <ErrorBoundary>
-        {deviceReady ? (
-          <SdmProvider value={devices.common}>{children}</SdmProvider>
-        ) : (
+    // Keep SdmProvider mounted once ready so page hooks are never swapped mid-tree.
+    if (!deviceReady) {
+      return (
+        <ErrorBoundary>
           <View
             className="app-loading"
             style={{ backgroundColor: APP_BG, minHeight: "100vh" }}
@@ -93,7 +101,13 @@ class App extends React.Component<Props> {
               ...
             </Text>
           </View>
-        )}
+        </ErrorBoundary>
+      );
+    }
+
+    return (
+      <ErrorBoundary>
+        <SdmProvider value={devices.common}>{children}</SdmProvider>
       </ErrorBoundary>
     );
   }

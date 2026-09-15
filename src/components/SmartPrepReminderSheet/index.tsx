@@ -146,7 +146,7 @@ const SmartPrepReminderSheet: React.FC<Props> = ({
           </View>
           <View
             className={styles.closeButton}
-            onClick={busy ? undefined : onClose}
+            onClick={busy ? undefined : showBackButton ? onClose : onDismiss}
           >
             <Image
               src={

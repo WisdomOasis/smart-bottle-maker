@@ -2,65 +2,36 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  hasSeenConnectedFeaturesSetup,
-  markConnectedFeaturesSetupSeen,
-  shouldAutoOpenConnectedFeaturesSetup,
+  hasCompletedSmartPrepSetup,
+  markSmartPrepSetupComplete,
+  shouldShowSmartPrepSetupSnackbar,
 } from "../src/utils/connectedFeaturesSetup.ts";
 
-test("auto-opens setup only when the panel context is ready and unseen", () => {
+test("shows Smart Prep snackbar when device is known and setup incomplete", () => {
   assert.equal(
-    shouldAutoOpenConnectedFeaturesSetup({
-      cloudFeaturesAvailable: true,
-      isOnline: true,
-      homeId: "238738635",
+    shouldShowSmartPrepSetupSnackbar({
       deviceId: "bottle-maker",
-      hasSeen: false,
+      completed: false,
     }),
     true
   );
   assert.equal(
-    shouldAutoOpenConnectedFeaturesSetup({
-      cloudFeaturesAvailable: true,
-      isOnline: false,
-      homeId: "238738635",
-      deviceId: "bottle-maker",
-      hasSeen: false,
+    shouldShowSmartPrepSetupSnackbar({
+      deviceId: "",
+      completed: false,
     }),
     false
   );
   assert.equal(
-    shouldAutoOpenConnectedFeaturesSetup({
-      cloudFeaturesAvailable: true,
-      isOnline: true,
-      homeId: "",
+    shouldShowSmartPrepSetupSnackbar({
       deviceId: "bottle-maker",
-      hasSeen: false,
-    }),
-    false
-  );
-  assert.equal(
-    shouldAutoOpenConnectedFeaturesSetup({
-      cloudFeaturesAvailable: true,
-      isOnline: true,
-      homeId: "238738635",
-      deviceId: "bottle-maker",
-      hasSeen: true,
-    }),
-    false
-  );
-  assert.equal(
-    shouldAutoOpenConnectedFeaturesSetup({
-      cloudFeaturesAvailable: false,
-      isOnline: true,
-      homeId: "238738635",
-      deviceId: "bottle-maker",
-      hasSeen: false,
+      completed: true,
     }),
     false
   );
 });
 
-test("stores the one-time setup prompt per home and device", () => {
+test("stores Smart Prep completion per home and device", () => {
   const storage = new Map<string, unknown>();
   const runtime = globalThis as typeof globalThis & {
     ty?: {
@@ -76,20 +47,17 @@ test("stores the one-time setup prompt per home and device", () => {
 
   try {
     assert.equal(
-      hasSeenConnectedFeaturesSetup("238738635", "bottle-maker"),
+      hasCompletedSmartPrepSetup("238738635", "bottle-maker"),
       false
     );
-    markConnectedFeaturesSetupSeen("238738635", "bottle-maker");
+    markSmartPrepSetupComplete("238738635", "bottle-maker");
+    assert.equal(hasCompletedSmartPrepSetup("238738635", "bottle-maker"), true);
     assert.equal(
-      hasSeenConnectedFeaturesSetup("238738635", "bottle-maker"),
-      true
-    );
-    assert.equal(
-      hasSeenConnectedFeaturesSetup("different-home", "bottle-maker"),
+      hasCompletedSmartPrepSetup("different-home", "bottle-maker"),
       false
     );
     assert.equal(
-      hasSeenConnectedFeaturesSetup("238738635", "different-device"),
+      hasCompletedSmartPrepSetup("238738635", "different-device"),
       false
     );
   } finally {

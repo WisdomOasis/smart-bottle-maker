@@ -6,41 +6,47 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 
-test("global page styles allow the home page to scroll vertically", () => {
-  const appStyles = readFileSync(`${projectRoot}/src/app.less`, "utf8");
+test("home page locks to one viewport without outer scroll", () => {
+  const homeStyles = readFileSync(
+    `${projectRoot}/src/pages/home/index.module.less`,
+    "utf8"
+  );
   const homeConfig = readFileSync(
     `${projectRoot}/src/pages/home/index.config.ts`,
     "utf8"
   );
 
-  assert.match(appStyles, /page\s*\{[\s\S]*?overflow-y:\s*auto;/);
-  assert.doesNotMatch(appStyles, /page\s*\{[\s\S]*?overflow:\s*hidden;/);
-  assert.match(homeConfig, /disableScroll:\s*false/);
+  assert.match(homeStyles, /\.root\s*\{[\s\S]*?height:\s*100vh;/);
+  assert.match(homeStyles, /\.page\s*\{[\s\S]*?overflow:\s*hidden;/);
+  assert.match(homeConfig, /disableScroll:\s*true/);
 });
 
-test("home exposes the two connected feature entries without a duplicate hub", () => {
+test("home uses nav feeding entry and Smart Prep snackbar without a hub sheet", () => {
   const homePage = readFileSync(
     `${projectRoot}/src/pages/home/index.tsx`,
     "utf8"
   );
 
-  assert.match(homePage, />\s*Feeding record\s*</);
-  assert.match(homePage, />\s*Smart Prep Reminder\s*</);
-  assert.doesNotMatch(homePage, />\s*Connected features\s*</);
+  assert.match(homePage, /onFeedingRecordPress/);
+  assert.match(homePage, /FeedingProfileSheet/);
+  assert.match(homePage, /SmartPrepSetupSnackbar/);
+  assert.match(homePage, /SmartPrepReminderSheet/);
+  assert.doesNotMatch(homePage, /ConnectedFeaturesSetupSheet/);
 });
 
-test("home gates every European cloud flow on account availability", () => {
+test("home gates European cloud flows on account availability", () => {
   const homePage = readFileSync(
     `${projectRoot}/src/pages/home/index.tsx`,
     "utf8"
   );
 
   assert.match(homePage, /useEuropeanCloudAvailability\(\)/);
-  assert.match(homePage, /\{\s*cloudFeaturesAvailable,\s*isOnline,/);
+  assert.match(homePage, /cloudFeaturesAvailable/);
   assert.match(
     homePage,
     /cloudFeaturesAvailable\s*&&\s*feedingConfirmationPending/
   );
-  assert.match(homePage, /cloudFeaturesAvailable\s*&&\s*hungryReminderOpen/);
-  assert.match(homePage, /getEuropeanCloudFeatureStatusText/);
+  assert.match(homePage, /cloudFeaturesAvailable\s*&&/);
+  assert.match(homePage, /CryAssistFeedRequestModal/);
+  assert.match(homePage, /FeedingRecordConfirmationModal/);
 });

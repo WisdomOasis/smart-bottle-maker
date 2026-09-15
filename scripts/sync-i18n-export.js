@@ -278,7 +278,10 @@ function runOnce({ stageFile }) {
     stageOutputFile();
   }
 
-  notify("smart-fan i18n", `Updated i18n_export.xlsx (${keyCount} keys)`);
+  notify(
+    "smart-bottle-maker i18n",
+    `Updated i18n_export.xlsx (${keyCount} keys)`
+  );
 }
 
 function main() {
@@ -297,7 +300,7 @@ function main() {
     return;
   }
 
-  notify("smart-fan i18n", "Watching src/i18n/strings.ts for changes");
+  notify("smart-bottle-maker i18n", "Watching src/i18n/strings.ts for changes");
 
   let timer = null;
   fs.watch(stringsFile, () => {
@@ -306,7 +309,7 @@ function main() {
       try {
         runOnce({ stageFile: false });
       } catch (error) {
-        notify("smart-fan i18n", `Export failed: ${error.message}`);
+        notify("smart-bottle-maker i18n", `Export failed: ${error.message}`);
       }
     }, 200);
   });
@@ -315,6 +318,6 @@ function main() {
 try {
   main();
 } catch (error) {
-  notify("smart-fan i18n", `Export failed: ${error.message}`);
+  notify("smart-bottle-maker i18n", `Export failed: ${error.message}`);
   process.exit(1);
 }

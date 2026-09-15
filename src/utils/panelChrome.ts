@@ -1,29 +1,38 @@
-/** 隱藏 Tuya 面板原生懸浮「…」與標題列 icon（含關閉） */
-export const hidePanelFloatingButtons = (): void => {
-  const { ty } = globalThis as {
-    ty?: Record<string, (p?: Record<string, unknown>) => unknown>;
-  };
-
+/** Soft-call native chrome APIs; IDE often rejects unimplemented ones. */
+const swallowPromise = (value: unknown): void => {
   try {
-    const systemInfo = ty?.getSystemInfoSync?.() as
-      | { brand?: string }
-      | undefined;
-    if (systemInfo?.brand === "devtools") return;
+    Promise.resolve(value).catch(() => undefined);
   } catch {
-    // Continue on hosts that do not expose system information here.
+    // ignore
   }
+};
 
-  [ty?.hideMenuButton, ty?.hideBoardTitleIcon].forEach((method) => {
-    try {
-      const result = method?.({ fail: () => undefined });
-      if (
-        result &&
-        typeof (result as { catch?: unknown }).catch === "function"
-      ) {
-        (result as Promise<unknown>).catch(() => undefined);
-      }
-    } catch {
-      // These optional host APIs are unavailable in some IDE runtimes.
-    }
-  });
+const callChromeApi = (
+  fn: ((p?: Record<string, unknown>) => unknown) | undefined
+): void => {
+  if (typeof fn !== "function") return;
+  try {
+    const result = fn({
+      success: () => undefined,
+      fail: () => undefined,
+      complete: () => undefined,
+    });
+    swallowPromise(result);
+  } catch {
+    // ignore unsupported APIs
+  }
+};
+
+type TyChrome = Record<string, (p?: Record<string, unknown>) => unknown>;
+
+/**
+ * 隱藏 Tuya 面板原生懸浮「…」與標題列 icon（含關閉）。
+ * 只用非 Sync API：IDE 常掛了 *Sync 名稱但未實作，呼叫會噴錯。
+ */
+export const hidePanelFloatingButtons = (): void => {
+  const { ty } = globalThis as { ty?: TyChrome };
+  if (!ty) return;
+
+  callChromeApi(ty.hideMenuButton);
+  callChromeApi(ty.hideBoardTitleIcon);
 };

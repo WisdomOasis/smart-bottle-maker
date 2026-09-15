@@ -37,6 +37,9 @@ const composeLayout = (SubComp: React.ComponentType<any>) => {
       dispatch(initializeSystemInfo(systemInfo));
       dispatch(updateThemeType(theme));
       hidePanelFloatingButtons();
+      // Host chrome can remount after launch; hide again shortly after.
+      setTimeout(() => hidePanelFloatingButtons(), 300);
+      setTimeout(() => hidePanelFloatingButtons(), 1200);
     }
 
     render() {

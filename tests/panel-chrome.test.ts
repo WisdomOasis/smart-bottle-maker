@@ -15,7 +15,6 @@ test("handles unsupported panel chrome APIs without unhandled rejections", () =>
   };
 
   (globalThis as { ty?: unknown }).ty = {
-    getSystemInfoSync: () => ({ brand: "Apple" }),
     hideMenuButton: (options: { fail?: (error: Error) => void }) => {
       options.fail?.(new Error("unsupported in IDE"));
       if (options.fail) handledFailures += 1;
@@ -25,6 +24,13 @@ test("handles unsupported panel chrome APIs without unhandled rejections", () =>
       options.fail?.(new Error("unsupported in IDE"));
       if (options.fail) handledFailures += 1;
       return rejectedCall;
+    },
+    // Present but must never be called — IDE stubs throw loudly.
+    hideMenuButtonSync: () => {
+      throw new Error("hideMenuButtonSync should not be called");
+    },
+    hideBoardTitleIconSync: () => {
+      throw new Error("hideBoardTitleIconSync should not be called");
     },
   };
 
@@ -37,23 +43,12 @@ test("handles unsupported panel chrome APIs without unhandled rejections", () =>
   }
 });
 
-test("does not call unsupported panel chrome APIs in the IDE", () => {
+test("ignores missing chrome APIs", () => {
   const previousTy = (globalThis as { ty?: unknown }).ty;
-  let hideCalls = 0;
-
-  (globalThis as { ty?: unknown }).ty = {
-    getSystemInfoSync: () => ({ brand: "devtools" }),
-    hideMenuButton: () => {
-      hideCalls += 1;
-    },
-    hideBoardTitleIcon: () => {
-      hideCalls += 1;
-    },
-  };
+  (globalThis as { ty?: unknown }).ty = {};
 
   try {
-    hidePanelFloatingButtons();
-    assert.equal(hideCalls, 0);
+    assert.doesNotThrow(() => hidePanelFloatingButtons());
   } finally {
     (globalThis as { ty?: unknown }).ty = previousTy;
   }
