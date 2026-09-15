@@ -111,6 +111,25 @@ export type FeedingRecordConfirmation = {
   completedAt: number;
 };
 
+export const settleConfirmationClear = async (
+  clearConfirmation: () => Promise<boolean>,
+  timeoutMs = 8000
+): Promise<boolean> => {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(clearConfirmation),
+      new Promise<boolean>((resolve) => {
+        timer = setTimeout(() => resolve(false), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return false;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+};
+
 type UpdateInput = {
   context: FeedingContextValue;
   record: FeedingRecordConfirmation;

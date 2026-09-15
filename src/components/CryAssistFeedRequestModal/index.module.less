@@ -1,0 +1,164 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(45, 54, 95, 0.42);
+}
+
+.dialog {
+  width: 100%;
+  max-width: 340px;
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(24, 67, 119, 0.18);
+}
+
+.content {
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.title {
+  color: #2d365f;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.subtitle {
+  color: #2d365f;
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.metricsPanel {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  background: #f2f6fc;
+  border-radius: 20px;
+}
+
+.metricRow {
+  padding: 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metricRow:first-child {
+  padding-top: 0;
+}
+
+.metricRow:last-child {
+  padding-bottom: 0;
+}
+
+.metricDivider {
+  width: 100%;
+  border-top: 1px dashed #cbdeef;
+}
+
+.metricHeader,
+.metricLabelGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.metricHeader {
+  justify-content: space-between;
+}
+
+.metricLabelGroup {
+  min-width: 0;
+  gap: 8px;
+}
+
+.metricIcon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.metricLabel,
+.metricValue {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.metricLabel {
+  color: #4d7294;
+}
+
+.metricValue {
+  color: #2d365f;
+}
+
+.divider {
+  width: 100%;
+  border-top: 1px solid #dfeaf4;
+}
+
+.actions {
+  min-height: 52px;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.action {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionDivider {
+  border-left: 1px solid #dfeaf4;
+}
+
+.cancelText,
+.startText {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.cancelText {
+  color: #81869f;
+  font-weight: 400;
+}
+
+.startText {
+  color: #4d7294;
+  font-weight: 600;
+}
+
+.actionDisabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

@@ -3,7 +3,10 @@ import { Text, View, showToast } from "@ray-js/ray";
 import CustomModeSlider from "@/components/CustomModeSlider";
 import Strings from "@/i18n";
 import type { FeedingContextValue } from "@/utils/feedingContextValue";
-import type { FeedingRecordConfirmation } from "@/utils/feedingRecordConfirmation";
+import {
+  settleConfirmationClear,
+  type FeedingRecordConfirmation,
+} from "@/utils/feedingRecordConfirmation";
 import { updateFeedingRecord } from "@/services/feedingRecordConfirmation";
 import styles from "./index.module.less";
 
@@ -48,7 +51,7 @@ const FeedingRecordConfirmationModal: React.FC<Props> = ({
       return;
     }
     setPhase("clearing");
-    const cleared = await clearConfirmation();
+    const cleared = await settleConfirmationClear(clearConfirmation);
     if (cleared) {
       setDismissed(true);
       return;
@@ -66,20 +69,25 @@ const FeedingRecordConfirmationModal: React.FC<Props> = ({
     try {
       await updateFeedingRecord({ context, record, remainingAmount });
       setRecordUpdated(true);
-      const cleared = await clearConfirmation();
-      if (!cleared) {
-        setPhase("clear_error");
-        return;
-      }
       showToast({
         title: Strings.getLang("feeding_confirmation_updated"),
         icon: "success",
       });
+      setPhase("clearing");
+      const cleared = await settleConfirmationClear(clearConfirmation);
+      if (!cleared) {
+        setPhase("clear_error");
+        return;
+      }
       setDismissed(true);
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error("Feeding record confirmation update failed", error);
       setPhase("update_error");
+      showToast({
+        title: Strings.getLang("feeding_confirmation_update_failed"),
+        icon: "none",
+      });
     }
   }, [
     busy,

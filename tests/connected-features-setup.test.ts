@@ -10,6 +10,7 @@ import {
 test("auto-opens setup only when the panel context is ready and unseen", () => {
   assert.equal(
     shouldAutoOpenConnectedFeaturesSetup({
+      cloudFeaturesAvailable: true,
       isOnline: true,
       homeId: "238738635",
       deviceId: "bottle-maker",
@@ -19,6 +20,7 @@ test("auto-opens setup only when the panel context is ready and unseen", () => {
   );
   assert.equal(
     shouldAutoOpenConnectedFeaturesSetup({
+      cloudFeaturesAvailable: true,
       isOnline: false,
       homeId: "238738635",
       deviceId: "bottle-maker",
@@ -28,6 +30,7 @@ test("auto-opens setup only when the panel context is ready and unseen", () => {
   );
   assert.equal(
     shouldAutoOpenConnectedFeaturesSetup({
+      cloudFeaturesAvailable: true,
       isOnline: true,
       homeId: "",
       deviceId: "bottle-maker",
@@ -37,10 +40,21 @@ test("auto-opens setup only when the panel context is ready and unseen", () => {
   );
   assert.equal(
     shouldAutoOpenConnectedFeaturesSetup({
+      cloudFeaturesAvailable: true,
       isOnline: true,
       homeId: "238738635",
       deviceId: "bottle-maker",
       hasSeen: true,
+    }),
+    false
+  );
+  assert.equal(
+    shouldAutoOpenConnectedFeaturesSetup({
+      cloudFeaturesAvailable: false,
+      isOnline: true,
+      homeId: "238738635",
+      deviceId: "bottle-maker",
+      hasSeen: false,
     }),
     false
   );

@@ -28,3 +28,19 @@ test("home exposes the two connected feature entries without a duplicate hub", (
   assert.match(homePage, />\s*Smart Prep Reminder\s*</);
   assert.doesNotMatch(homePage, />\s*Connected features\s*</);
 });
+
+test("home gates every European cloud flow on account availability", () => {
+  const homePage = readFileSync(
+    `${projectRoot}/src/pages/home/index.tsx`,
+    "utf8"
+  );
+
+  assert.match(homePage, /useEuropeanCloudAvailability\(\)/);
+  assert.match(homePage, /\{\s*cloudFeaturesAvailable,\s*isOnline,/);
+  assert.match(
+    homePage,
+    /cloudFeaturesAvailable\s*&&\s*feedingConfirmationPending/
+  );
+  assert.match(homePage, /cloudFeaturesAvailable\s*&&\s*hungryReminderOpen/);
+  assert.match(homePage, /getEuropeanCloudFeatureStatusText/);
+});

@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import {
   buildFeedingRecordUpdate,
   parseFeedingRecordConfirmation,
+  settleConfirmationClear,
   sha256Hex,
 } from "../src/utils/feedingRecordConfirmation.ts";
 import dpCodes from "../src/constant/dpCodes.ts";
@@ -159,5 +160,18 @@ test("declares DP 120 as a writable confirmation enum", () => {
       property: { type: "enum", range: ["none", "pending"] },
       type: "obj",
     }
+  );
+});
+
+test("does not wait forever when the device never confirms clearing DP 120", async () => {
+  const never = new Promise<boolean>(() => undefined);
+
+  assert.equal(await settleConfirmationClear(() => never, 5), false);
+  assert.equal(await settleConfirmationClear(async () => true, 50), true);
+  assert.equal(
+    await settleConfirmationClear(async () => {
+      throw new Error("publish failed");
+    }, 50),
+    false
   );
 });

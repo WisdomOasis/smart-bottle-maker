@@ -44,11 +44,13 @@ export const markConnectedFeaturesSetupSeen = (
 };
 
 export const shouldAutoOpenConnectedFeaturesSetup = (input: {
+  cloudFeaturesAvailable: boolean;
   isOnline: boolean;
   homeId: string;
   deviceId: string;
   hasSeen: boolean;
 }): boolean =>
+  input.cloudFeaturesAvailable &&
   input.isOnline &&
   Boolean(input.homeId) &&
   Boolean(input.deviceId) &&
