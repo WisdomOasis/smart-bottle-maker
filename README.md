@@ -35,4 +35,20 @@ Bind this panel to product PID `SmartBottleMaker` on the Tuya developer platform
 
 - Source of truth: `src/i18n/strings.ts`
 - Export file: `i18n_export.xlsx`
+- Manual export: run `yarn i18n:export`
+- Watch mode: run `yarn i18n:watch`
 - Pre-commit regenerates the Excel when staged i18n files change
+
+## Capability dependency
+
+- TTT dependency
+  - BaseKit / MiniKit / DeviceKit (see `project.tuya.json`)
+- Device Detail Functional Page for settings
+
+## Problem feedback
+
+If you have any questions, please visit the link and submit post feedback: https://tuyaos.com/viewforum.php?f=10
+
+## License
+
+[License details](LICENSE)

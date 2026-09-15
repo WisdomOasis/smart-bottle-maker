@@ -180,6 +180,14 @@ export const defaultSchema = [
     property: { type: "string", maxlen: 512 },
     type: "obj",
   },
+  {
+    code: "feeding_record_confir",
+    id: 120,
+    mode: "rw",
+    name: "Feeding Record Confir",
+    property: { type: "enum", range: ["none", "pending"] },
+    type: "obj",
+  },
 ] as const;
 
 export type SchemaCode = (typeof defaultSchema)[number]["code"];

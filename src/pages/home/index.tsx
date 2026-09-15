@@ -42,11 +42,13 @@ import WaterTemperaturePanel from "@/components/WaterTemperaturePanel";
 import PowderCautionPanel from "@/components/PowderCautionPanel";
 import BabyDiarySnackbar from "@/components/BabyDiarySnackbar";
 import FeedingProfileSheet from "@/components/FeedingProfileSheet";
-import FeedRequestModal from "@/components/FeedRequestModal";
+import FeedingRecordConfirmationModal from "@/components/FeedingRecordConfirmationModal";
+import CryAssistFeedRequestModal from "@/components/CryAssistFeedRequestModal";
 import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
 import PanelNavBar from "@/components/PanelNavBar";
 import SmartPrepReminderSheet from "@/components/SmartPrepReminderSheet";
 import SmartPrepSetupSnackbar from "@/components/SmartPrepSetupSnackbar";
+import { useEuropeanCloudAvailability } from "@/hooks/useEuropeanCloudAvailability";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
   saveFeedingProfileSelection,
@@ -98,6 +100,15 @@ import {
   shouldResetCryAssistReminder,
 } from "@/utils/cryassistReminder";
 import {
+  buildCryAssistMilkRecipe,
+  createCryAssistMilkDraft,
+  isCryAssistDraftChanged,
+  type CryAssistMilkDraft,
+} from "@/utils/cryassistMilkDraft";
+import { parseFeedingRecordConfirmation } from "@/utils/feedingRecordConfirmation";
+import { executeMilkStart, isMilkStartConfirmed } from "@/utils/milkStart";
+import { isEuropeanCloudAvailable } from "@/utils/europeanCloudAvailability";
+import {
   isPanelDeviceContextReady,
   resolvePanelDeviceId,
 } from "@/utils/panelDeviceContext";
@@ -137,6 +148,10 @@ const HomePage: React.FC = () => {
 
   const { switchOn, isOnline, panelDisabled, devInfo, dpState } =
     useDeviceConnectivity();
+  const cloudFeatureAvailability = useEuropeanCloudAvailability();
+  const cloudFeaturesAvailable = isEuropeanCloudAvailable(
+    cloudFeatureAvailability
+  );
   const actions = useActions();
   const dispatch = useAppDispatch();
   const brandSet = useSelector(selectPowderBrandConfigured);
@@ -169,6 +184,9 @@ const HomePage: React.FC = () => {
     useState<SmartPrepPreparedContext | null>(null);
   const [smartPrepSetupDone, setSmartPrepSetupDone] = useState(false);
   const [hungryReminderOpen, setHungryReminderOpen] = useState(false);
+  const [hungryReminderBusy, setHungryReminderBusy] = useState(false);
+  const [hungryStartAwaitingDevice, setHungryStartAwaitingDevice] =
+    useState(false);
 
   const prevWorking = useRef(false);
   const prevWorkMode = useRef<WorkMode>("milk");
@@ -204,6 +222,16 @@ const HomePage: React.FC = () => {
     () => parseFeedingContextValue(dpState[dpCodes.feedingContext]),
     [dpState]
   );
+  const hungryReminderInitialDraft = useMemo(
+    () =>
+      createCryAssistMilkDraft({
+        volumeMl,
+        temp,
+        formulaWater: formulaWaterMl,
+        formulaRatio,
+      }),
+    [formulaRatio, formulaWaterMl, temp, volumeMl]
+  );
 
   const refreshFeedingRecordStatus = useCallback(() => {
     const requestId = homeInfoRequestId.current + 1;
@@ -237,6 +265,18 @@ const HomePage: React.FC = () => {
   const hasValidFeedingContext = Boolean(
     feedingContext && feedingHomeId && feedingContext.homeID === feedingHomeId
   );
+  const feedingConfirmationPending =
+    dpState[dpCodes.feedingRecordConfirmation] === "pending";
+  const feedingConfirmationRecord = useMemo(
+    () =>
+      hasValidFeedingContext && feedingContext
+        ? parseFeedingRecordConfirmation(
+            dpState[dpCodes.drinkRecordUpload],
+            feedingContext
+          )
+        : null,
+    [dpState, feedingContext, hasValidFeedingContext]
+  );
 
   useEffect(() => {
     setSmartPrepSetupDone(
@@ -245,6 +285,7 @@ const HomePage: React.FC = () => {
   }, [feedingDeviceId, feedingHomeId]);
 
   const showSmartPrepSnackbar = shouldShowSmartPrepSetupSnackbar({
+    cloudFeaturesAvailable,
     isOnline,
     homeId: feedingHomeId,
     deviceId: feedingDeviceId,
@@ -287,6 +328,11 @@ const HomePage: React.FC = () => {
     [actions]
   );
 
+  const clearFeedingConfirmation = useCallback(
+    () => setDp(dpCodes.feedingRecordConfirmation, "none"),
+    [setDp]
+  );
+
   useEffect(() => {
     if (awaitingWorkMode && isMaking && workMode === awaitingWorkMode) {
       setAwaitingWorkMode(null);
@@ -323,7 +369,10 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     if (prevWorking.current && !isMaking) {
       setAwaitingWorkMode(null);
-      if (dpState[dpCodes.sceneFeedRequest] === "hungry_pending") {
+      if (
+        cloudFeaturesAvailable &&
+        dpState[dpCodes.sceneFeedRequest] === "hungry_pending"
+      ) {
         setDp(dpCodes.sceneFeedRequest, "none").catch(() => undefined);
       }
       const finished = prevWorkMode.current;
@@ -643,6 +692,10 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     const sceneFeedRequest = dpState[dpCodes.sceneFeedRequest];
+    if (!cloudFeaturesAvailable) {
+      hungryReminderShown.current = false;
+      return;
+    }
     if (
       shouldOpenCryAssistReminder(sceneFeedRequest, hungryReminderShown.current)
     ) {
@@ -651,49 +704,106 @@ const HomePage: React.FC = () => {
     }
     if (shouldResetCryAssistReminder(sceneFeedRequest)) {
       hungryReminderShown.current = false;
+      setHungryReminderOpen(false);
+      setHungryReminderBusy(false);
+      setHungryStartAwaitingDevice(false);
     }
-  }, [dpState]);
+  }, [cloudFeaturesAvailable, dpState]);
 
-  const dismissFeedRequest = useCallback(async () => {
-    setHungryReminderOpen(false);
-    await clearHungryReminder();
-  }, [clearHungryReminder]);
+  useEffect(() => {
+    if (
+      !hungryStartAwaitingDevice ||
+      !isMilkStartConfirmed(isMaking, workMode)
+    ) {
+      return undefined;
+    }
+    setHungryStartAwaitingDevice(false);
+    clearHungryReminder()
+      .then((cleared) => {
+        if (cleared) setHungryReminderOpen(false);
+      })
+      .finally(() => setHungryReminderBusy(false));
+    return undefined;
+  }, [clearHungryReminder, hungryStartAwaitingDevice, isMaking, workMode]);
 
-  const handleFeedRequestStart = async (draft: {
-    ml: number;
-    formulaWaterMl: number;
+  useEffect(() => {
+    if (!hungryStartAwaitingDevice || !hungryReminderBusy) return undefined;
+    const timer = setTimeout(() => {
+      setHungryReminderBusy(false);
+      showToast({
+        title: Strings.getLang("cryassist_feed_start_not_confirmed"),
+        icon: "none",
+      });
+    }, 12000);
+    return () => clearTimeout(timer);
+  }, [hungryReminderBusy, hungryStartAwaitingDevice]);
+
+  const handleHungryNotNow = async () => {
+    if (hungryReminderBusy) return;
+    setHungryReminderBusy(true);
+    try {
+      const cleared = await clearHungryReminder();
+      if (cleared) {
+        setHungryStartAwaitingDevice(false);
+        setHungryReminderOpen(false);
+      }
+    } finally {
+      setHungryReminderBusy(false);
+    }
+  };
+
+  const startMilkWithRecipe = async (recipe: {
+    volumeMl: number;
+    temp: TempSet | number;
+    formulaWater: number;
     formulaRatio: number;
-    temp: TempSet;
+    unitSet: "mL";
   }) => {
-    if (toastIfBlocked() || startDisabled) {
-      await dismissFeedRequest();
-      return;
-    }
-    setHungryReminderOpen(false);
-    setSceneKey("custom");
-    setSelectedAction("milk");
+    if (toastIfBlocked() || startDisabled) return false;
     setMilkSessionActive(true);
     setAwaitingWorkMode("milk");
-    const recipe = resolveMilkRecipeParams({
-      sceneKey: "custom",
-      volumeMl: draft.ml,
-      temp: draft.temp,
-      formulaRatio: draft.formulaRatio,
-      powderBrandSelection: null,
-    });
-    const paramsSent = await publishDpBatch(setDp, {
-      ...buildMilkStartDpPayload({
-        ...recipe,
-        formulaWater: draft.formulaWaterMl || recipe.formulaWater,
-      }),
-      [dpCodes.sceneFeedRequest]: "none",
-    });
-    const sent =
-      paramsSent && (await setBoolDp(setDp, dpCodes.workingStatus, true));
+    const sent = await executeMilkStart(
+      recipe,
+      (nextRecipe) =>
+        publishDpBatch(
+          setDp,
+          buildMilkStartDpPayload({
+            volumeMl: nextRecipe.volumeMl,
+            temp: nextRecipe.temp as TempSet,
+            formulaWater: nextRecipe.formulaWater,
+            formulaRatio: nextRecipe.formulaRatio,
+            unitSet: "mL",
+          })
+        ),
+      () => setBoolDp(setDp, dpCodes.workingStatus, true)
+    );
     if (!sent) {
       setMilkSessionActive(false);
       setAwaitingWorkMode(null);
       showToast({ title: t("dp_command_failed"), icon: "none" });
+      return false;
+    }
+    return true;
+  };
+
+  const handleHungryStartMaking = async (draft: CryAssistMilkDraft) => {
+    if (hungryReminderBusy) return;
+    setHungryReminderBusy(true);
+    try {
+      const started = await startMilkWithRecipe(
+        buildCryAssistMilkRecipe(draft)
+      );
+      if (started) {
+        if (isCryAssistDraftChanged(hungryReminderInitialDraft, draft)) {
+          setSceneKey("custom");
+        }
+        setSelectedAction("milk");
+        setHungryStartAwaitingDevice(true);
+        return;
+      }
+      setHungryReminderBusy(false);
+    } catch {
+      setHungryReminderBusy(false);
     }
   };
 
@@ -1213,24 +1323,37 @@ const HomePage: React.FC = () => {
           !babyDiaryToastVisible &&
           !feedingSheetOpen &&
           !smartPrepSheetOpen &&
-          !hungryReminderOpen
+          !hungryReminderOpen &&
+          !feedingConfirmationPending
         }
         onPress={openSmartPrepSheet}
       />
 
-      <FeedRequestModal
-        visible={hungryReminderOpen && !isMakingUi && !isCleanSession}
-        ml={volumeMl}
-        formulaWaterMl={formulaWaterMl}
-        formulaRatio={formulaRatio}
-        temp={temp}
-        onCancel={() => {
-          dismissFeedRequest().catch(() => undefined);
-        }}
-        onStart={(draft) => {
-          handleFeedRequestStart(draft).catch(() => undefined);
-        }}
-      />
+      {cloudFeaturesAvailable && feedingConfirmationPending ? (
+        <FeedingRecordConfirmationModal
+          context={hasValidFeedingContext ? feedingContext : null}
+          record={feedingConfirmationRecord}
+          isOnline={isOnline}
+          clearConfirmation={clearFeedingConfirmation}
+        />
+      ) : null}
+
+      {cloudFeaturesAvailable &&
+      hungryReminderOpen &&
+      !isMakingUi &&
+      !isCleanSession ? (
+        <CryAssistFeedRequestModal
+          initialDraft={hungryReminderInitialDraft}
+          busy={hungryReminderBusy}
+          startDisabled={startDisabled || isMaking}
+          onCancel={() => {
+            handleHungryNotNow().catch(() => undefined);
+          }}
+          onStart={(draft) => {
+            handleHungryStartMaking(draft).catch(() => undefined);
+          }}
+        />
+      ) : null}
     </View>
   );
 };

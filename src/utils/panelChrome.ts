@@ -24,6 +24,16 @@ export const hidePanelFloatingButtons = (): void => {
   const { ty } = globalThis as {
     ty?: Record<string, (p?: Record<string, unknown>) => unknown>;
   };
+
+  try {
+    const systemInfo = ty?.getSystemInfoSync?.() as
+      | { brand?: string }
+      | undefined;
+    if (systemInfo?.brand === "devtools") return;
+  } catch {
+    // Continue on hosts that do not expose system information here.
+  }
+
   callChromeApi(ty?.hideMenuButton);
   callChromeApi(ty?.hideBoardTitleIcon);
 };
