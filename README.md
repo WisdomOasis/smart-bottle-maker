@@ -33,7 +33,7 @@ Before using this template, you need to have a basic understanding of the Ray fr
 
 - TTT dependency
   - "BaseKit": "3.0.6",
-  - "MiniKit": "3.0.7",
+  - "MiniKit": "3.2.0",
   - "DeviceKit": "4.6.1",
 - Component dependency
   - None

@@ -130,8 +130,7 @@ const SCENE_TABS: SceneTabItem[] = [
 const HomePage: React.FC = () => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
-  const { switchOn, isOnline, wifiStatus, panelDisabled } =
-    useDeviceConnectivity();
+  const { switchOn, isOnline, panelDisabled } = useDeviceConnectivity();
   const { devInfo } = useDevice((state) => ({ devInfo: state.devInfo }));
   const dpState = useProps() as Record<string, unknown>;
   const actions = useActions();
@@ -430,12 +429,12 @@ const HomePage: React.FC = () => {
 
   const statusText = useMemo(
     () =>
-      formatConnectionStatus(isOnline, wifiStatus, {
+      formatConnectionStatus(isOnline, {
         online: t("status_online"),
         offline: t("status_offline"),
         connecting: t("status_connecting"),
       }),
-    [isOnline, wifiStatus, t]
+    [isOnline, t]
   );
 
   const activeSceneTab = useMemo(
