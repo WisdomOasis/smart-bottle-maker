@@ -94,7 +94,7 @@ import {
   resolveMilkRecipeParams,
 } from "@/utils/milkRecipe";
 import { formatConnectionStatus } from "@/utils/deviceStatus";
-import { getCustomNavTopInset } from "@/utils/customNavInset";
+import { useCustomNavTopInset } from "@/utils/customNavInset";
 import {
   shouldOpenCryAssistReminder,
   shouldResetCryAssistReminder,
@@ -112,6 +112,7 @@ import {
   isPanelDeviceContextReady,
   resolvePanelDeviceId,
 } from "@/utils/panelDeviceContext";
+import { hidePanelFloatingButtons } from "@/utils/panelChrome";
 import styles from "./index.module.less";
 
 type ActionKind = "milk" | "water" | "powder";
@@ -194,8 +195,7 @@ const HomePage: React.FC = () => {
   const hungryReminderShown = useRef(false);
   const homeInfoRequestId = useRef(0);
 
-  // Not a hook — avoid native API calls inside useState initializers (can re-enter render).
-  const navTopInset = getCustomNavTopInset();
+  const navTopInset = useCustomNavTopInset();
 
   const hasSavedPowderBrands = powderBrandEntries.length > 0;
   const isCustomBrand = powderBrandSelection?.brandId === CUSTOM_BRAND_ID;
@@ -255,12 +255,16 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     refreshFeedingRecordStatus();
+    hidePanelFloatingButtons();
     return () => {
       homeInfoRequestId.current += 1;
     };
   }, [refreshFeedingRecordStatus]);
 
-  useAppEvent("onShow", refreshFeedingRecordStatus);
+  useAppEvent("onShow", () => {
+    hidePanelFloatingButtons();
+    refreshFeedingRecordStatus();
+  });
 
   const hasValidFeedingContext = Boolean(
     feedingContext && feedingHomeId && feedingContext.homeID === feedingHomeId
@@ -285,9 +289,6 @@ const HomePage: React.FC = () => {
   }, [feedingDeviceId, feedingHomeId]);
 
   const showSmartPrepSnackbar = shouldShowSmartPrepSetupSnackbar({
-    cloudFeaturesAvailable,
-    isOnline,
-    homeId: feedingHomeId,
     deviceId: feedingDeviceId,
     completed: smartPrepSetupDone,
   });
@@ -818,469 +819,481 @@ const HomePage: React.FC = () => {
   };
 
   return (
-    <View className={styles.page} style={{ paddingTop: navTopInset }}>
-      <PanelNavBar
-        mode="home"
-        deviceId={devInfo?.devId}
-        onFeedingRecordPress={() => {
-          setFeedingSheetOpen(true);
-        }}
-      />
-      <View className={styles.header}>
-        <View className={styles.titleRow}>
-          <View className={styles.titleGroup}>
-            <Text className={styles.appTitle}>{t("app_title")}</Text>
-            <View
-              className={styles.powerTap}
-              onClick={() => {
-                handlePowerToggle();
-              }}
-            >
-              <Image
-                src={switchOn ? Res.powerIcon.on : Res.powerIcon.off}
-                className={styles.headerPowerIcon}
-              />
-            </View>
-          </View>
-          <View className={styles.onlineRow}>
-            <Image
-              src={
-                isOnline ? IC_CONNECTION_ONLINE_URI : IC_CONNECTION_OFFLINE_URI
-              }
-              className={styles.onlineIcon}
-            />
-            <Text
-              className={styles.onlineText}
-              style={{ color: isOnline ? "#55A074" : "#BA2F2F" }}
-            >
-              {statusText}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      <View className={styles.pageBody}>
-        <View
-          className={clsx(
-            styles.mainPanel,
-            (!isOnline || panelDisabled) && styles.mainPanelOffline
-          )}
-        >
-          <View className={styles.dashboardCard}>
-            <View className={styles.panelGaugeCluster}>
-              <View className={styles.dashboardCardTop}>
-                <View className={styles.gaugeSlot}>
-                  <AmountGauge
-                    value={gaugeValue}
-                    unit={gaugeUnit}
-                    label={gaugeLabel}
-                    min={0}
-                    max={powderPrimary ? 200 : GAUGE_ML_MAX}
-                    dimmed={
-                      panelDisabled || !isOnline || childLock || isMakingUi
-                    }
-                  />
-                </View>
-
-                <View className={styles.gaugeDivider} />
-                <View className={styles.gapAfterDivider} />
-
-                <View className={styles.dashboardMiddle}>
-                  <View className={styles.dashboardMiddleInner}>
-                    {isCleanSession ? (
-                      <WaterTemperaturePanel
-                        temp={cleanDisplayTemp}
-                        fixedTemp={cleanDisplayTemp}
-                        disabled
-                        onChange={() => undefined}
-                      />
-                    ) : isMakingUi ? (
-                      <View className={styles.middleContentSpread}>
-                        <MakingModeBar
-                          variant={makingBarVariant}
-                          modeKey={sceneKey}
-                          modeLabelKey={activeSceneTab?.labelKey}
-                        />
-                      </View>
-                    ) : isWaterActionSelected ? (
-                      <WaterTemperaturePanel
-                        temp={temp}
-                        disabled={panelDisabled}
-                        onChange={handleWaterTempChange}
-                      />
-                    ) : isPowderActionSelected ? (
-                      <PowderCautionPanel />
-                    ) : (
-                      <View className={styles.metrics}>
-                        <View className={styles.metric}>
-                          <View className={styles.metricValue}>
-                            <Text className={styles.metricValueNum}>
-                              {volumeMl}
-                            </Text>
-                            <Text className={styles.metricValueSuffix}>mL</Text>
-                          </View>
-                          <Text className={styles.metricLabel}>
-                            {t("metric_water")}
-                          </Text>
-                        </View>
-                        <View className={styles.metric}>
-                          <View className={styles.metricValue}>
-                            <Text className={styles.metricValueNum}>
-                              {powderG}
-                            </Text>
-                            <Text className={styles.metricValueSuffix}>g</Text>
-                          </View>
-                          <Text className={styles.metricLabel}>
-                            {t("metric_powder")}
-                          </Text>
-                        </View>
-                        <View
-                          className={clsx(
-                            styles.metric,
-                            panelDisabled && styles.metricDisabled
-                          )}
-                          onClick={panelDisabled ? undefined : cycleTemp}
-                        >
-                          <View className={styles.metricValue}>
-                            <Text className={styles.metricValueNum}>
-                              {temp}
-                            </Text>
-                            <Text className={styles.metricValueSuffix}>°C</Text>
-                          </View>
-                          <Text className={styles.metricLabel}>
-                            {t("metric_temp")}
-                          </Text>
-                        </View>
-                        <View
-                          className={clsx(
-                            styles.metric,
-                            styles.metricAfterDivider,
-                            styles.metricTap,
-                            panelDisabled && styles.metricDisabled
-                          )}
-                          onClick={panelDisabled ? undefined : openCustomMode}
-                        >
-                          <View className={styles.metricValue}>
-                            <Image
-                              src={Res.icEditUri}
-                              className={styles.metricEditIcon}
-                            />
-                          </View>
-                          <Text className={styles.metricLabel}>
-                            {t("metric_edit")}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              </View>
-
-              {!isMakingUi &&
-                !isCleanSession &&
-                !isWaterActionSelected &&
-                !isPowderActionSelected && (
-                  <View className={styles.dashboardCardFooter}>
-                    {showBrandBanner ? (
-                      <>
-                        <View className={styles.gapMiddleToBrand} />
-                        <View
-                          className={clsx(
-                            styles.brandBannerSlot,
-                            panelDisabled && styles.panelBlock
-                          )}
-                        >
-                          <BrandBanner
-                            clicked={!brandSet && brandBannerClicked}
-                            customRatio={
-                              isCustomBrand && powderBrandSelection
-                                ? {
-                                    waterMl: powderBrandSelection.waterMl,
-                                    powderG: powderBrandSelection.powderG,
-                                  }
-                                : null
-                            }
-                            brandSummary={
-                              brandSet && !isCustomBrand && powderBrandSelection
-                                ? {
-                                    brand: powderBrandSelection.brandLabel,
-                                    series: powderBrandSelection.seriesLabel,
-                                    stage: powderBrandSelection.stageLabel,
-                                  }
-                                : null
-                            }
-                            onClick={
-                              panelDisabled
-                                ? () => undefined
-                                : handleBrandBanner
-                            }
-                          />
-                        </View>
-                      </>
-                    ) : null}
-                    <View
-                      className={
-                        showBrandBanner
-                          ? styles.gapBrandToTabs
-                          : styles.gapMiddleToTabs
-                      }
-                    />
-                    <View
-                      className={clsx(
-                        styles.modeTabsSlot,
-                        panelDisabled && styles.panelBlock
-                      )}
-                    >
-                      <SceneModeTabs
-                        tabs={SCENE_TABS}
-                        activeKey={sceneKey}
-                        onChange={applyPreset}
-                        disabled={panelDisabled}
-                      />
-                    </View>
-                  </View>
-                )}
-            </View>
-          </View>
-
-          <View className={styles.mainPanelSpacer} />
-
-          <View
-            className={clsx(
-              styles.actions,
-              (isMakingUi || bottleMadePhase) && styles.actionsMaking
-            )}
-          >
-            {bottleMadePhase ? (
-              <BottleMadeButton
-                labelKey={
-                  completionKind === "water"
-                    ? "water_dispensed"
-                    : completionKind === "powder"
-                    ? "powder_dispensed"
-                    : "bottle_made"
-                }
-              />
-            ) : isMakingUi ? (
-              <MakingActionsPanel
-                onStop={() => {
-                  handleStopMaking();
+    <View className={styles.root}>
+      <View className={styles.page} style={{ paddingTop: navTopInset }}>
+        <PanelNavBar
+          mode="home"
+          deviceId={devInfo?.devId}
+          onFeedingRecordPress={() => {
+            setFeedingSheetOpen(true);
+          }}
+        />
+        <View className={styles.header}>
+          <View className={styles.titleRow}>
+            <View className={styles.titleGroup}>
+              <Text className={styles.appTitle}>{t("app_title")}</Text>
+              <View
+                className={styles.powerTap}
+                onClick={() => {
+                  handlePowerToggle();
                 }}
-                stopDisabled={panelDisabled || stopBusy}
-                stopLabelKey={
-                  workMode === "water"
-                    ? "action_stop_water"
-                    : workMode === "powder"
-                    ? "action_stop_powder"
-                    : "action_stop_making"
-                }
-              />
-            ) : (
-              <>
-                <View
-                  className={clsx(
-                    styles.sideBtn,
-                    isCleanSession && styles.actionDisabled
-                  )}
-                  onClick={isCleanSession ? undefined : handleSelectWater}
-                >
-                  <View className={styles.actionIconRow}>
-                    <View
-                      className={clsx(
-                        styles.sideBtnCircle,
-                        isWaterActionSelected && styles.sideBtnCircleSelected
-                      )}
-                    >
-                      <View
-                        className={clsx(
-                          styles.sideBtnCircleInner,
-                          isWaterActionSelected &&
-                            styles.sideBtnCircleInnerSelected
-                        )}
-                      >
-                        <Image
-                          src={
-                            isWaterActionSelected
-                              ? Res.actionButtonIcons.waterActive
-                              : Res.actionButtonIcons.water
-                          }
-                          className={styles.sideIcon}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                  <Text className={styles.sideLabel}>
-                    {t("action_water_only")}
-                  </Text>
-                </View>
-                <View
-                  className={clsx(
-                    styles.startCol,
-                    (startDisabled || isCleanSession) && styles.actionDisabled
-                  )}
-                  onClick={
-                    startDisabled || isCleanSession ? undefined : handleStart
-                  }
-                >
-                  <View className={styles.actionIconRow}>
-                    <View className={styles.startBtn}>
-                      <Image
-                        src={Res.actionButtonIcons.play}
-                        className={styles.startIcon}
-                      />
-                    </View>
-                  </View>
-                  <Text
-                    className={clsx(
-                      styles.startLabel,
-                      (startDisabled || isCleanSession) &&
-                        styles.actionLabelDisabled
-                    )}
-                  >
-                    {t("action_start")}
-                  </Text>
-                </View>
-                <View
-                  className={clsx(
-                    styles.sideBtn,
-                    isCleanSession && styles.actionDisabled
-                  )}
-                  onClick={isCleanSession ? undefined : handleSelectPowder}
-                >
-                  <View className={styles.actionIconRow}>
-                    <View
-                      className={clsx(
-                        styles.sideBtnCircle,
-                        isPowderActionSelected && styles.sideBtnCircleSelected
-                      )}
-                    >
-                      <View
-                        className={clsx(
-                          styles.sideBtnCircleInner,
-                          isPowderActionSelected &&
-                            styles.sideBtnCircleInnerSelected
-                        )}
-                      >
-                        <Image
-                          src={
-                            isPowderActionSelected
-                              ? Res.actionButtonIcons.powderActive
-                              : Res.actionButtonIcons.powder
-                          }
-                          className={styles.sideIcon}
-                        />
-                      </View>
-                    </View>
-                  </View>
-                  <Text className={styles.sideLabel}>
-                    {t("action_powder_only")}
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        <View className={styles.secondaryList}>
-          <View
-            className={clsx(
-              styles.settingsRowCard,
-              isCleanSession && styles.settingsRowCardCleanActive,
-              (panelDisabled || childLock || awaitingWorkMode === "clean") &&
-                !isCleanSession &&
-                styles.disabled
-            )}
-            onClick={
-              isCleanSession || awaitingWorkMode === "clean"
-                ? undefined
-                : () => {
-                    handleClean();
-                  }
-            }
-          >
-            <View className={styles.cleanRowTextCol}>
-              <Text className={styles.settingsRowLabel}>
-                {isCleanSession
-                  ? t("high_temp_cleaning")
-                  : t("row_high_temp_clean")}
-              </Text>
-              {isCleanSession ? (
-                <Text className={styles.cleanRowSubtext}>
-                  {t("clean_milk_on_hold")}
-                </Text>
-              ) : null}
-            </View>
-            {isCleanSession ? (
-              <HighTempCleanStopButton
-                secondsLeft={cleanCountdown}
-                disabled={panelDisabled || stopBusy}
-                onStop={() => {
-                  handleCleanStop();
-                }}
-              />
-            ) : (
-              <View className={styles.cleanRowBtn}>
+              >
                 <Image
-                  src={Res.actionButtonIcons.clean}
-                  className={styles.cleanRowIcon}
+                  src={switchOn ? Res.powerIcon.on : Res.powerIcon.off}
+                  className={styles.headerPowerIcon}
                 />
               </View>
-            )}
-          </View>
-          {babyDiaryToastVisible ? (
-            <View className={styles.diaryToastSlot}>
-              <BabyDiarySnackbar
-                onClose={() => {
-                  setBabyDiaryToastVisible(false);
-                  setMilkSessionActive(false);
-                }}
-              />
             </View>
-          ) : (
+            <View className={styles.onlineRow}>
+              <Image
+                src={
+                  isOnline
+                    ? IC_CONNECTION_ONLINE_URI
+                    : IC_CONNECTION_OFFLINE_URI
+                }
+                className={styles.onlineIcon}
+              />
+              <Text
+                className={styles.onlineText}
+                style={{ color: isOnline ? "#55A074" : "#BA2F2F" }}
+              >
+                {statusText}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        <View className={styles.pageBody}>
+          <View
+            className={clsx(
+              styles.mainPanel,
+              (!isOnline || panelDisabled) && styles.mainPanelOffline
+            )}
+          >
+            <View className={styles.dashboardCard}>
+              <View className={styles.panelGaugeCluster}>
+                <View className={styles.dashboardCardTop}>
+                  <View className={styles.gaugeSlot}>
+                    <AmountGauge
+                      value={gaugeValue}
+                      unit={gaugeUnit}
+                      label={gaugeLabel}
+                      min={0}
+                      max={powderPrimary ? 200 : GAUGE_ML_MAX}
+                      dimmed={
+                        panelDisabled || !isOnline || childLock || isMakingUi
+                      }
+                    />
+                  </View>
+
+                  <View className={styles.gaugeDivider} />
+                  <View className={styles.gapAfterDivider} />
+
+                  <View className={styles.dashboardMiddle}>
+                    <View className={styles.dashboardMiddleInner}>
+                      {isCleanSession ? (
+                        <WaterTemperaturePanel
+                          temp={cleanDisplayTemp}
+                          fixedTemp={cleanDisplayTemp}
+                          disabled
+                          onChange={() => undefined}
+                        />
+                      ) : isMakingUi ? (
+                        <View className={styles.middleContentSpread}>
+                          <MakingModeBar
+                            variant={makingBarVariant}
+                            modeKey={sceneKey}
+                            modeLabelKey={activeSceneTab?.labelKey}
+                          />
+                        </View>
+                      ) : isWaterActionSelected ? (
+                        <WaterTemperaturePanel
+                          temp={temp}
+                          disabled={panelDisabled}
+                          onChange={handleWaterTempChange}
+                        />
+                      ) : isPowderActionSelected ? (
+                        <PowderCautionPanel />
+                      ) : (
+                        <View className={styles.metrics}>
+                          <View className={styles.metric}>
+                            <View className={styles.metricValue}>
+                              <Text className={styles.metricValueNum}>
+                                {volumeMl}
+                              </Text>
+                              <Text className={styles.metricValueSuffix}>
+                                mL
+                              </Text>
+                            </View>
+                            <Text className={styles.metricLabel}>
+                              {t("metric_water")}
+                            </Text>
+                          </View>
+                          <View className={styles.metric}>
+                            <View className={styles.metricValue}>
+                              <Text className={styles.metricValueNum}>
+                                {powderG}
+                              </Text>
+                              <Text className={styles.metricValueSuffix}>
+                                g
+                              </Text>
+                            </View>
+                            <Text className={styles.metricLabel}>
+                              {t("metric_powder")}
+                            </Text>
+                          </View>
+                          <View
+                            className={clsx(
+                              styles.metric,
+                              panelDisabled && styles.metricDisabled
+                            )}
+                            onClick={panelDisabled ? undefined : cycleTemp}
+                          >
+                            <View className={styles.metricValue}>
+                              <Text className={styles.metricValueNum}>
+                                {temp}
+                              </Text>
+                              <Text className={styles.metricValueSuffix}>
+                                °C
+                              </Text>
+                            </View>
+                            <Text className={styles.metricLabel}>
+                              {t("metric_temp")}
+                            </Text>
+                          </View>
+                          <View
+                            className={clsx(
+                              styles.metric,
+                              styles.metricAfterDivider,
+                              styles.metricTap,
+                              panelDisabled && styles.metricDisabled
+                            )}
+                            onClick={panelDisabled ? undefined : openCustomMode}
+                          >
+                            <View className={styles.metricValue}>
+                              <Image
+                                src={Res.icEditUri}
+                                className={styles.metricEditIcon}
+                              />
+                            </View>
+                            <Text className={styles.metricLabel}>
+                              {t("metric_edit")}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                {!isMakingUi &&
+                  !isCleanSession &&
+                  !isWaterActionSelected &&
+                  !isPowderActionSelected && (
+                    <View className={styles.dashboardCardFooter}>
+                      {showBrandBanner ? (
+                        <>
+                          <View className={styles.gapMiddleToBrand} />
+                          <View
+                            className={clsx(
+                              styles.brandBannerSlot,
+                              panelDisabled && styles.panelBlock
+                            )}
+                          >
+                            <BrandBanner
+                              clicked={!brandSet && brandBannerClicked}
+                              customRatio={
+                                isCustomBrand && powderBrandSelection
+                                  ? {
+                                      waterMl: powderBrandSelection.waterMl,
+                                      powderG: powderBrandSelection.powderG,
+                                    }
+                                  : null
+                              }
+                              brandSummary={
+                                brandSet &&
+                                !isCustomBrand &&
+                                powderBrandSelection
+                                  ? {
+                                      brand: powderBrandSelection.brandLabel,
+                                      series: powderBrandSelection.seriesLabel,
+                                      stage: powderBrandSelection.stageLabel,
+                                    }
+                                  : null
+                              }
+                              onClick={
+                                panelDisabled
+                                  ? () => undefined
+                                  : handleBrandBanner
+                              }
+                            />
+                          </View>
+                        </>
+                      ) : null}
+                      <View
+                        className={
+                          showBrandBanner
+                            ? styles.gapBrandToTabs
+                            : styles.gapMiddleToTabs
+                        }
+                      />
+                      <View
+                        className={clsx(
+                          styles.modeTabsSlot,
+                          panelDisabled && styles.panelBlock
+                        )}
+                      >
+                        <SceneModeTabs
+                          tabs={SCENE_TABS}
+                          activeKey={sceneKey}
+                          onChange={applyPreset}
+                          disabled={panelDisabled}
+                        />
+                      </View>
+                    </View>
+                  )}
+              </View>
+            </View>
+
+            <View className={styles.mainPanelSpacer} />
+
+            <View
+              className={clsx(
+                styles.actions,
+                (isMakingUi || bottleMadePhase) && styles.actionsMaking
+              )}
+            >
+              {bottleMadePhase ? (
+                <BottleMadeButton
+                  labelKey={
+                    completionKind === "water"
+                      ? "water_dispensed"
+                      : completionKind === "powder"
+                      ? "powder_dispensed"
+                      : "bottle_made"
+                  }
+                />
+              ) : isMakingUi ? (
+                <MakingActionsPanel
+                  onStop={() => {
+                    handleStopMaking();
+                  }}
+                  stopDisabled={panelDisabled || stopBusy}
+                  stopLabelKey={
+                    workMode === "water"
+                      ? "action_stop_water"
+                      : workMode === "powder"
+                      ? "action_stop_powder"
+                      : "action_stop_making"
+                  }
+                />
+              ) : (
+                <>
+                  <View
+                    className={clsx(
+                      styles.sideBtn,
+                      isCleanSession && styles.actionDisabled
+                    )}
+                    onClick={isCleanSession ? undefined : handleSelectWater}
+                  >
+                    <View className={styles.actionIconRow}>
+                      <View
+                        className={clsx(
+                          styles.sideBtnCircle,
+                          isWaterActionSelected && styles.sideBtnCircleSelected
+                        )}
+                      >
+                        <View
+                          className={clsx(
+                            styles.sideBtnCircleInner,
+                            isWaterActionSelected &&
+                              styles.sideBtnCircleInnerSelected
+                          )}
+                        >
+                          <Image
+                            src={
+                              isWaterActionSelected
+                                ? Res.actionButtonIcons.waterActive
+                                : Res.actionButtonIcons.water
+                            }
+                            className={styles.sideIcon}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                    <Text className={styles.sideLabel}>
+                      {t("action_water_only")}
+                    </Text>
+                  </View>
+                  <View
+                    className={clsx(
+                      styles.startCol,
+                      (startDisabled || isCleanSession) && styles.actionDisabled
+                    )}
+                    onClick={
+                      startDisabled || isCleanSession ? undefined : handleStart
+                    }
+                  >
+                    <View className={styles.actionIconRow}>
+                      <View className={styles.startBtn}>
+                        <Image
+                          src={Res.actionButtonIcons.play}
+                          className={styles.startIcon}
+                        />
+                      </View>
+                    </View>
+                    <Text
+                      className={clsx(
+                        styles.startLabel,
+                        (startDisabled || isCleanSession) &&
+                          styles.actionLabelDisabled
+                      )}
+                    >
+                      {t("action_start")}
+                    </Text>
+                  </View>
+                  <View
+                    className={clsx(
+                      styles.sideBtn,
+                      isCleanSession && styles.actionDisabled
+                    )}
+                    onClick={isCleanSession ? undefined : handleSelectPowder}
+                  >
+                    <View className={styles.actionIconRow}>
+                      <View
+                        className={clsx(
+                          styles.sideBtnCircle,
+                          isPowderActionSelected && styles.sideBtnCircleSelected
+                        )}
+                      >
+                        <View
+                          className={clsx(
+                            styles.sideBtnCircleInner,
+                            isPowderActionSelected &&
+                              styles.sideBtnCircleInnerSelected
+                          )}
+                        >
+                          <Image
+                            src={
+                              isPowderActionSelected
+                                ? Res.actionButtonIcons.powderActive
+                                : Res.actionButtonIcons.powder
+                            }
+                            className={styles.sideIcon}
+                          />
+                        </View>
+                      </View>
+                    </View>
+                    <Text className={styles.sideLabel}>
+                      {t("action_powder_only")}
+                    </Text>
+                  </View>
+                </>
+              )}
+            </View>
+          </View>
+
+          <View className={styles.secondaryList}>
             <View
               className={clsx(
                 styles.settingsRowCard,
-                panelDisabled && styles.disabled
+                isCleanSession && styles.settingsRowCardCleanActive,
+                (panelDisabled || childLock || awaitingWorkMode === "clean") &&
+                  !isCleanSession &&
+                  styles.disabled
               )}
               onClick={
-                panelDisabled || !isOnline
+                isCleanSession || awaitingWorkMode === "clean"
                   ? undefined
-                  : () => handleChildLockToggle().catch(() => undefined)
+                  : () => {
+                      handleClean();
+                    }
               }
             >
-              <Text className={styles.settingsRowLabel}>
-                {t("row_child_lock")}
-              </Text>
-              <View
-                className={clsx(
-                  styles.cleanRowBtn,
-                  childLock && styles.cleanRowBtnActive
-                )}
-              >
-                <Image
-                  src={
-                    childLock
-                      ? Res.actionButtonIcons.lockActive
-                      : Res.actionButtonIcons.lock
-                  }
-                  className={styles.cleanRowIcon}
+              <View className={styles.cleanRowTextCol}>
+                <Text className={styles.settingsRowLabel}>
+                  {isCleanSession
+                    ? t("high_temp_cleaning")
+                    : t("row_high_temp_clean")}
+                </Text>
+                {isCleanSession ? (
+                  <Text className={styles.cleanRowSubtext}>
+                    {t("clean_milk_on_hold")}
+                  </Text>
+                ) : null}
+              </View>
+              {isCleanSession ? (
+                <HighTempCleanStopButton
+                  secondsLeft={cleanCountdown}
+                  disabled={panelDisabled || stopBusy}
+                  onStop={() => {
+                    handleCleanStop();
+                  }}
+                />
+              ) : (
+                <View className={styles.cleanRowBtn}>
+                  <Image
+                    src={Res.actionButtonIcons.clean}
+                    className={styles.cleanRowIcon}
+                  />
+                </View>
+              )}
+            </View>
+            {babyDiaryToastVisible ? (
+              <View className={styles.diaryToastSlot}>
+                <BabyDiarySnackbar
+                  onClose={() => {
+                    setBabyDiaryToastVisible(false);
+                    setMilkSessionActive(false);
+                  }}
                 />
               </View>
-            </View>
-          )}
+            ) : (
+              <View
+                className={clsx(
+                  styles.settingsRowCard,
+                  panelDisabled && styles.disabled
+                )}
+                onClick={
+                  panelDisabled || !isOnline
+                    ? undefined
+                    : () => handleChildLockToggle().catch(() => undefined)
+                }
+              >
+                <Text className={styles.settingsRowLabel}>
+                  {t("row_child_lock")}
+                </Text>
+                <View
+                  className={clsx(
+                    styles.cleanRowBtn,
+                    childLock && styles.cleanRowBtnActive
+                  )}
+                >
+                  <Image
+                    src={
+                      childLock
+                        ? Res.actionButtonIcons.lockActive
+                        : Res.actionButtonIcons.lock
+                    }
+                    className={styles.cleanRowIcon}
+                  />
+                </View>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
 
-      {customModeOpen && (
-        <CustomModeSettingsPanel
-          ml={volumeMl}
-          formulaRatio={formulaRatio}
-          temp={temp}
-          onSave={handleCustomModeSave}
-          onClose={() => setCustomModeOpen(false)}
-          saveDisabled={panelDisabled || isMaking || childLock}
-        />
-      )}
+        {customModeOpen && (
+          <CustomModeSettingsPanel
+            ml={volumeMl}
+            formulaRatio={formulaRatio}
+            temp={temp}
+            onSave={handleCustomModeSave}
+            onClose={() => setCustomModeOpen(false)}
+            saveDisabled={panelDisabled || isMaking || childLock}
+          />
+        )}
+      </View>
 
       {feedingSheetOpen ? (
         <FeedingProfileSheet

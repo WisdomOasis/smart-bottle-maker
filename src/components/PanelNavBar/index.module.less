@@ -4,7 +4,7 @@
   margin-left: -32rpx;
   margin-right: -32rpx;
   min-height: 44px;
-  padding: 0 4px;
+  padding: 0 0 0 4px;
   box-sizing: border-box;
   display: flex;
   flex-direction: row;
@@ -31,7 +31,15 @@
 }
 
 .right {
+  /* Tighter than left so bottle sits closer to the trailing edge */
+  width: 76px;
   justify-content: flex-end;
+  gap: 0;
+}
+
+.sideBtnFeeding {
+  /* Pull bottle icon toward settings / screen right */
+  margin-right: -10px;
 }
 
 .center {
@@ -43,12 +51,14 @@
   justify-content: center;
   overflow: hidden;
   z-index: 1;
+  pointer-events: none;
 }
 
 .logo {
   width: 156px;
   max-width: 100%;
   height: 29px;
+  pointer-events: none;
 }
 
 .sideBtn {

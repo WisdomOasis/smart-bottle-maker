@@ -51,15 +51,11 @@ export const markSmartPrepSetupComplete = (
   writeBool(smartPrepDoneKey(homeId, deviceId), true);
 };
 
+/**
+ * Bottom setup banner until CryAssist linking is done.
+ * Not gated on EU cloud / online — open handler still validates those.
+ */
 export const shouldShowSmartPrepSetupSnackbar = (input: {
-  cloudFeaturesAvailable: boolean;
-  isOnline: boolean;
-  homeId: string;
   deviceId: string;
   completed: boolean;
-}): boolean =>
-  input.cloudFeaturesAvailable &&
-  input.isOnline &&
-  Boolean(input.homeId) &&
-  Boolean(input.deviceId) &&
-  !input.completed;
+}): boolean => Boolean(input.deviceId) && !input.completed;

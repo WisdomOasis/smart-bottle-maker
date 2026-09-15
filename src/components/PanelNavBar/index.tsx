@@ -57,7 +57,10 @@ const PanelNavBar: React.FC<Props> = ({
 
       <View className={styles.right}>
         {onFeedingRecordPress ? (
-          <View className={styles.sideBtn} onClick={onFeedingRecordPress}>
+          <View
+            className={`${styles.sideBtn} ${styles.sideBtnFeeding}`}
+            onClick={onFeedingRecordPress}
+          >
             <Image
               src={IC_FEEDING_RECORD_URI}
               className={styles.sideIcon}

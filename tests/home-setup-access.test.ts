@@ -6,16 +6,19 @@ import { fileURLToPath } from "node:url";
 
 const projectRoot = fileURLToPath(new URL("..", import.meta.url));
 
-test("global page styles allow the home page to scroll vertically", () => {
-  const appStyles = readFileSync(`${projectRoot}/src/app.less`, "utf8");
+test("home page locks to one viewport without outer scroll", () => {
+  const homeStyles = readFileSync(
+    `${projectRoot}/src/pages/home/index.module.less`,
+    "utf8"
+  );
   const homeConfig = readFileSync(
     `${projectRoot}/src/pages/home/index.config.ts`,
     "utf8"
   );
 
-  assert.match(appStyles, /page\s*\{[\s\S]*?overflow-y:\s*auto;/);
-  assert.doesNotMatch(appStyles, /page\s*\{[\s\S]*?overflow:\s*hidden;/);
-  assert.match(homeConfig, /disableScroll:\s*false/);
+  assert.match(homeStyles, /\.root\s*\{[\s\S]*?height:\s*100vh;/);
+  assert.match(homeStyles, /\.page\s*\{[\s\S]*?overflow:\s*hidden;/);
+  assert.match(homeConfig, /disableScroll:\s*true/);
 });
 
 test("home uses nav feeding entry and Smart Prep snackbar without a hub sheet", () => {

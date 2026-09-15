@@ -7,12 +7,9 @@ import {
   shouldShowSmartPrepSetupSnackbar,
 } from "../src/utils/connectedFeaturesSetup.ts";
 
-test("shows Smart Prep snackbar only when online, ready, and incomplete", () => {
+test("shows Smart Prep snackbar when device is known and setup incomplete", () => {
   assert.equal(
     shouldShowSmartPrepSetupSnackbar({
-      cloudFeaturesAvailable: true,
-      isOnline: true,
-      homeId: "238738635",
       deviceId: "bottle-maker",
       completed: false,
     }),
@@ -20,41 +17,15 @@ test("shows Smart Prep snackbar only when online, ready, and incomplete", () => 
   );
   assert.equal(
     shouldShowSmartPrepSetupSnackbar({
-      cloudFeaturesAvailable: true,
-      isOnline: false,
-      homeId: "238738635",
-      deviceId: "bottle-maker",
+      deviceId: "",
       completed: false,
     }),
     false
   );
   assert.equal(
     shouldShowSmartPrepSetupSnackbar({
-      cloudFeaturesAvailable: true,
-      isOnline: true,
-      homeId: "",
-      deviceId: "bottle-maker",
-      completed: false,
-    }),
-    false
-  );
-  assert.equal(
-    shouldShowSmartPrepSetupSnackbar({
-      cloudFeaturesAvailable: true,
-      isOnline: true,
-      homeId: "238738635",
       deviceId: "bottle-maker",
       completed: true,
-    }),
-    false
-  );
-  assert.equal(
-    shouldShowSmartPrepSetupSnackbar({
-      cloudFeaturesAvailable: false,
-      isOnline: true,
-      homeId: "238738635",
-      deviceId: "bottle-maker",
-      completed: false,
     }),
     false
   );
