@@ -28,6 +28,7 @@ import { IC_FORMULA_SEARCH_URI } from "@/res/icFormulaSearchUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import {
   markBrandBannerEverClicked,
   selectActiveBrandId,
@@ -53,6 +54,7 @@ import { POWDER_BRAND_SHEET_ICONS } from "@/components/PowderBrandOptionSheet/ic
 import styles from "./index.module.less";
 
 const FormulaPage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const actions = useActions();
@@ -313,7 +315,7 @@ const FormulaPage: React.FC = () => {
               className={styles.emptyPageFooterLink}
               onClick={handleCustomizeFormulaRatio}
             >
-              {` ${t("formula_custom_ratio_link")}`}
+              {t("formula_custom_ratio_link")}
             </Text>
           </View>
         </View>

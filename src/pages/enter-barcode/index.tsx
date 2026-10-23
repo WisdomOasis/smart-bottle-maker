@@ -10,6 +10,7 @@ import { IC_BACK_URI } from "@/res/icBackUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import { setEditingBrandId } from "@/redux/modules/powderBrandSlice";
 import { lookupBarcodeFormula } from "@/utils/barcodeLookup";
 import styles from "./index.module.less";
@@ -26,6 +27,7 @@ const readInputValue = (event: unknown): string => {
 };
 
 const EnterBarcodePage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const [barcodeValue, setBarcodeValue] = useState("");

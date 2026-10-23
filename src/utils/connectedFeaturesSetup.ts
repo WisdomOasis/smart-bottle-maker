@@ -52,10 +52,32 @@ export const markSmartPrepSetupComplete = (
 };
 
 /**
- * Bottom setup banner until CryAssist linking is done.
- * Not gated on EU cloud / online — open handler still validates those.
+ * Bottom setup banner only when a CryAssist device exists and linking is unfinished.
+ * Open handler still validates online status.
  */
 export const shouldShowSmartPrepSetupSnackbar = (input: {
   deviceId: string;
   completed: boolean;
-}): boolean => Boolean(input.deviceId) && !input.completed;
+  hasCryAssistDevice: boolean;
+}): boolean =>
+  Boolean(input.deviceId) && input.hasCryAssistDevice && !input.completed;
+
+const UNIX_MS_THRESHOLD = 1_000_000_000_000;
+const SESSION_REUSE_MS = 10 * 60 * 1000;
+
+/** Reuse a prepare result while its server session is still valid. */
+export const isSmartPrepPreparedFresh = (
+  prepared: { session: string; expiresAt: number } | null,
+  fetchedAt: number,
+  now = Date.now()
+): boolean => {
+  if (!prepared?.session || fetchedAt <= 0) return false;
+  if (prepared.expiresAt > 0) {
+    const expiresMs =
+      prepared.expiresAt < UNIX_MS_THRESHOLD
+        ? prepared.expiresAt * 1000
+        : prepared.expiresAt;
+    return expiresMs > now;
+  }
+  return now - fetchedAt < SESSION_REUSE_MS;
+};

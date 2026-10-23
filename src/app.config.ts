@@ -7,6 +7,7 @@ export const thing = {
     navigationBarTitleText: "",
     navigationBarBackgroundColor: "#f2f4f6",
     navigationBarTextStyle: "black",
+    hideMenuButton: true,
   },
   pages: ["pages/home/index"],
 };

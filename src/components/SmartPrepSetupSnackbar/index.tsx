@@ -8,16 +8,24 @@ import styles from "./index.module.less";
 
 interface Props {
   visible: boolean;
+  spotlight?: boolean;
   onPress: () => void;
 }
 
-const SmartPrepSetupSnackbar: React.FC<Props> = ({ visible, onPress }) => {
+const SmartPrepSetupSnackbar: React.FC<Props> = ({
+  visible,
+  spotlight = false,
+  onPress,
+}) => {
   const t = (key: I18nKey) => Strings.getLang(key);
 
   if (!visible) return null;
 
   return (
-    <View className={styles.wrap}>
+    <View
+      id="guide-smart-prep"
+      className={`${styles.wrap} ${spotlight ? styles.wrapSpotlight : ""}`}
+    >
       <View className={styles.bar} onClick={onPress}>
         <Image
           src={SMART_PREP_SETUP_SNACKBAR_ICONS.warning}

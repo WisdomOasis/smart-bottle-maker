@@ -13,6 +13,7 @@ import { IC_BACK_URI } from "@/res/icBackUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import {
   selectActiveBrandId,
   selectPowderBrandEntries,
@@ -24,6 +25,7 @@ import { createDpSetter, publishDpBatch } from "@/utils/dpControl";
 import styles from "./index.module.less";
 
 const PowderBrandSettingsPage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const actions = useActions();

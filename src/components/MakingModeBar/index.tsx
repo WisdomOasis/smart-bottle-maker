@@ -2,8 +2,6 @@
 import React, { useMemo } from "react";
 import { View, Text, Image } from "@ray-js/ray";
 import Strings from "@/i18n";
-import type { I18nKey } from "@/i18n/strings";
-import type { ScenePresetKey } from "@/constant/presets";
 import { MAKING_LOADING_ICON_URI } from "./icons";
 import styles from "./index.module.less";
 
@@ -11,21 +9,9 @@ export type MakingBarVariant = "milk" | "water" | "powder" | "clean";
 
 interface Props {
   variant?: MakingBarVariant;
-  modeKey?: ScenePresetKey;
-  modeLabelKey?: I18nKey;
 }
 
-const MakingModeBar: React.FC<Props> = ({
-  variant = "milk",
-  modeKey = "standard",
-  modeLabelKey,
-}) => {
-  const label = useMemo(() => {
-    const key: I18nKey =
-      modeKey === "custom" ? "mode_custom" : modeLabelKey ?? "mode_standard";
-    return Strings.getLang(key);
-  }, [modeKey, modeLabelKey]);
-
+const MakingModeBar: React.FC<Props> = ({ variant = "milk" }) => {
   const text = useMemo(() => {
     if (variant === "water") {
       return Strings.getLang("water_dispensing");
@@ -33,9 +19,8 @@ const MakingModeBar: React.FC<Props> = ({
     if (variant === "powder") {
       return Strings.getLang("powder_dispensing");
     }
-    const template = Strings.getLang("making_progress");
-    return template.replace("{0}", label);
-  }, [label, variant]);
+    return Strings.getLang("making_progress");
+  }, [variant]);
 
   return (
     <View className={styles.bar}>

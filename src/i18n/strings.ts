@@ -162,11 +162,6 @@ const bottleStrings = {
   customize_formula_saved: "Formula saved.",
   brand_row_custom_ratio: "Custom Mixing Ratio: {0}ml / {1}g",
   brand_row_brand_summary: "{0} / {1} / {2}",
-  mode_standard: "Standard",
-  mode_nighttime: "Nighttime",
-  mode_go_out: "Go Out",
-  mode_double: "Double",
-  mode_custom: "Custom",
   action_water_only: "Water Only",
   action_powder_only: "Powder Only",
   action_start: "Start",
@@ -177,7 +172,7 @@ const bottleStrings = {
   row_child_lock: "Child Lock",
   child_lock_on: "On",
   child_lock_off: "Off",
-  making_progress: "Making in {0} mode...",
+  making_progress: "Making...",
   making_leave_hint: "Making magic! Please leave the bottle be!",
   action_stop_making: "Stop Making",
   bottle_made: "Bottle Made!",
@@ -199,6 +194,7 @@ const bottleStrings = {
     "CryAssist detected your baby may be hungry. Start preparing a bottle with these settings, or adjust them first.",
   feed_request_start: "Start Making",
   smart_prep_snackbar_setup: "Finish Smart Prep setup",
+  smart_prep_saved: "Smart Prep Reminder saved",
   volume_modal_title: "Water amount",
   temp_modal_title: "Temperature",
   feeding_confirmation_title: "Milk Feeding Record Confirmation!",
@@ -301,6 +297,30 @@ const bottleStrings = {
   device_power_off: "Device is powered off. Tap the power button to turn on.",
   device_settings_unavailable: "Device settings are unavailable.",
   device_settings_open_failed: "Could not open device settings.",
+  first_guide_skip: "Skip",
+  first_guide_next: "Next",
+  first_guide_done: "Got it",
+  first_guide_water_title: "Water, powder, and temperature",
+  first_guide_water_body:
+    "Tap EDIT to set the water amount, powder amount, and temperature. Water, powder, and temperature are shown here.",
+  first_guide_formula_title: "Set a formula",
+  first_guide_formula_body:
+    "Tap this row to scan a barcode, search a brand, or set a custom ratio.",
+  first_guide_make_title: "Make a bottle",
+  first_guide_make_body:
+    "Tap Start to make a bottle. Water Only dispenses water. Powder Only dispenses powder.",
+  first_guide_care_title: "Clean and lock",
+  first_guide_care_body:
+    "High-Temp Clean rinses the machine. Child Lock blocks the controls until you turn it off.",
+  first_guide_record_title: "Feeding record",
+  first_guide_record_body:
+    "Tap the bottle icon to link a baby profile. Later bottle-making records can be saved to Baby Diary.",
+  first_guide_smart_prep_title: "Smart Prep",
+  first_guide_smart_prep_body:
+    "A CryAssist device was found. Tap Finish Smart Prep setup, choose a device, then save. The bar stays until setup is saved.",
+  first_guide_cryassist_title: "CryAssist",
+  first_guide_cryassist_body:
+    "If you have a CryAssist baby monitor, it can remind you to prepare a bottle. After a compatible device is found, a setup bar appears here.",
 };
 
 const locales = {
@@ -469,11 +489,6 @@ const locales = {
     customize_formula_saved: "フォーミュラを保存しました。",
     brand_row_custom_ratio: "カスタムミックス比率: {0}ml / {1}g",
     brand_row_brand_summary: "{0} / {1} / {2}",
-    mode_standard: "標準",
-    mode_nighttime: "夜間",
-    mode_go_out: "お出かけ",
-    mode_double: "二度盛り",
-    mode_custom: "カスタム",
     action_water_only: "水のみ",
     action_powder_only: "粉のみ",
     action_start: "開始",
@@ -484,7 +499,7 @@ const locales = {
     row_child_lock: "チャイルドロック",
     child_lock_on: "オン",
     child_lock_off: "オフ",
-    making_progress: "{0}モードで調乳中...",
+    making_progress: "調乳中...",
     making_leave_hint: "調乳中です。哺乳瓶に触れないでください。",
     action_stop_making: "停止",
     bottle_made: "調乳完了！",
@@ -506,6 +521,7 @@ const locales = {
       "CryAssist が赤ちゃんの空腹を検知しました。この設定で調乳を開始するか、先に調整してください。",
     feed_request_start: "調乳を開始",
     smart_prep_snackbar_setup: "Smart Prep の設定を完了",
+    smart_prep_saved: "Smart Prep Reminder を保存しました",
     volume_modal_title: "水量設定",
     temp_modal_title: "温度設定",
     block_water_tank_missing: "水箱が装着されていません。",
@@ -592,6 +608,30 @@ const locales = {
       "電源がオフです。電源ボタンをタップしてオンにしてください。",
     device_settings_unavailable: "デバイス設定を開けません。",
     device_settings_open_failed: "デバイス設定を開けませんでした。",
+    first_guide_skip: "スキップ",
+    first_guide_next: "次へ",
+    first_guide_done: "完了",
+    first_guide_water_title: "水量、粉量、温度",
+    first_guide_water_body:
+      "編集をタップして、水量、粉量、温度を設定します。ここでは水量、粉量、温度が表示されます。",
+    first_guide_formula_title: "ミルクを設定",
+    first_guide_formula_body:
+      "この行をタップして、バーコードを読み取る、ブランドを検索する、または比率をカスタム設定します。",
+    first_guide_make_title: "調乳する",
+    first_guide_make_body:
+      "開始をタップすると調乳します。水のみは水だけ、粉のみは粉ミルクだけを出します。",
+    first_guide_care_title: "洗浄とロック",
+    first_guide_care_body:
+      "高温洗浄は本体をすすぎます。チャイルドロックは、オフにするまで操作を止めます。",
+    first_guide_record_title: "授乳記録",
+    first_guide_record_body:
+      "哺乳瓶アイコンをタップして赤ちゃんのプロフィールを連携します。その後の調乳記録をベビーダイアリーに保存できます。",
+    first_guide_smart_prep_title: "Smart Prep",
+    first_guide_smart_prep_body:
+      "CryAssist 対応機器が見つかりました。Smart Prep の設定を完了をタップし、機器を選んで保存してください。設定が保存されるまでバーは残ります。",
+    first_guide_cryassist_title: "CryAssist",
+    first_guide_cryassist_body:
+      "CryAssist のベビーモニターがあれば、調乳を知らせることができます。対応機器が見つかると、ここに設定バーが表示されます。",
   },
   zh: {
     ...bottleStrings,
@@ -757,11 +797,6 @@ const locales = {
     customize_formula_saved: "配方已保存。",
     brand_row_custom_ratio: "自定义配比: {0}ml / {1}g",
     brand_row_brand_summary: "{0} / {1} / {2}",
-    mode_standard: "标准",
-    mode_nighttime: "夜间",
-    mode_go_out: "外出",
-    mode_double: "双倍",
-    mode_custom: "自定义",
     action_water_only: "仅出水",
     action_powder_only: "仅出粉",
     action_start: "开始",
@@ -772,7 +807,7 @@ const locales = {
     row_child_lock: "童锁",
     child_lock_on: "开",
     child_lock_off: "关",
-    making_progress: "正在{0}模式冲奶...",
+    making_progress: "正在冲奶...",
     making_leave_hint: "正在冲奶，请勿移动奶瓶。",
     action_stop_making: "停止冲奶",
     bottle_made: "冲奶完成！",
@@ -793,6 +828,7 @@ const locales = {
       "CryAssist 检测到宝宝可能饿了。可用以下设置开始冲奶，或先自行调整。",
     feed_request_start: "开始冲奶",
     smart_prep_snackbar_setup: "请完成 Smart Prep 设置",
+    smart_prep_saved: "Smart Prep Reminder 已保存",
     volume_modal_title: "水量设置",
     temp_modal_title: "温度设置",
     block_water_tank_missing: "水箱未安装。",
@@ -873,6 +909,29 @@ const locales = {
     device_power_off: "设备已关机，请点击电源键开机。",
     device_settings_unavailable: "无法打开设备设置。",
     device_settings_open_failed: "无法打开设备设置页。",
+    first_guide_skip: "跳过",
+    first_guide_next: "下一步",
+    first_guide_done: "知道了",
+    first_guide_water_title: "水量、粉量和温度",
+    first_guide_water_body:
+      "点编辑可设置水量、奶粉量和温度。这里会显示当前水量、粉量和温度。",
+    first_guide_formula_title: "设置配方",
+    first_guide_formula_body:
+      "点这一栏可扫描条码、搜索品牌，或设置自定义比例。",
+    first_guide_make_title: "开始冲奶",
+    first_guide_make_body: "点开始进行冲奶。仅出水只出水，仅出粉只出粉。",
+    first_guide_care_title: "清洁与锁定",
+    first_guide_care_body:
+      "高温清洁会冲洗机器。童锁会锁住操作，直到你关闭锁定。",
+    first_guide_record_title: "喂养记录",
+    first_guide_record_body:
+      "点奶瓶图标可绑定宝宝资料。之后的冲奶记录可写入宝宝日记。",
+    first_guide_smart_prep_title: "Smart Prep",
+    first_guide_smart_prep_body:
+      "已检测到哭声翻译设备。点请完成 Smart Prep 设置，选择设备后保存。这条提醒会一直留到设置完成。",
+    first_guide_cryassist_title: "哭声翻译",
+    first_guide_cryassist_body:
+      "如果还有哭声翻译设备，它可以在宝宝可能饿了时提醒冲奶。检测到兼容设备后，这里会出现设置栏。",
   },
   "zh-TW": {
     ...bottleStrings,
@@ -1029,11 +1088,6 @@ const locales = {
     customize_formula_saved: "配方已儲存。",
     brand_row_custom_ratio: "自訂配比: {0}ml / {1}g",
     brand_row_brand_summary: "{0} / {1} / {2}",
-    mode_standard: "標準",
-    mode_nighttime: "夜間",
-    mode_go_out: "外出",
-    mode_double: "雙倍",
-    mode_custom: "自訂",
     action_water_only: "僅出水",
     action_powder_only: "僅出粉",
     action_start: "開始",
@@ -1044,7 +1098,7 @@ const locales = {
     row_child_lock: "童鎖",
     child_lock_on: "開",
     child_lock_off: "關",
-    making_progress: "正在{0}模式沖奶...",
+    making_progress: "正在沖奶...",
     making_leave_hint: "正在沖奶，請勿移動奶瓶。",
     action_stop_making: "停止沖奶",
     bottle_made: "沖奶完成！",
@@ -1065,6 +1119,7 @@ const locales = {
       "哭聲翻譯偵測到寶寶可能飢餓。可用以下設定開始沖奶，或先自行調整。",
     feed_request_start: "開始沖奶",
     smart_prep_snackbar_setup: "請完成 Smart Prep 設定",
+    smart_prep_saved: "Smart Prep Reminder 已儲存",
     volume_modal_title: "水量設定",
     temp_modal_title: "溫度設定",
     block_water_tank_missing: "水箱未安裝。",
@@ -1145,6 +1200,28 @@ const locales = {
     device_power_off: "裝置已關機，請點擊電源鍵開機。",
     device_settings_unavailable: "無法開啟裝置設定。",
     device_settings_open_failed: "無法開啟裝置設定頁。",
+    first_guide_skip: "略過",
+    first_guide_next: "下一步",
+    first_guide_done: "知道了",
+    first_guide_water_title: "水量、粉量與溫度",
+    first_guide_water_body:
+      "點編輯可設定水量、奶粉量與溫度。這裡會顯示目前水量、粉量與溫度。",
+    first_guide_formula_title: "設定配方",
+    first_guide_formula_body: "點這一列可掃描條碼、搜尋品牌，或設定自訂比例。",
+    first_guide_make_title: "開始沖奶",
+    first_guide_make_body: "點開始進行沖奶。僅出水只出水，僅出粉只出粉。",
+    first_guide_care_title: "清洗與鎖定",
+    first_guide_care_body:
+      "高溫清潔會沖洗機器。童鎖會鎖住操作，直到你關閉鎖定。",
+    first_guide_record_title: "餵養紀錄",
+    first_guide_record_body:
+      "點奶瓶圖示可綁定寶寶資料。之後的沖奶紀錄可寫入寶寶日記。",
+    first_guide_smart_prep_title: "Smart Prep",
+    first_guide_smart_prep_body:
+      "已偵測到哭聲翻譯裝置。點請完成 Smart Prep 設定，選擇裝置後儲存。這條提醒會一直留到設定完成。",
+    first_guide_cryassist_title: "哭聲翻譯",
+    first_guide_cryassist_body:
+      "如果還有哭聲翻譯裝置，它可以在寶寶可能餓了時提醒沖奶。偵測到相容裝置後，這裡會出現設定列。",
   },
 };
 

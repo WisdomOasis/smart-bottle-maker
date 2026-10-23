@@ -1,6 +1,5 @@
 import dpCodes from "@/constant/dpCodes";
 import type { PowderBrandSelection } from "@/constant/powderBrandStorage";
-import { SCENE_PRESETS, type ScenePresetKey } from "@/constant/presets";
 import {
   clampMl,
   FORMULA_RATIO_MAX,
@@ -18,31 +17,19 @@ export interface MilkRecipeParams {
 }
 
 export interface ResolveMilkRecipeInput {
-  sceneKey: ScenePresetKey;
   volumeMl: number;
   temp: TempSet;
   formulaRatio: number;
   powderBrandSelection: PowderBrandSelection | null;
 }
 
-/** 依目前場景／自訂模式／奶粉品牌，解析本次泡奶應下發的配方參數 */
+/** 依目前水量、溫度與奶粉品牌，解析本次泡奶應下發的配方參數 */
 export const resolveMilkRecipeParams = (
   input: ResolveMilkRecipeInput
 ): MilkRecipeParams => {
   let { volumeMl } = input;
-  let { temp } = input;
+  const { temp } = input;
   let { formulaRatio } = input;
-
-  if (input.sceneKey !== "custom") {
-    const {
-      ml,
-      temp: presetTemp,
-      formulaRatio: presetFormulaRatio,
-    } = SCENE_PRESETS[input.sceneKey];
-    volumeMl = ml;
-    temp = presetTemp;
-    formulaRatio = presetFormulaRatio;
-  }
 
   let formulaWater = 100;
   if (input.powderBrandSelection) {

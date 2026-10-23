@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Image, Text, View } from "@ray-js/ray";
+import clsx from "clsx";
 import Res from "@/res";
 import {
   prepareSmartPrep,
@@ -103,8 +104,10 @@ const SmartPrepReminderSheet: React.FC<Props> = ({
     );
   };
 
+  const hasSelection = devices.some((device) => device.selected);
+
   const save = async () => {
-    if (phase !== "ready" || !session) return;
+    if (phase !== "ready" || !session || !hasSelection) return;
     setPhase("saving");
     setErrorText("");
     setDebugText("");
@@ -238,8 +241,15 @@ const SmartPrepReminderSheet: React.FC<Props> = ({
               <Text className={styles.debugText}>{debugText}</Text>
             ) : null}
             <View
-              className={styles.primaryButton}
-              onClick={busy ? undefined : () => save().catch(() => undefined)}
+              className={clsx(
+                styles.primaryButton,
+                !hasSelection && styles.primaryButtonDisabled
+              )}
+              onClick={
+                busy || !hasSelection
+                  ? undefined
+                  : () => save().catch(() => undefined)
+              }
             >
               <Text className={styles.primaryButtonText}>
                 {busy ? "Saving…" : "Save"}

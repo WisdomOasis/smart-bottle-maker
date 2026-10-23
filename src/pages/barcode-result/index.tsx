@@ -26,6 +26,7 @@ import Strings from "@/i18n";
 import { formatFormulaSummary } from "@/i18n/formatters";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import {
   addPowderBrandEntry,
   hydratePowderBrandFromStorage,
@@ -46,6 +47,7 @@ import BarcodeScanCover from "@/components/BarcodeScanCover";
 import styles from "./index.module.less";
 
 const BarcodeResultPage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const actions = useActions();

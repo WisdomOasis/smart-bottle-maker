@@ -10,6 +10,7 @@ import Strings from "@/i18n";
 import { formatLabeledValue } from "@/i18n/formatters";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import {
   removePowderBrandEntries,
   selectPowderBrandEntries,
@@ -27,6 +28,7 @@ const applyTemplate = (template: string, values: string[]) => {
 };
 
 const PowderBrandBatchDeletePage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const entries = useSelector(selectPowderBrandEntries);

@@ -4,5 +4,6 @@ export default {
   navigationBarTextStyle: "@navTxtStyle",
   navigationBarTitleText: "Smart Bottle Maker",
   navigationStyle: "custom",
+  hideMenuButton: true,
   disableScroll: true,
 };

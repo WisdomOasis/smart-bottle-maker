@@ -1,8 +1,8 @@
 .bar {
-  width: calc(100% + 64rpx);
+  width: calc(100% + 32rpx);
   max-width: none;
-  margin-left: -32rpx;
-  margin-right: -32rpx;
+  margin-left: -16rpx;
+  margin-right: -16rpx;
   min-height: 44px;
   padding: 0 0 0 4px;
   box-sizing: border-box;
@@ -35,6 +35,15 @@
   width: 76px;
   justify-content: flex-end;
   gap: 0;
+}
+
+.barGuide {
+  z-index: auto;
+  pointer-events: none;
+}
+
+.rightGuide {
+  z-index: auto;
 }
 
 .sideBtnFeeding {
@@ -70,6 +79,13 @@
   flex-shrink: 0;
   position: relative;
   z-index: 3;
+}
+
+.feedingSpotlight {
+  z-index: 1300;
+  background: #f0f3f7;
+  border-radius: 22px;
+  pointer-events: none;
 }
 
 .sideIcon {

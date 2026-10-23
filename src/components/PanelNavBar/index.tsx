@@ -15,12 +15,14 @@ interface Props {
   deviceId?: string;
   /** Home：餵養紀錄（選寶寶檔案） */
   onFeedingRecordPress?: () => void;
+  spotlightFeeding?: boolean;
 }
 
 const PanelNavBar: React.FC<Props> = ({
   mode = "home",
   deviceId,
   onFeedingRecordPress,
+  spotlightFeeding = false,
 }) => {
   const handleBack = () => {
     if (mode === "subpage") {
@@ -35,7 +37,9 @@ const PanelNavBar: React.FC<Props> = ({
   };
 
   return (
-    <View className={styles.bar}>
+    <View
+      className={`${styles.bar} ${spotlightFeeding ? styles.barGuide : ""}`}
+    >
       <View className={styles.left}>
         <View className={styles.sideBtn} onClick={handleBack}>
           <Image
@@ -55,10 +59,17 @@ const PanelNavBar: React.FC<Props> = ({
         />
       </View>
 
-      <View className={styles.right}>
+      <View
+        className={`${styles.right} ${
+          spotlightFeeding ? styles.rightGuide : ""
+        }`}
+      >
         {onFeedingRecordPress ? (
           <View
-            className={`${styles.sideBtn} ${styles.sideBtnFeeding}`}
+            id="guide-feeding"
+            className={`${styles.sideBtn} ${styles.sideBtnFeeding} ${
+              spotlightFeeding ? styles.feedingSpotlight : ""
+            }`}
             onClick={onFeedingRecordPress}
           >
             <Image

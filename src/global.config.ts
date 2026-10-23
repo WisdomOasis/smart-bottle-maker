@@ -7,6 +7,7 @@ export const tuya = {
     navigationBarTitleText: "",
     navigationBarBackgroundColor: "#f2f4f6",
     navigationBarTextStyle: "black",
+    hideMenuButton: true,
   },
   functionalPages: {
     settings: {

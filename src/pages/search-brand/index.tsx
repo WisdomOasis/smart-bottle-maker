@@ -16,6 +16,7 @@ import { IC_FORMULA_SEARCH_URI } from "@/res/icFormulaSearchUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import { useSelector } from "react-redux";
 import {
   selectPowderBrandEntries,
@@ -35,6 +36,7 @@ import { readInputValue } from "@/utils/readInputValue";
 import styles from "./index.module.less";
 
 const SearchBrandPage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const entries = useSelector(selectPowderBrandEntries);

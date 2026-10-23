@@ -16,6 +16,7 @@ import { IC_BACK_URI } from "@/res/icBackUri";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import {
   markBrandBannerEverClicked,
   removePowderBrandEntries,
@@ -35,6 +36,7 @@ const resolveEntryImageUri = (brandId: string): string | undefined => {
 };
 
 const FormulaDetailsPage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
   const dispatch = useAppDispatch();
   const actions = useActions();

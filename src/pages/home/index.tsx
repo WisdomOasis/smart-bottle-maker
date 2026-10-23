@@ -22,17 +22,12 @@ import Res from "@/res";
 import { IC_CONNECTION_OFFLINE_URI } from "@/res/icConnectionOfflineUri";
 import { IC_CONNECTION_ONLINE_URI } from "@/res/icConnectionOnlineUri";
 import dpCodes from "@/constant/dpCodes";
-import {
-  SCENE_PRESETS,
-  type ScenePresetKey,
-  GAUGE_ML_MAX,
-} from "@/constant/presets";
+import { GAUGE_ML_MAX } from "@/constant/presets";
 import AmountGauge from "@/components/AmountGauge";
 import CustomModeSettingsPanel, {
   type CustomModeDraft,
 } from "@/components/CustomModeSettingsPanel";
 import BrandBanner from "@/components/BrandBanner";
-import SceneModeTabs, { type SceneTabItem } from "@/components/SceneModeTabs";
 import MakingModeBar, {
   type MakingBarVariant,
 } from "@/components/MakingModeBar";
@@ -48,6 +43,8 @@ import HighTempCleanStopButton from "@/components/HighTempCleanStopButton";
 import PanelNavBar from "@/components/PanelNavBar";
 import SmartPrepReminderSheet from "@/components/SmartPrepReminderSheet";
 import SmartPrepSetupSnackbar from "@/components/SmartPrepSetupSnackbar";
+import FormulaSavedToast from "@/components/FormulaSavedToast";
+import FirstTimeGuide from "@/components/FirstTimeGuide";
 import { useEuropeanCloudAvailability } from "@/hooks/useEuropeanCloudAvailability";
 import { CUSTOM_BRAND_ID } from "@/constant/customMixRatio";
 import {
@@ -57,10 +54,18 @@ import {
 import { parseFeedingContextValue } from "@/utils/feedingContextValue";
 import {
   hasCompletedSmartPrepSetup,
+  isSmartPrepPreparedFresh,
   markSmartPrepSetupComplete,
   shouldShowSmartPrepSetupSnackbar,
 } from "@/utils/connectedFeaturesSetup";
-import type { SmartPrepPreparedContext } from "@/services/smartPrep";
+import {
+  hasSeenFirstTimeGuide,
+  markFirstTimeGuideSeen,
+} from "@/constant/firstTimeGuideStorage";
+import {
+  prepareSmartPrep,
+  type SmartPrepPreparedContext,
+} from "@/services/smartPrep";
 import {
   HIGH_TEMP_CLEAN_COUNTDOWN_SEC,
   HIGH_TEMP_CLEAN_TOTAL_ML,
@@ -102,7 +107,6 @@ import {
 import {
   buildCryAssistMilkRecipe,
   createCryAssistMilkDraft,
-  isCryAssistDraftChanged,
   type CryAssistMilkDraft,
 } from "@/utils/cryassistMilkDraft";
 import { parseFeedingRecordConfirmation } from "@/utils/feedingRecordConfirmation";
@@ -113,38 +117,17 @@ import {
   resolvePanelDeviceId,
 } from "@/utils/panelDeviceContext";
 import { hidePanelFloatingButtons } from "@/utils/panelChrome";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import styles from "./index.module.less";
 
 type ActionKind = "milk" | "water" | "powder";
 type CompletionKind = "milk" | "water" | "powder";
 
-const SCENE_TABS: SceneTabItem[] = [
-  {
-    key: "standard",
-    labelKey: "mode_standard",
-    iconUri: Res.sceneTabIcons.standard,
-  },
-  {
-    key: "nighttime",
-    labelKey: "mode_nighttime",
-    iconUri: Res.sceneTabIcons.nighttime,
-  },
-  {
-    key: "goOut",
-    labelKey: "mode_go_out",
-    iconUri: Res.sceneTabIcons.goOut,
-  },
-  {
-    key: "doubleFeeding",
-    labelKey: "mode_double",
-    iconUri: Res.sceneTabIcons.doubleFeeding,
-  },
-];
-
 /** Survive remounts so storage hydrate only runs once per JS context */
 let powderBrandHydratedOnce = false;
 
 const HomePage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: I18nKey) => Strings.getLang(key);
 
   const { switchOn, isOnline, panelDisabled, devInfo, dpState } =
@@ -160,7 +143,6 @@ const HomePage: React.FC = () => {
   const powderBrandSelection = useSelector(selectPowderBrandSelection);
   const brandBannerClicked = useSelector(selectBrandBannerEverClicked);
 
-  const [sceneKey, setSceneKey] = useState<ScenePresetKey>("standard");
   const [customModeOpen, setCustomModeOpen] = useState(false);
   const [bottleMadePhase, setBottleMadePhase] = useState(false);
   const [completionKind, setCompletionKind] = useState<CompletionKind>("milk");
@@ -183,7 +165,14 @@ const HomePage: React.FC = () => {
   const [smartPrepSheetOpen, setSmartPrepSheetOpen] = useState(false);
   const [smartPrepPrepared, setSmartPrepPrepared] =
     useState<SmartPrepPreparedContext | null>(null);
+  const [smartPrepPreparedAt, setSmartPrepPreparedAt] = useState(0);
   const [smartPrepSetupDone, setSmartPrepSetupDone] = useState(false);
+  const [cryAssistDeviceAvailable, setCryAssistDeviceAvailable] =
+    useState(false);
+  const [smartPrepSavedToastVisible, setSmartPrepSavedToastVisible] =
+    useState(false);
+  const [firstGuideSeen, setFirstGuideSeen] = useState(hasSeenFirstTimeGuide);
+  const [guideTargetId, setGuideTargetId] = useState<string | null>(null);
   const [hungryReminderOpen, setHungryReminderOpen] = useState(false);
   const [hungryReminderBusy, setHungryReminderBusy] = useState(false);
   const [hungryStartAwaitingDevice, setHungryStartAwaitingDevice] =
@@ -194,8 +183,11 @@ const HomePage: React.FC = () => {
   const wasInCleanMode = useRef(false);
   const hungryReminderShown = useRef(false);
   const homeInfoRequestId = useRef(0);
+  const cryAssistProbeId = useRef(0);
+  const probeCryAssistDevicesRef = useRef<() => void>(() => undefined);
 
   const navTopInset = useCustomNavTopInset();
+  const pageEdgeInset = Math.max(navTopInset - 12, 64);
 
   const hasSavedPowderBrands = powderBrandEntries.length > 0;
   const isCustomBrand = powderBrandSelection?.brandId === CUSTOM_BRAND_ID;
@@ -212,8 +204,6 @@ const HomePage: React.FC = () => {
   const formulaWaterMl = Number(dpState[dpCodes.formulaWater] ?? 100);
   const volumeMl = getVolumeFromDp(dpState, unit);
   const powderG = calcPowderGrams(volumeMl, formulaRatio);
-  const preset = SCENE_PRESETS[sceneKey as keyof typeof SCENE_PRESETS];
-  const powderPrimary = preset?.powderPrimary ?? false;
   const feedingDeviceId = resolvePanelDeviceId(
     devInfo?.devId,
     getLaunchOptionsSync()?.query
@@ -264,6 +254,7 @@ const HomePage: React.FC = () => {
   useAppEvent("onShow", () => {
     hidePanelFloatingButtons();
     refreshFeedingRecordStatus();
+    probeCryAssistDevicesRef.current();
   });
 
   const hasValidFeedingContext = Boolean(
@@ -291,7 +282,56 @@ const HomePage: React.FC = () => {
   const showSmartPrepSnackbar = shouldShowSmartPrepSetupSnackbar({
     deviceId: feedingDeviceId,
     completed: smartPrepSetupDone,
+    hasCryAssistDevice: cryAssistDeviceAvailable,
   });
+  const showFirstGuide =
+    !firstGuideSeen &&
+    !isMakingUi &&
+    !isCleanSession &&
+    !customModeOpen &&
+    !bottleMadePhase &&
+    !feedingSheetOpen &&
+    !smartPrepSheetOpen &&
+    !hungryReminderOpen &&
+    !feedingConfirmationPending;
+  const finishFirstGuide = useCallback(() => {
+    markFirstTimeGuideSeen();
+    setFirstGuideSeen(true);
+    setGuideTargetId(null);
+  }, []);
+  const handleGuideTargetChange = useCallback((targetId: string | null) => {
+    setGuideTargetId(targetId);
+  }, []);
+
+  const probeCryAssistDevices = useCallback(() => {
+    if (smartPrepSetupDone || !isOnline) return;
+    if (!isPanelDeviceContextReady(feedingHomeId, feedingDeviceId)) return;
+    const requestId = cryAssistProbeId.current + 1;
+    cryAssistProbeId.current = requestId;
+    prepareSmartPrep({
+      homeId: feedingHomeId,
+      deviceId: feedingDeviceId,
+    })
+      .then((prepared) => {
+        if (cryAssistProbeId.current !== requestId) return;
+        const hasDevice = prepared.devices.length > 0;
+        setCryAssistDeviceAvailable(hasDevice);
+        setSmartPrepPrepared(hasDevice ? prepared : null);
+        setSmartPrepPreparedAt(hasDevice ? Date.now() : 0);
+      })
+      .catch(() => undefined);
+  }, [feedingDeviceId, feedingHomeId, isOnline, smartPrepSetupDone]);
+  probeCryAssistDevicesRef.current = probeCryAssistDevices;
+
+  useEffect(() => {
+    setCryAssistDeviceAvailable(false);
+    setSmartPrepPrepared(null);
+    setSmartPrepPreparedAt(0);
+  }, [feedingDeviceId, feedingHomeId]);
+
+  useEffect(() => {
+    probeCryAssistDevices();
+  }, [probeCryAssistDevices]);
 
   const openSmartPrepSheet = useCallback(() => {
     if (!isOnline) {
@@ -319,6 +359,7 @@ const HomePage: React.FC = () => {
     markSmartPrepSetupComplete(feedingHomeId, feedingDeviceId);
     setSmartPrepSetupDone(true);
     setSmartPrepSheetOpen(false);
+    setSmartPrepSavedToastVisible(true);
   }, [feedingDeviceId, feedingHomeId]);
 
   const setDp = useMemo(
@@ -345,20 +386,6 @@ const HomePage: React.FC = () => {
     const timer = setTimeout(() => setAwaitingWorkMode(null), 12000);
     return () => clearTimeout(timer);
   }, [awaitingWorkMode]);
-
-  const applyPreset = useCallback(
-    (key: Exclude<ScenePresetKey, "custom">) => {
-      if (panelDisabled) return;
-      const p = SCENE_PRESETS[key];
-      setSceneKey(key);
-      setSelectedAction("milk");
-      setDp(dpCodes.volumeMl, p.ml);
-      setDp(dpCodes.tempSet, p.temp);
-      setDp(dpCodes.formulaRatio, p.formulaRatio);
-      setDp(dpCodes.unitSet, "mL");
-    },
-    [setDp, panelDisabled]
-  );
 
   useEffect(() => {
     if (powderBrandHydratedOnce) return;
@@ -444,15 +471,9 @@ const HomePage: React.FC = () => {
     return () => clearInterval(timer);
   }, [isMaking, workMode, cleanCountdown]);
 
-  const gaugeValue = isCleanSession
-    ? HIGH_TEMP_CLEAN_TOTAL_ML
-    : powderPrimary
-    ? powderG
-    : volumeMl;
-  const gaugeUnit = powderPrimary ? "g" : "mL";
-  const gaugeLabel = powderPrimary
-    ? t("gauge_powder_amount")
-    : t("gauge_water_amount");
+  const gaugeValue = isCleanSession ? HIGH_TEMP_CLEAN_TOTAL_ML : volumeMl;
+  const gaugeUnit = "mL";
+  const gaugeLabel = t("gauge_water_amount");
 
   const statusText = useMemo(
     () =>
@@ -464,16 +485,10 @@ const HomePage: React.FC = () => {
     [isOnline, t]
   );
 
-  const activeSceneTab = useMemo(
-    () => SCENE_TABS.find((tab) => tab.key === sceneKey),
-    [sceneKey]
-  );
-
   const isWaterActionSelected = selectedAction === "water";
   const isPowderActionSelected = selectedAction === "powder";
 
   const handleCustomModeSave = (draft: CustomModeDraft) => {
-    setSceneKey("custom");
     setDp(dpCodes.volumeMl, clampMl(draft.ml));
     setDp(dpCodes.formulaRatio, draft.formulaRatio);
     setDp(dpCodes.tempSet, draft.temp);
@@ -496,7 +511,6 @@ const HomePage: React.FC = () => {
     const order: TempSet[] = [20, 25, 30, 35, 40];
     const idx = order.indexOf(temp);
     const next = order[(idx + 1) % order.length];
-    setSceneKey("custom");
     setDp(dpCodes.tempSet, next);
   };
 
@@ -540,7 +554,6 @@ const HomePage: React.FC = () => {
     setMilkSessionActive(true);
     setAwaitingWorkMode("milk");
     const recipe = resolveMilkRecipeParams({
-      sceneKey,
       volumeMl,
       temp,
       formulaRatio,
@@ -581,7 +594,6 @@ const HomePage: React.FC = () => {
 
   const handleWaterTempChange = (next: TempSet) => {
     if (panelDisabled) return;
-    setSceneKey("custom");
     setDp(dpCodes.tempSet, next);
   };
 
@@ -795,9 +807,6 @@ const HomePage: React.FC = () => {
         buildCryAssistMilkRecipe(draft)
       );
       if (started) {
-        if (isCryAssistDraftChanged(hungryReminderInitialDraft, draft)) {
-          setSceneKey("custom");
-        }
         setSelectedAction("milk");
         setHungryStartAwaitingDevice(true);
         return;
@@ -815,15 +824,22 @@ const HomePage: React.FC = () => {
       router.push("/powder-brand-settings");
       return;
     }
-    router.push("/powder-brand");
+    router.push("/formula");
   };
 
   return (
     <View className={styles.root}>
-      <View className={styles.page} style={{ paddingTop: navTopInset }}>
+      <View
+        className={clsx(styles.page, showFirstGuide && styles.pageGuide)}
+        style={{
+          paddingTop: pageEdgeInset + 8,
+          paddingBottom: Math.max(pageEdgeInset - 24, 8),
+        }}
+      >
         <PanelNavBar
           mode="home"
           deviceId={devInfo?.devId}
+          spotlightFeeding={guideTargetId === "guide-feeding"}
           onFeedingRecordPress={() => {
             setFeedingSheetOpen(true);
           }}
@@ -863,7 +879,12 @@ const HomePage: React.FC = () => {
           </View>
         </View>
 
-        <View className={styles.pageBody}>
+        <View
+          className={clsx(
+            styles.pageBody,
+            showFirstGuide && styles.pageBodyGuide
+          )}
+        >
           <View
             className={clsx(
               styles.mainPanel,
@@ -872,14 +893,20 @@ const HomePage: React.FC = () => {
           >
             <View className={styles.dashboardCard}>
               <View className={styles.panelGaugeCluster}>
-                <View className={styles.dashboardCardTop}>
+                <View
+                  className={clsx(
+                    styles.dashboardCardTop,
+                    guideTargetId === "guide-gauge" && styles.guideTarget,
+                    guideTargetId === "guide-gauge" && styles.guideTargetGauge
+                  )}
+                >
                   <View className={styles.gaugeSlot}>
                     <AmountGauge
                       value={gaugeValue}
                       unit={gaugeUnit}
                       label={gaugeLabel}
                       min={0}
-                      max={powderPrimary ? 200 : GAUGE_ML_MAX}
+                      max={GAUGE_ML_MAX}
                       dimmed={
                         panelDisabled || !isOnline || childLock || isMakingUi
                       }
@@ -900,11 +927,7 @@ const HomePage: React.FC = () => {
                         />
                       ) : isMakingUi ? (
                         <View className={styles.middleContentSpread}>
-                          <MakingModeBar
-                            variant={makingBarVariant}
-                            modeKey={sceneKey}
-                            modeLabelKey={activeSceneTab?.labelKey}
-                          />
+                          <MakingModeBar variant={makingBarVariant} />
                         </View>
                       ) : isWaterActionSelected ? (
                         <WaterTemperaturePanel
@@ -976,7 +999,12 @@ const HomePage: React.FC = () => {
                                 className={styles.metricEditIcon}
                               />
                             </View>
-                            <Text className={styles.metricLabel}>
+                            <Text
+                              className={clsx(
+                                styles.metricLabel,
+                                styles.metricEditLabel
+                              )}
+                            >
                               {t("metric_edit")}
                             </Text>
                           </View>
@@ -995,9 +1023,12 @@ const HomePage: React.FC = () => {
                         <>
                           <View className={styles.gapMiddleToBrand} />
                           <View
+                            id="guide-formula"
                             className={clsx(
                               styles.brandBannerSlot,
-                              panelDisabled && styles.panelBlock
+                              panelDisabled && styles.panelBlock,
+                              guideTargetId === "guide-formula" &&
+                                styles.guideTarget
                             )}
                           >
                             <BrandBanner
@@ -1030,26 +1061,6 @@ const HomePage: React.FC = () => {
                           </View>
                         </>
                       ) : null}
-                      <View
-                        className={
-                          showBrandBanner
-                            ? styles.gapBrandToTabs
-                            : styles.gapMiddleToTabs
-                        }
-                      />
-                      <View
-                        className={clsx(
-                          styles.modeTabsSlot,
-                          panelDisabled && styles.panelBlock
-                        )}
-                      >
-                        <SceneModeTabs
-                          tabs={SCENE_TABS}
-                          activeKey={sceneKey}
-                          onChange={applyPreset}
-                          disabled={panelDisabled}
-                        />
-                      </View>
                     </View>
                   )}
               </View>
@@ -1058,9 +1069,12 @@ const HomePage: React.FC = () => {
             <View className={styles.mainPanelSpacer} />
 
             <View
+              id="guide-actions"
               className={clsx(
                 styles.actions,
-                (isMakingUi || bottleMadePhase) && styles.actionsMaking
+                (isMakingUi || bottleMadePhase) && styles.actionsMaking,
+                guideTargetId === "guide-actions" && styles.guideTarget,
+                guideTargetId === "guide-actions" && styles.guideTargetActions
               )}
             >
               {bottleMadePhase ? (
@@ -1193,7 +1207,15 @@ const HomePage: React.FC = () => {
             </View>
           </View>
 
-          <View className={styles.secondaryList}>
+          <View className={styles.cardGap} />
+          <View
+            id="guide-care"
+            className={clsx(
+              styles.guideCare,
+              guideTargetId === "guide-care" && styles.guideTarget,
+              guideTargetId === "guide-care" && styles.guideTargetCare
+            )}
+          >
             <View
               className={clsx(
                 styles.settingsRowCard,
@@ -1239,6 +1261,7 @@ const HomePage: React.FC = () => {
                 </View>
               )}
             </View>
+            <View className={styles.cardGap} />
             {babyDiaryToastVisible ? (
               <View className={styles.diaryToastSlot}>
                 <BabyDiarySnackbar
@@ -1315,7 +1338,11 @@ const HomePage: React.FC = () => {
         <SmartPrepReminderSheet
           homeId={feedingHomeId}
           deviceId={feedingDeviceId}
-          initialPrepared={smartPrepPrepared}
+          initialPrepared={
+            isSmartPrepPreparedFresh(smartPrepPrepared, smartPrepPreparedAt)
+              ? smartPrepPrepared
+              : null
+          }
           onPreparedChange={(prepared) => {
             setSmartPrepPrepared(prepared);
             if (prepared.devices.some((device) => device.selected)) {
@@ -1339,7 +1366,14 @@ const HomePage: React.FC = () => {
           !hungryReminderOpen &&
           !feedingConfirmationPending
         }
+        spotlight={guideTargetId === "guide-smart-prep"}
         onPress={openSmartPrepSheet}
+      />
+
+      <FormulaSavedToast
+        visible={smartPrepSavedToastVisible}
+        message={t("smart_prep_saved")}
+        onDismiss={() => setSmartPrepSavedToastVisible(false)}
       />
 
       {cloudFeaturesAvailable && feedingConfirmationPending ? (
@@ -1365,6 +1399,14 @@ const HomePage: React.FC = () => {
           onStart={(draft) => {
             handleHungryStartMaking(draft).catch(() => undefined);
           }}
+        />
+      ) : null}
+
+      {showFirstGuide ? (
+        <FirstTimeGuide
+          includeSmartPrep={showSmartPrepSnackbar}
+          onFinish={finishFirstGuide}
+          onTargetChange={handleGuideTargetChange}
         />
       ) : null}
     </View>

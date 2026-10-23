@@ -28,6 +28,7 @@ import { IC_BACK_URI } from "@/res/icBackUri";
 import { IC_BRAND_DELETE_URI } from "@/res/icBrandDeleteUri";
 import Strings from "@/i18n";
 import { useAppDispatch } from "@/redux";
+import { useHidePanelFloatingButtons } from "@/hooks/useHidePanelFloatingButtons";
 import {
   markBrandBannerEverClicked,
   removePowderBrandEntries,
@@ -55,6 +56,7 @@ const scheduleDeactivate = (
 };
 
 const CustomMixRatioPage: React.FC = () => {
+  useHidePanelFloatingButtons();
   const t = (key: Parameters<typeof Strings.getLang>[0]) =>
     Strings.getLang(key);
   const dispatch = useAppDispatch();
