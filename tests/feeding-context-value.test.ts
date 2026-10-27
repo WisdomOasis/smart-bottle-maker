@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-syntax */
+// Node-only tests: sequential fixtures; local transpilation and platform stubs.
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -83,6 +85,37 @@ test("rejects values longer than DP 119", () => {
   assert.equal(
     parseFeedingContextValue(
       `${bdUserCiphertext},${"i".repeat(150)},home,17,Europe/Paris`
+    ),
+    null
+  );
+});
+
+test("Raw decoder restores profile state and rejects malformed wire data", async () => {
+  const value = await import("../src/utils/feedingContextValue.ts");
+  assert.equal(typeof value.parseFeedingContextRaw, "function");
+  const text = `${bdUserCiphertext},宝宝😀,home,17,Europe/Paris`;
+  const hex = Buffer.from(text).toString("hex");
+  assert.deepEqual(
+    value.parseFeedingContextRaw(hex.toUpperCase()),
+    parseFeedingContextValue(text)
+  );
+  for (const invalid of [
+    text,
+    "abc",
+    "zz",
+    "ff",
+    "c080",
+    "00".repeat(513),
+    null,
+  ]) {
+    assert.equal(value.parseFeedingContextRaw(invalid), null);
+  }
+});
+
+test("text parser rejects UTF-8 exceeding the byte limit", () => {
+  assert.equal(
+    parseFeedingContextValue(
+      `${bdUserCiphertext},${"宝".repeat(55)},home,17,Europe/Paris`
     ),
     null
   );

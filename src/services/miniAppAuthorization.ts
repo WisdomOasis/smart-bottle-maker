@@ -34,9 +34,14 @@ export const createMiniAppAuthorizationCoordinator = (
 ) => {
   let queue: Promise<void> = Promise.resolve();
 
-  const run = <T>(operation: (code: string) => Promise<T>): Promise<T> => {
+  const run = <T>(
+    operation: (code: string) => Promise<T>,
+    assertActive?: () => void
+  ): Promise<T> => {
     const task = queue.then(async () => {
+      assertActive?.();
       const code = (await withTimeout(requestLoginCode(), timeoutMs)).trim();
+      assertActive?.();
       if (!code)
         throw new Error("MiniApp login did not return an authorization code");
       return operation(code);

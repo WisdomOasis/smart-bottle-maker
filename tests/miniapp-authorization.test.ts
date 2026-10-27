@@ -71,3 +71,49 @@ test("times out a stalled native login and releases the next task", async () => 
   await assert.rejects(timedOut, MiniAppAuthorizationTimeoutError);
   assert.equal(await succeeded, "code-2");
 });
+
+test("cancelled queued work never logs in and cancellation during login never posts", async () => {
+  const blocker = deferred<void>();
+  let logins = 0;
+  let active = true;
+  let posted = 0;
+  const coordinator = createMiniAppAuthorizationCoordinator(async () => {
+    logins++;
+    return "code";
+  });
+  const first = coordinator.run(async () => blocker.promise);
+  const second = coordinator.run(
+    async () => {
+      posted++;
+    },
+    () => {
+      if (!active) throw new Error("cancelled");
+    }
+  );
+  const rejected = assert.rejects(second, /cancelled/);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  active = false;
+  blocker.resolve();
+  await first;
+  await rejected;
+  assert.equal(logins, 1);
+  assert.equal(posted, 0);
+
+  const login = deferred<string>();
+  active = true;
+  const other = createMiniAppAuthorizationCoordinator(() => login.promise);
+  const work = other.run(
+    async () => {
+      posted++;
+    },
+    () => {
+      if (!active) throw new Error("cancelled");
+    }
+  );
+  const cancelled = assert.rejects(work, /cancelled/);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  active = false;
+  login.resolve("code");
+  await cancelled;
+  assert.equal(posted, 0);
+});

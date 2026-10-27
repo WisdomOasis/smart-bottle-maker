@@ -1,3 +1,8 @@
+import {
+  encodeFeedingContextRaw,
+  decodeFeedingContextRaw,
+} from "./feedingContextRaw.js";
+
 export type FeedingContextValue = {
   bdUserCiphertext: string;
   userIdentity: string;
@@ -12,7 +17,8 @@ const isRSA2048Ciphertext = (value: string) =>
 export const parseFeedingContextValue = (
   value: unknown
 ): FeedingContextValue | null => {
-  if (typeof value !== "string" || value.length > 512) return null;
+  if (typeof value !== "string" || encodeFeedingContextRaw(value) === null)
+    return null;
   const fields = value.split(",");
   if (
     fields.length !== 5 ||
@@ -29,3 +35,9 @@ export const parseFeedingContextValue = (
 
   return { bdUserCiphertext, userIdentity, homeID, childID, timezoneID };
 };
+
+// Device state is Raw hex; finalize responses use parseFeedingContextValue directly.
+export const parseFeedingContextRaw = (
+  value: unknown
+): FeedingContextValue | null =>
+  parseFeedingContextValue(decodeFeedingContextRaw(value));

@@ -14,5 +14,6 @@ const coordinator = createMiniAppAuthorizationCoordinator(
 );
 
 export const runWithMiniAppAuthorization = <T>(
-  operation: (code: string) => Promise<T>
-): Promise<T> => coordinator.run(operation);
+  operation: (code: string) => Promise<T>,
+  assertActive?: () => void
+): Promise<T> => coordinator.run(operation, assertActive);

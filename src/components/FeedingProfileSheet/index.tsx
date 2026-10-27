@@ -6,10 +6,11 @@ import {
   getSystemInfoSync,
   showToast,
   useAppEvent,
+  publishDps,
+  onDpDataChange,
+  offDpDataChange,
 } from "@ray-js/ray";
-import { useDevice, useProps } from "@ray-js/panel-sdk";
-import { devices } from "@/devices";
-import dpCodes from "@/constant/dpCodes";
+import { useDevice } from "@ray-js/panel-sdk";
 import type { FeedingProfileSelection } from "@/constant/feedingRecordStorage";
 import Res from "@/res";
 import { POWDER_BRAND_SHEET_ICONS } from "@/components/PowderBrandOptionSheet/icons";
@@ -17,11 +18,14 @@ import {
   finalizeFeedingContext,
   prepareFeedingContext,
   type FeedingChild,
+  type PreparedContext,
 } from "@/services/feedingContext";
+import { finalizeProfileSession } from "@/utils/feedingProfileSession";
 import { parseFeedingContextValue } from "@/utils/feedingContextValue";
 import {
   FeedingContextSaveError,
   feedingContextSaveMessage,
+  feedingContextDiagnostic,
   publishFeedingContext,
 } from "@/utils/feedingContextPublish";
 import { openBabyDiaryPanel } from "@/utils/openBabyDiaryPanel";
@@ -97,12 +101,16 @@ const FeedingProfileSheet: React.FC<Props> = ({
   onBusyChange,
 }) => {
   const { devInfo } = useDevice((state) => ({ devInfo: state.devInfo }));
-  const props = useProps() as Record<string, unknown>;
-  const propsRef = useRef(props);
-  propsRef.current = props;
+  const mountedRef = useRef(true);
+  const operationVersion = useRef(0);
+  const cancelPublish =
+    useRef<ReturnType<typeof publishFeedingContext>["cancel"]>();
+  const devInfoRef = useRef(devInfo);
+  devInfoRef.current = devInfo;
   const onlineRef = useRef(isOnline);
   onlineRef.current = isOnline;
   const busyRef = useRef(false);
+  const [isBusy, setIsBusy] = useState(false);
   const startedForOnlinePeriodRef = useRef(false);
   const loadProfilesRef = useRef<(fromBabyDiary?: boolean) => Promise<void>>(
     async () => undefined
@@ -111,14 +119,15 @@ const FeedingProfileSheet: React.FC<Props> = ({
   const openingBabyDiaryRef = useRef(false);
   const [phase, setPhase] = useState<Phase>("checking");
   const [children, setChildren] = useState<FeedingChild[]>([]);
-  const [session, setSession] = useState("");
+  const preparedRef = useRef<PreparedContext | null>(null);
   const [errorText, setErrorText] = useState("");
-  const [debugText, setDebugText] = useState("");
+  const [diagnostic, setDiagnostic] = useState("");
   const [failedChild, setFailedChild] = useState<FeedingChild | null>(null);
   const [returnedFromBabyDiary, setReturnedFromBabyDiary] = useState(false);
   const setBusy = useCallback(
     (busy: boolean) => {
       busyRef.current = busy;
+      setIsBusy(busy);
       onBusyChange(busy);
     },
     [onBusyChange]
@@ -127,9 +136,10 @@ const FeedingProfileSheet: React.FC<Props> = ({
   const loadProfiles = useCallback(
     async (fromBabyDiary = false) => {
       if (busyRef.current || !onlineRef.current) return;
+      const version = operationVersion.current;
       setBusy(true);
       setErrorText("");
-      setDebugText("");
+      setDiagnostic("");
       setFailedChild(null);
       setPhase(fromBabyDiary ? "returning" : "checking");
       if (fromBabyDiary) setReturnedFromBabyDiary(true);
@@ -139,31 +149,52 @@ const FeedingProfileSheet: React.FC<Props> = ({
           deviceTimezone: devInfo?.devTimezoneId,
           requestUserInfo: requestMiniAppUserInfo,
         });
+        if (
+          !mountedRef.current ||
+          !onlineRef.current ||
+          version !== operationVersion.current
+        )
+          return;
         if (!homeId || !deviceId || !timezoneId) {
           throw new Error("Panel context is unavailable");
         }
         const prepared = await prepareFeedingContext({
+          assertActive: () => {
+            if (
+              !mountedRef.current ||
+              !onlineRef.current ||
+              version !== operationVersion.current
+            ) {
+              throw new FeedingContextSaveError("cancelled");
+            }
+          },
           homeId,
           deviceId,
           timezoneId,
         });
-        if (!onlineRef.current) return;
+        if (
+          !mountedRef.current ||
+          !onlineRef.current ||
+          version !== operationVersion.current
+        )
+          return;
         if (!prepared.children.length) {
           setChildren([]);
-          setSession("");
+          preparedRef.current = null;
           setPhase("no_profiles");
           return;
         }
         setChildren(prepared.children);
-        setSession(prepared.session);
+        preparedRef.current = prepared;
         setPhase("choosing");
       } catch (error) {
+        if (!mountedRef.current) return;
         setChildren([]);
-        setSession("");
+        preparedRef.current = null;
         setErrorText(profileCheckMessage(error));
         setPhase("check_error");
       } finally {
-        setBusy(false);
+        if (mountedRef.current) setBusy(false);
       }
     },
     [deviceId, devInfo?.devTimezoneId, homeId, setBusy]
@@ -175,9 +206,12 @@ const FeedingProfileSheet: React.FC<Props> = ({
 
   useEffect(() => {
     if (!isOnline) {
+      operationVersion.current++;
+      cancelPublish.current?.("offline");
       startedForOnlinePeriodRef.current = false;
       return;
     }
+    if (isBusy) return;
     if (
       !shouldStartFeedingProfileCheck({
         isOnline,
@@ -188,14 +222,17 @@ const FeedingProfileSheet: React.FC<Props> = ({
     }
     startedForOnlinePeriodRef.current = true;
     loadProfiles().catch(() => undefined);
-  }, [isOnline, loadProfiles]);
+  }, [isOnline, isBusy, loadProfiles]);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      operationVersion.current++;
+      cancelPublish.current?.("cancelled");
       onBusyChange(false);
-    },
-    [onBusyChange]
-  );
+    };
+  }, [onBusyChange]);
 
   useAppEvent("onShow", () => {
     if (
@@ -214,6 +251,7 @@ const FeedingProfileSheet: React.FC<Props> = ({
     if (busyRef.current || openingBabyDiaryRef.current) return;
     openingBabyDiaryRef.current = true;
     setErrorText("");
+    setDiagnostic("");
     setReturnedFromBabyDiary(false);
     setPhase("opening_diary");
     openBabyDiaryPanel({
@@ -245,19 +283,51 @@ const FeedingProfileSheet: React.FC<Props> = ({
   const saveChild = useCallback(
     async (child: FeedingChild) => {
       if (busyRef.current || !onlineRef.current) return;
-      if (child.id === currentChildId) {
-        applySelection(child);
-        onClose();
-        return;
-      }
-      if (!session) return;
+      const version = operationVersion.current;
+      const assertActive = () => {
+        if (!mountedRef.current) throw new FeedingContextSaveError("cancelled");
+        if (!onlineRef.current || version !== operationVersion.current) {
+          throw new FeedingContextSaveError("offline");
+        }
+      };
       setBusy(true);
       setErrorText("");
-      setDebugText("");
+      setDiagnostic("");
       setFailedChild(null);
       setPhase("preparing");
       try {
-        const context = await finalizeFeedingContext(session, child.id);
+        const context = await finalizeProfileSession({
+          prepared: preparedRef.current,
+          childId: child.id,
+          refresh: async () => {
+            assertActive();
+            const timezoneId = await resolveFeedingProfileTimezone({
+              systemTimezone: getSystemInfoSync?.()?.timezoneId,
+              deviceTimezone: devInfoRef.current?.devTimezoneId,
+              requestUserInfo: requestMiniAppUserInfo,
+            });
+            assertActive();
+            if (!homeId || !deviceId || !timezoneId)
+              throw new Error("Panel context is unavailable");
+            const prepared = await prepareFeedingContext({
+              homeId,
+              deviceId,
+              timezoneId,
+              assertActive,
+            });
+            assertActive();
+            preparedRef.current = prepared;
+            setChildren(prepared.children);
+            return prepared;
+          },
+          finalize: async (session, childId) => {
+            assertActive();
+            const value = await finalizeFeedingContext(session, childId);
+            assertActive();
+            return value;
+          },
+        });
+        assertActive();
         const parsedContext = parseFeedingContextValue(context);
         if (
           !parsedContext ||
@@ -266,75 +336,55 @@ const FeedingProfileSheet: React.FC<Props> = ({
         ) {
           throw new Error("Provisioning context is invalid");
         }
-        if (!onlineRef.current) throw new Error("Device is offline");
         setPhase("sending");
-        // eslint-disable-next-line no-console
-        console.info("Feeding profile DP publish started", {
-          dpCode: dpCodes.feedingContext,
-          contextLength: context.length,
-          publisher: "devices.common.publishDps",
-        });
-        const publishResult = await publishFeedingContext({
+        const tx = publishFeedingContext({
           context,
+          deviceId,
+          modelDeviceId: devInfoRef.current?.devId,
           isOnline: onlineRef.current,
-          publish: async (payload) => {
-            if (!devices.common?.initialized) {
-              throw new Error("Panel device model is unavailable");
-            }
-            return devices.common.publishDps(payload);
+          publish: (params) => publishDps(params),
+          subscribe: (listener) => {
+            onDpDataChange(listener);
+            return () => offDpDataChange(listener);
+          },
+          onAccepted: () => {
+            if (mountedRef.current) setPhase("confirming");
           },
         });
-        // eslint-disable-next-line no-console
-        console.info("Feeding profile DP publish accepted", {
-          dpCode: dpCodes.feedingContext,
-          contextLength: publishResult.contextLength,
-          accepted: publishResult.result !== false,
-        });
-        setPhase("confirming");
-        const didReadBack = await new Promise<boolean>((resolve) => {
-          const deadline = Date.now() + 8000;
-          const check = () => {
-            if (propsRef.current[dpCodes.feedingContext] === context) {
-              resolve(true);
-              return;
-            }
-            if (Date.now() >= deadline) {
-              resolve(false);
-              return;
-            }
-            setTimeout(check, 400);
-          };
-          check();
-        });
-        if (!didReadBack) {
-          throw new FeedingContextSaveError("readback");
-        }
+        cancelPublish.current = tx.cancel;
+        await tx.promise;
+        assertActive();
         applySelection(child);
         showToast({ title: "Baby profile updated" });
         onClose();
       } catch (error) {
+        if (!mountedRef.current) return;
         const stage =
           error instanceof FeedingContextSaveError ? error.stage : "validation";
-        const detail =
-          error instanceof FeedingContextSaveError ? error.detail : error;
-        const detailMessage =
-          detail instanceof Error
-            ? detail.message
-            : typeof detail === "string"
-            ? detail
-            : "unknown error";
-        const diagnostic = `${stage} · ${detailMessage}`;
+        // Log only bounded metadata; backend/platform messages may contain credentials.
         // eslint-disable-next-line no-console
-        console.error("Feeding profile save failed", diagnostic);
-        setFailedChild(child);
-        setErrorText(feedingContextSaveMessage(error));
-        setDebugText(`Debug: ${diagnostic}`);
+        console.error("Feeding profile save failed", {
+          stage,
+          dpId: 119,
+          code:
+            error instanceof FeedingContextSaveError ? error.code : undefined,
+        });
+        const unavailable =
+          error instanceof Error && error.message === "profile_unavailable";
+        setFailedChild(unavailable ? null : child);
+        setErrorText(
+          unavailable
+            ? "This baby profile is no longer available. Try again to choose a profile."
+            : feedingContextSaveMessage(error)
+        );
+        setDiagnostic(feedingContextDiagnostic(error));
         setPhase("save_error");
       } finally {
-        setBusy(false);
+        cancelPublish.current = undefined;
+        if (mountedRef.current) setBusy(false);
       }
     },
-    [applySelection, currentChildId, homeId, onClose, session, setBusy]
+    [applySelection, deviceId, homeId, onClose, setBusy]
   );
 
   const retry = useCallback(() => {
@@ -470,8 +520,10 @@ const FeedingProfileSheet: React.FC<Props> = ({
         {isOnline && (phase === "check_error" || phase === "save_error") ? (
           <View className={styles.stateBlock}>
             <Text className={styles.errorText}>{errorText}</Text>
-            {phase === "save_error" && debugText ? (
-              <Text className={styles.debugText}>{debugText}</Text>
+            {phase === "save_error" && diagnostic ? (
+              <Text className={styles.debugText}>
+                Support code: {diagnostic}
+              </Text>
             ) : null}
             <View className={styles.primaryButton} onClick={retry}>
               <Text className={styles.primaryButtonText}>Try again</Text>

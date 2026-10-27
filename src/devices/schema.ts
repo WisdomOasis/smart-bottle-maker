@@ -177,8 +177,8 @@ export const defaultSchema = [
     id: 119,
     mode: "rw",
     name: "Feeding Record Context",
-    property: { type: "string", maxlen: 512 },
-    type: "obj",
+    property: { type: "raw" },
+    type: "raw",
   },
   {
     code: "feeding_record_confir",

@@ -54,15 +54,18 @@ export const prepareFeedingContext = async (input: {
   homeId: string;
   deviceId: string;
   timezoneId: string;
+  assertActive?: () => void;
 }): Promise<PreparedContext> => {
-  const body = await runWithMiniAppAuthorization((code) =>
-    post({
-      action: "prepare_feeding_context",
-      code,
-      home_id: input.homeId,
-      device_id: input.deviceId,
-      timezone_id: input.timezoneId,
-    })
+  const body = await runWithMiniAppAuthorization(
+    (code) =>
+      post({
+        action: "prepare_feeding_context",
+        code,
+        home_id: input.homeId,
+        device_id: input.deviceId,
+        timezone_id: input.timezoneId,
+      }),
+    input.assertActive
   );
   if (typeof body.session !== "string" || !Array.isArray(body.children)) {
     throw new Error("Provisioning response is invalid");

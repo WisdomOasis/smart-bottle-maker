@@ -51,7 +51,7 @@ import {
   saveFeedingProfileSelection,
   type FeedingProfileSelection,
 } from "@/constant/feedingRecordStorage";
-import { parseFeedingContextValue } from "@/utils/feedingContextValue";
+import { parseFeedingContextRaw } from "@/utils/feedingContextValue";
 import {
   hasCompletedSmartPrepSetup,
   isSmartPrepPreparedFresh,
@@ -209,7 +209,7 @@ const HomePage: React.FC = () => {
     getLaunchOptionsSync()?.query
   );
   const feedingContext = useMemo(
-    () => parseFeedingContextValue(dpState[dpCodes.feedingContext]),
+    () => parseFeedingContextRaw(dpState[dpCodes.feedingContext]),
     [dpState]
   );
   const hungryReminderInitialDraft = useMemo(

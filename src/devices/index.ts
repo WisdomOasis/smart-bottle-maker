@@ -9,6 +9,8 @@ const isGroupDevice = !!getLaunchOptionsSync()?.query?.groupId;
 export const dpKit = createDpKit<SmartDeviceSchema>({ protocols });
 
 const options = {
+  // DP119 contains account context: suppress SDK payload logging in development too.
+  logConfig: { level: "WARN" as const },
   interceptors: dpKit.interceptors,
 };
 
@@ -23,6 +25,6 @@ export const devices = {
    */
   // common: new SmartDeviceModel<SmartDeviceSchema>(options),
   common: isGroupDevice
-    ? new SmartGroupModel<SmartDeviceSchema>()
+    ? new SmartGroupModel<SmartDeviceSchema>({ logConfig: options.logConfig })
     : new SmartDeviceModel<SmartDeviceSchema>(options),
 };
