@@ -52,6 +52,8 @@ export const useBarcodeScanLauncher = () => {
     safetyTimerRef.current = setTimeout(() => {
       scanningRef.current = false;
       safetyTimerRef.current = null;
+      pendingResultNavRef.current = false;
+      setScanCoverVisible(false);
     }, SCAN_LOCK_SAFETY_MS);
   }, []);
 
@@ -67,9 +69,8 @@ export const useBarcodeScanLauncher = () => {
       launchOptionsRef.current = options;
       pendingResultNavRef.current = false;
       armScanLock();
-      setNotFoundVisible(false);
-      setScanCoverVisible(true);
-
+      // Call scanCode in the same tap turn. An opaque cover here matches the
+      // formula page colour and can swallow the native scanner in OEM apps.
       runBarcodeScan({
         onResult: (raw) => {
           clearScanLock();
@@ -81,6 +82,7 @@ export const useBarcodeScanLauncher = () => {
               onMatch(match);
             } else {
               pendingResultNavRef.current = true;
+              setScanCoverVisible(true);
               writeBarcodeResult(match, "scan");
               goToBarcodeResultPage("/formula");
             }
@@ -99,7 +101,13 @@ export const useBarcodeScanLauncher = () => {
             hideScanCover();
           }
         },
+        onUnavailable: () => {
+          clearScanLock();
+          hideScanCover();
+          router.push("/enter-barcode");
+        },
       });
+      setNotFoundVisible(false);
     },
     [armScanLock, clearScanLock, hideScanCover]
   );

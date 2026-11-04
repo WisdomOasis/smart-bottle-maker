@@ -1,78 +1,115 @@
-import { scanCode } from "@ray-js/ray";
+import { authorize, scanCode, showToast } from "@ray-js/ray";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
-
-type KeyboardBean = {
-  title?: string;
-  placeholder?: string;
-  desc?: string;
-  actionText?: string;
-};
-
-/** Tuya scanCode 擴展參數（BaseKit typings 未完整收錄） */
-type NativeScanCodeParams = {
-  onlyFromCamera?: boolean;
-  scanType?: string[];
-  customTips?: string;
-  isShowActionTitle?: boolean;
-  isShowTorch?: boolean;
-  isShowKeyboard?: boolean;
-  keyboardBean?: KeyboardBean;
-  success?: (res: { result: string }) => void;
-  fail?: (res: { errorMsg?: string }) => void;
-  complete?: () => void;
-};
+import { pausePanelChromeHide, resumePanelChromeHide } from "./panelChrome";
 
 const t = (key: I18nKey) => Strings.getLang(key);
 
-/** 對齊客製 Enter Barcode 頁文案，供官方 keyboardBean 使用 */
-export const getBarcodeKeyboardBean = (): KeyboardBean => ({
-  title: t("barcode_enter_barcode"),
-  placeholder: t("barcode_input_placeholder"),
-  desc: t("barcode_reference_hint"),
-  actionText: t("barcode_search"),
-});
+type ScanFail = {
+  errorMsg?: string;
+  errorCode?: string | number;
+  innerError?: { errorCode?: string | number; errorMsg?: string };
+};
+
+const textOf = (value: unknown): string =>
+  typeof value === "string" ? value.toLowerCase() : "";
+
+const failMessage = (res?: ScanFail): string =>
+  `${textOf(res?.errorMsg)} ${textOf(res?.innerError?.errorMsg)}`;
+
+export const isBarcodeScanCancel = (res?: ScanFail): boolean => {
+  const code = res?.errorCode ?? res?.innerError?.errorCode;
+  return (
+    code === 1 ||
+    code === "1" ||
+    /cancel|canceled|cancelled|取消/.test(failMessage(res))
+  );
+};
+
+const requestCameraAccess = (onGranted: () => void, onDenied: () => void) => {
+  try {
+    authorize({
+      scope: "scope.camera",
+      success: () => onGranted(),
+      fail: () => onDenied(),
+    });
+  } catch {
+    onDenied();
+  }
+};
 
 /**
- * 調起 Tuya 官方掃碼（全螢幕相機 + 官方 Enter Barcode 手動輸入）。
- * 原生輸入頁僅能改文案，無法完全複製客製樣式。
+ * 先向系統要相機權限，再調起官方掃碼。
+ * 權限未授權時 scanCode 會直接 fail，看起來像點了沒反應。
  */
 export const runBarcodeScan = (handlers: {
   onResult: (raw: string) => void;
   /** 使用者按返回／取消，未掃到有效條碼 */
   onDismiss?: () => void;
   onComplete?: () => void;
+  /** 相機掃碼無法開啟時，改走手動輸入 */
+  onUnavailable?: () => void;
 }): void => {
   let gotResult = false;
   let dismissed = false;
+  let chromePaused = false;
+
+  const pauseChrome = () => {
+    if (chromePaused) return;
+    chromePaused = true;
+    pausePanelChromeHide();
+  };
+
+  const resumeChrome = () => {
+    if (!chromePaused) return;
+    chromePaused = false;
+    resumePanelChromeHide();
+  };
 
   const dismissOnce = () => {
     if (gotResult || dismissed) return;
     dismissed = true;
+    resumeChrome();
     handlers.onDismiss?.();
   };
 
-  const params: NativeScanCodeParams = {
-    onlyFromCamera: true,
-    scanType: ["barCode", "qrCode"],
-    isShowActionTitle: false,
-    isShowKeyboard: true,
-    keyboardBean: getBarcodeKeyboardBean(),
-    success: (res) => {
-      const raw = res.result?.trim() ?? "";
-      if (!raw) return;
-      gotResult = true;
-      handlers.onResult(raw);
-    },
-    fail: () => {
-      dismissOnce();
-    },
-    complete: () => {
-      handlers.onComplete?.();
-      // iOS 有時僅觸發 complete，不觸發 fail
-      dismissOnce();
-    },
+  const finishComplete = () => {
+    resumeChrome();
+    handlers.onComplete?.();
+    dismissOnce();
   };
 
-  scanCode(params as Parameters<typeof scanCode>[0]);
+  const openNativeScanner = () => {
+    scanCode({
+      onlyFromCamera: false,
+      scanType: ["barCode", "qrCode"],
+      success: (res) => {
+        const raw = res.result?.trim() ?? "";
+        if (!raw) return;
+        gotResult = true;
+        resumeChrome();
+        handlers.onResult(raw);
+      },
+      fail: (res) => {
+        if (!isBarcodeScanCancel(res)) handlers.onUnavailable?.();
+        dismissOnce();
+      },
+      complete: () => {
+        finishComplete();
+      },
+    });
+  };
+
+  try {
+    pauseChrome();
+    requestCameraAccess(openNativeScanner, () => {
+      showToast({ title: t("barcode_camera_denied"), icon: "none" });
+      handlers.onUnavailable?.();
+      finishComplete();
+    });
+  } catch {
+    showToast({ title: t("barcode_camera_denied"), icon: "none" });
+    handlers.onUnavailable?.();
+    finishComplete();
+  }
 };
