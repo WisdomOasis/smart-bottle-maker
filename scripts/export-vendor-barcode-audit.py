@@ -86,7 +86,7 @@ FOUND = [
 ]
 
 MISSING = [
-    ("3288131580128", "Babybio", "Optimist", 2, "Babybio Optimist Stage 2", "無此條碼", "ADD", "全新系列 Optimist"),
+    ("3288131580128", "Babybio", "Optigest", 2, "Babybio Optigest Stage 2", "名稱錯誤（曾誤標 Caprea／Optimist）", "FIX", "圖確認為 Optigest Stage 2"),
     ("3288131580210", "Babybio", "Primea", 1, "Babybio Primea Stage 1", "無此條碼", "ADD", "庫內舊碼 3288131580029 Primea 2，不可覆寫"),
     ("3288131580227", "Babybio", "Primea", 2, "Babybio Primea Stage 2", "無此條碼", "ADD", "與舊碼並存"),
     ("3288131580234", "Babybio", "Primea", 3, "Babybio Primea Stage 3", "無此條碼", "ADD", ""),
@@ -131,7 +131,7 @@ MISSING = [
     ("7613033112867", "Nidal", "Nidalgest", 1, "Nidal Nidalgest Stage 1", "無此條碼", "ADD", ""),
     ("3551102095564", "Picot", "Picot", 1, "Picot Stage 1", "無此條碼", "ADD", ""),
     ("3551102095571", "Picot", "Picot", 2, "Picot Stage 2", "無此條碼", "ADD", ""),
-    ("3551102469225", "Picot", "Picot", 4, "Picot Stage 4", "無此條碼", "ADD", ""),
+    ("3551102469525", "Picot", "Picot", 4, "Picot Stage 4", "無此條碼", "ADD", "原誤碼 3551102469225 已更正"),
     ("3551101545398", "Picot", "Bio", 3, "Picot Bio Stage 3", "無此條碼", "ADD", ""),
     ("3288111545277", "Picot", "Lemiel", 3, "Picot Lemiel Stage 3", "無此條碼", "ADD", "圖檔寫 Lemial；建議正式名 Lemiel"),
     ("3288111545253", "Picot", "Lemiel", 1, "Picot Lemiel Stage 1", "無此條碼", "ADD", ""),
@@ -313,7 +313,7 @@ def main() -> None:
     ws["A10"].font = label_font
     write_headers(ws, 11, ["品牌 Brand", "系列 Series", "缺漏段位", "條碼數", "備註"], TEAL)
     brand_rows = [
-        ("Babybio", "Optimist / Primea", "1–3", 4, ""),
+        ("Babybio", "Optigest / Primea", "1–3", 4, ""),
         ("Blédilait", "Bledigest / Blédilait 2", "1–2", 3, "Junior 那筆改列 Wrong"),
         ("France Bébé Bio", "France Bébé Bio", "1–2", 2, "全新品牌"),
         ("Gallia", "Calisma / Galliagest / Junior / Relais", "多段", 6, ""),

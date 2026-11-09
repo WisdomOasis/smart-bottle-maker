@@ -2772,6 +2772,15 @@
     "milkId": "1287"
   },
   {
+    "barcode": "3041090841644",
+    "brand": "Gallia",
+    "series": "GALLIAGEST CROISSANCE",
+    "segment": 3,
+    "powderG": 34.07,
+    "waterMl": 210.0,
+    "milkId": "4681"
+  },
+  {
     "barcode": "3041090898013",
     "brand": "Gallia",
     "series": "milk_series_ha_hydrolyzed",
@@ -2872,12 +2881,21 @@
   },
   {
     "barcode": "3041091439987",
-    "brand": "bledina",
-    "series": "bledilait",
+    "brand": "blédina",
+    "series": "Blédilait",
     "segment": 1,
-    "powderG": 27.6,
-    "waterMl": 180.0,
-    "milkId": "363"
+    "powderG": 13.5,
+    "waterMl": 90.0,
+    "milkId": "4672"
+  },
+  {
+    "barcode": "3041091440006",
+    "brand": "blédina",
+    "series": "Blédilait",
+    "segment": 2,
+    "powderG": 32.9,
+    "waterMl": 210.0,
+    "milkId": "4673"
   },
   {
     "barcode": "3041091461254",
@@ -2954,29 +2972,65 @@
   {
     "barcode": "3041091478122",
     "brand": "Gallia",
-    "series": "Calisma",
+    "series": "CALISMA BIO",
     "segment": 1,
-    "powderG": 21.85,
+    "powderG": 22.5,
     "waterMl": 150.0,
     "milkId": "1719"
   },
   {
     "barcode": "3041091478146",
     "brand": "Gallia",
-    "series": "Calisma",
+    "series": "CALISMA BIO CROISSANCE",
     "segment": 3,
-    "powderG": 4.76,
-    "waterMl": 30.0,
+    "powderG": 33.32,
+    "waterMl": 210.0,
     "milkId": "1498"
+  },
+  {
+    "barcode": "3041091478160",
+    "brand": "Gallia",
+    "series": "CALISMA BIO",
+    "segment": 2,
+    "powderG": 33.37,
+    "waterMl": 210.0,
+    "milkId": "4676"
   },
   {
     "barcode": "3041091510891",
     "brand": "Gallia",
-    "series": "Galliagest premium/갈리아제스트 프리미엄 1단계(프랑스내수용)",
+    "series": "GALLIAGEST PREMIUM",
     "segment": 1,
-    "powderG": 4.4,
-    "waterMl": 30.0,
+    "powderG": 13.6,
+    "waterMl": 90.0,
     "milkId": "2126"
+  },
+  {
+    "barcode": "3041091511690",
+    "brand": "Gallia",
+    "series": "GALLIAGEST PREMIUM",
+    "segment": 2,
+    "powderG": 33.6,
+    "waterMl": 210.0,
+    "milkId": "4680"
+  },
+  {
+    "barcode": "3041091511744",
+    "brand": "blédina",
+    "series": "Blédilait Blédigest",
+    "segment": 1,
+    "powderG": 13.6,
+    "waterMl": 90.0,
+    "milkId": "4670"
+  },
+  {
+    "barcode": "3041091511751",
+    "brand": "blédina",
+    "series": "Blédilait Blédigest",
+    "segment": 2,
+    "powderG": 33.6,
+    "waterMl": 210.0,
+    "milkId": "4671"
   },
   {
     "barcode": "3041091511775",
@@ -2999,8 +3053,8 @@
   {
     "barcode": "3041091683878",
     "brand": "blédina",
-    "series": "BLEDILAIT JUNIOR",
-    "segment": 4,
+    "series": "Bledigest Croissance +",
+    "segment": 3,
     "powderG": 29.96,
     "waterMl": 210.0,
     "milkId": "572"
@@ -3008,20 +3062,47 @@
   {
     "barcode": "3041091725929",
     "brand": "Gallia",
-    "series": "Calisma",
+    "series": "CALISMA",
     "segment": 1,
-    "powderG": 23.05,
+    "powderG": 22.83,
     "waterMl": 150.0,
     "milkId": "1685"
   },
   {
+    "barcode": "3041091725936",
+    "brand": "Gallia",
+    "series": "CALISMA",
+    "segment": 2,
+    "powderG": 33.83,
+    "waterMl": 210.0,
+    "milkId": "4679"
+  },
+  {
     "barcode": "3041091725943",
     "brand": "Gallia",
-    "series": "Calisma",
-    "segment": 2,
-    "powderG": 22.5,
+    "series": "CALISMA RELAIS",
+    "segment": 1,
+    "powderG": 22.83,
     "waterMl": 150.0,
     "milkId": "1772"
+  },
+  {
+    "barcode": "3041091725950",
+    "brand": "Gallia",
+    "series": "CALISMA RELAIS",
+    "segment": 2,
+    "powderG": 33.6,
+    "waterMl": 210.0,
+    "milkId": "4678"
+  },
+  {
+    "barcode": "3041092010550",
+    "brand": "Gallia",
+    "series": "CALISMA JUNIOR",
+    "segment": 4,
+    "powderG": 34.53,
+    "waterMl": 210.0,
+    "milkId": "4677"
   },
   {
     "barcode": "3041094853278",
@@ -3132,6 +3213,33 @@
     "milkId": "3900"
   },
   {
+    "barcode": "3288111545253",
+    "brand": "Picot",
+    "series": "Lémiel BÉBÉ GOURMAND",
+    "segment": 1,
+    "powderG": 13.5,
+    "waterMl": 90.0,
+    "milkId": "4715"
+  },
+  {
+    "barcode": "3288111545260",
+    "brand": "Picot",
+    "series": "Lémiel BÉBÉ GOURMAND",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4716"
+  },
+  {
+    "barcode": "3288111545277",
+    "brand": "Picot",
+    "series": "Lémiel BÉBÉ GOURMAND",
+    "segment": 3,
+    "powderG": 36.0,
+    "waterMl": 240.0,
+    "milkId": "4714"
+  },
+  {
     "barcode": "3288131500034",
     "brand": "Babybio",
     "series": "OPTIMA/LAIT DE SUITE/DÈS 6 MOIS 2",
@@ -3204,9 +3312,45 @@
     "milkId": "3168"
   },
   {
+    "barcode": "3288131580128",
+    "brand": "Babybio",
+    "series": "Optigest",
+    "segment": 2,
+    "powderG": 30.8,
+    "waterMl": 210.0,
+    "milkId": "4667"
+  },
+  {
+    "barcode": "3288131580210",
+    "brand": "Babybio",
+    "series": "PRIMEA DÈS LA NAISSANCE",
+    "segment": 1,
+    "powderG": 13.2,
+    "waterMl": 90.0,
+    "milkId": "4668"
+  },
+  {
+    "barcode": "3288131580227",
+    "brand": "Babybio",
+    "series": "PRIMEA SYSTÈME IMMUNITAIRE",
+    "segment": 2,
+    "powderG": 30.8,
+    "waterMl": 210.0,
+    "milkId": "4666"
+  },
+  {
+    "barcode": "3288131580234",
+    "brand": "Babybio",
+    "series": "PRIMEA CROISSANCE SYSTÈME IMMUNITAIRE",
+    "segment": 3,
+    "powderG": 35.2,
+    "waterMl": 240.0,
+    "milkId": "4669"
+  },
+  {
     "barcode": "3288131580319",
     "brand": "Babybio",
-    "series": "BABYBIO OPTIMA",
+    "series": "OPTIMA DÈS LA NAISSANCE",
     "segment": 1,
     "powderG": 26.4,
     "waterMl": 180.0,
@@ -3253,8 +3397,8 @@
     "brand": "Babybio",
     "series": "CAPREA Au lait de chèvre",
     "segment": 1,
-    "powderG": 4.3,
-    "waterMl": 30.0,
+    "powderG": 12.9,
+    "waterMl": 90.0,
     "milkId": "1150"
   },
   {
@@ -3816,6 +3960,15 @@
     "milkId": "3177"
   },
   {
+    "barcode": "3551101545398",
+    "brand": "Picot",
+    "series": "BIO",
+    "segment": 3,
+    "powderG": 36.0,
+    "waterMl": 240.0,
+    "milkId": "4713"
+  },
+  {
     "barcode": "3551101548016",
     "brand": "Picot",
     "series": "EXPERT",
@@ -3825,9 +3978,36 @@
     "milkId": "505"
   },
   {
+    "barcode": "3551102095564",
+    "brand": "Picot",
+    "series": "TRILACTA",
+    "segment": 1,
+    "powderG": 13.5,
+    "waterMl": 90.0,
+    "milkId": "4710"
+  },
+  {
+    "barcode": "3551102095571",
+    "brand": "Picot",
+    "series": "TRILACTA",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4711"
+  },
+  {
+    "barcode": "3551102469525",
+    "brand": "Picot",
+    "series": "SYSTÈME IMMUNITAIRE",
+    "segment": 4,
+    "powderG": 36.0,
+    "waterMl": 240.0,
+    "milkId": "4712"
+  },
+  {
     "barcode": "3572731142030",
     "brand": "modilac",
-    "series": "DOUCEA CROISSANCE",
+    "series": "DOUCÉA+ CROISSANCE",
     "segment": 3,
     "powderG": 36.0,
     "waterMl": 240.0,
@@ -3859,6 +4039,51 @@
     "powderG": 36.8,
     "waterMl": 240.0,
     "milkId": "579"
+  },
+  {
+    "barcode": "3572731301598",
+    "brand": "modilac",
+    "series": "DOUCÉA LF+",
+    "segment": 1,
+    "powderG": 13.5,
+    "waterMl": 90.0,
+    "milkId": "4704"
+  },
+  {
+    "barcode": "3572731303417",
+    "brand": "modilac",
+    "series": "Bio Mon petit LF+",
+    "segment": 1,
+    "powderG": 13.5,
+    "waterMl": 90.0,
+    "milkId": "4701"
+  },
+  {
+    "barcode": "3572731303424",
+    "brand": "modilac",
+    "series": "Bio Mon petit LF+",
+    "segment": 2,
+    "powderG": 34.4,
+    "waterMl": 240.0,
+    "milkId": "4702"
+  },
+  {
+    "barcode": "3572731303431",
+    "brand": "modilac",
+    "series": "Bio Mon petit + CROISSANCE",
+    "segment": 3,
+    "powderG": 34.4,
+    "waterMl": 240.0,
+    "milkId": "4703"
+  },
+  {
+    "barcode": "3572731303738",
+    "brand": "modilac",
+    "series": "ACTIGEST LF+ FORMULE ÉPAISSIE",
+    "segment": 2,
+    "powderG": 36.0,
+    "waterMl": 240.0,
+    "milkId": "4700"
   },
   {
     "barcode": "3572731342324",
@@ -4084,6 +4309,24 @@
     "powderG": 25.8,
     "waterMl": 180.0,
     "milkId": "103"
+  },
+  {
+    "barcode": "3700653801333",
+    "brand": "France Bébé",
+    "series": "Bio",
+    "segment": 1,
+    "powderG": 9.0,
+    "waterMl": 60.0,
+    "milkId": "4674"
+  },
+  {
+    "barcode": "3700653801340",
+    "brand": "France Bébé",
+    "series": "Bio",
+    "segment": 2,
+    "powderG": 28.35,
+    "waterMl": 210.0,
+    "milkId": "4675"
   },
   {
     "barcode": "3700763535692",
@@ -6808,9 +7051,36 @@
     "brand": "HiPP",
     "series": "BIOLOGIQUE COMBIOTIC",
     "segment": 2,
-    "powderG": 4.5,
-    "waterMl": 30.0,
+    "powderG": 31.5,
+    "waterMl": 210.0,
     "milkId": "76"
+  },
+  {
+    "barcode": "4062300456556",
+    "brand": "HIPP",
+    "series": "BIOLOGIQUE COMBIOTIC",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4697"
+  },
+  {
+    "barcode": "4062300456563",
+    "brand": "HIPP",
+    "series": "BIOLOGIQUE COMBIOTIC",
+    "segment": 3,
+    "powderG": 28.0,
+    "waterMl": 210.0,
+    "milkId": "4699"
+  },
+  {
+    "barcode": "4062300456617",
+    "brand": "HIPP",
+    "series": "BIOLOGIQUE COMBIOTIC",
+    "segment": 1,
+    "powderG": 13.2,
+    "waterMl": 90.0,
+    "milkId": "4698"
   },
   {
     "barcode": "4062300456648",
@@ -13041,6 +13311,15 @@
     "milkId": "939"
   },
   {
+    "barcode": "7613032322595",
+    "brand": "Nestlé",
+    "series": "Nidal",
+    "segment": 3,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "4708"
+  },
+  {
     "barcode": "7613032403522",
     "brand": "Nestle",
     "series": "NAN",
@@ -13048,6 +13327,15 @@
     "powderG": 25.8,
     "waterMl": 180.0,
     "milkId": "2333"
+  },
+  {
+    "barcode": "7613032405687",
+    "brand": "Nestlé",
+    "series": "Nidal",
+    "segment": 1,
+    "powderG": 13.5,
+    "waterMl": 90.0,
+    "milkId": "4706"
   },
   {
     "barcode": "7613032405700",
@@ -13093,6 +13381,15 @@
     "powderG": 31.5,
     "waterMl": 210.0,
     "milkId": "1720"
+  },
+  {
+    "barcode": "7613032506636",
+    "brand": "Nestlé",
+    "series": "Nidal",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4707"
   },
   {
     "barcode": "7613032526313",
@@ -13237,6 +13534,24 @@
     "powderG": 31.5,
     "waterMl": 210.0,
     "milkId": "3508"
+  },
+  {
+    "barcode": "7613033112867",
+    "brand": "Nestlé",
+    "series": "Nidal NidalGest",
+    "segment": 1,
+    "powderG": 12.9,
+    "waterMl": 90.0,
+    "milkId": "4709"
+  },
+  {
+    "barcode": "7613033112898",
+    "brand": "Nestlé",
+    "series": "Nidal NidalGest",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4705"
   },
   {
     "barcode": "7613033116094",
@@ -13624,6 +13939,15 @@
     "powderG": 26.4,
     "waterMl": 180.0,
     "milkId": "4078"
+  },
+  {
+    "barcode": "7613035124080",
+    "brand": "Guigoz",
+    "series": "GEST CROISSANCE",
+    "segment": 3,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "4684"
   },
   {
     "barcode": "7613035187719",
@@ -14317,6 +14641,24 @@
     "powderG": 40.55,
     "waterMl": 210.0,
     "milkId": "3385"
+  },
+  {
+    "barcode": "7613036217316",
+    "brand": "Guigoz",
+    "series": "Guigoz bio",
+    "segment": 1,
+    "powderG": 12.9,
+    "waterMl": 90.0,
+    "milkId": "4682"
+  },
+  {
+    "barcode": "7613036217347",
+    "brand": "Guigoz",
+    "series": "Guigoz bio",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4683"
   },
   {
     "barcode": "7613036217378",
@@ -15111,6 +15453,33 @@
     "milkId": "7"
   },
   {
+    "barcode": "7613038317533",
+    "brand": "Guigoz",
+    "series": "OPTIPRO RELAIS CROISSANCE",
+    "segment": 3,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "4695"
+  },
+  {
+    "barcode": "7613038317649",
+    "brand": "Guigoz",
+    "series": "Guigoz OPTIPRO RELAIS",
+    "segment": 2,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "4696"
+  },
+  {
+    "barcode": "7613038317922",
+    "brand": "Guigoz",
+    "series": "Guigoz OPTIPRO RELAIS",
+    "segment": 1,
+    "powderG": 12.9,
+    "waterMl": 90.0,
+    "milkId": "4694"
+  },
+  {
     "barcode": "7613038371863",
     "brand": "Wyeth/惠氏",
     "series": "婴儿配方奶粉",
@@ -15154,6 +15523,15 @@
     "powderG": 27.6,
     "waterMl": 180.0,
     "milkId": "1553"
+  },
+  {
+    "barcode": "7613038417486",
+    "brand": "Guigoz",
+    "series": "GuigozOPTIPRO JUNIOR",
+    "segment": 4,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "4689"
   },
   {
     "barcode": "7613038453736",
@@ -17487,6 +17865,15 @@
     "milkId": "12"
   },
   {
+    "barcode": "8445290000675",
+    "brand": "Guigoz",
+    "series": "Guigoz OPTIPRO",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4687"
+  },
+  {
     "barcode": "8445290000811",
     "brand": "Guigoz",
     "series": "Guigoz",
@@ -17494,6 +17881,15 @@
     "powderG": 25.8,
     "waterMl": 180.0,
     "milkId": "165"
+  },
+  {
+    "barcode": "8445290000842",
+    "brand": "Guigoz",
+    "series": "Guigoz OPTIPRO",
+    "segment": 1,
+    "powderG": 12.9,
+    "waterMl": 90.0,
+    "milkId": "4690"
   },
   {
     "barcode": "8445290006776",
@@ -17521,6 +17917,42 @@
     "powderG": 25.2,
     "waterMl": 180.0,
     "milkId": "905"
+  },
+  {
+    "barcode": "8445290098580",
+    "brand": "Guigoz",
+    "series": "Guigoz GEST",
+    "segment": 1,
+    "powderG": 12.9,
+    "waterMl": 90.0,
+    "milkId": "4685"
+  },
+  {
+    "barcode": "8445290098719",
+    "brand": "Guigoz",
+    "series": "Guigoz GEST",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4686"
+  },
+  {
+    "barcode": "8445290116543",
+    "brand": "Guigoz",
+    "series": "Guigoz Pelargon",
+    "segment": 1,
+    "powderG": 12.9,
+    "waterMl": 90.0,
+    "milkId": "4691"
+  },
+  {
+    "barcode": "8445290116574",
+    "brand": "Guigoz",
+    "series": "Guigoz Pelargon",
+    "segment": 2,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4692"
   },
   {
     "barcode": "8445290139955",
@@ -17642,11 +18074,20 @@
   {
     "barcode": "8445290624918",
     "brand": "Guigoz",
-    "series": "Optipro",
+    "series": "OPTIPRO CROISSANCE",
     "segment": 3,
     "powderG": 32.2,
     "waterMl": 210.0,
     "milkId": "676"
+  },
+  {
+    "barcode": "8445290624949",
+    "brand": "Guigoz",
+    "series": "Guigoz Optipro",
+    "segment": 3,
+    "powderG": 32.2,
+    "waterMl": 210.0,
+    "milkId": "4688"
   },
   {
     "barcode": "8445290625250",
@@ -18223,6 +18664,15 @@
     "powderG": 26.4,
     "waterMl": 180.0,
     "milkId": "237"
+  },
+  {
+    "barcode": "8445291755604",
+    "brand": "Guigoz",
+    "series": "Guigoz Pelargon",
+    "segment": 3,
+    "powderG": 31.5,
+    "waterMl": 210.0,
+    "milkId": "4693"
   },
   {
     "barcode": "8445291845725",
