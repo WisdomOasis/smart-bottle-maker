@@ -109,7 +109,7 @@ test("converts decimal total powder to the nearest legal formula ratio", () => {
   });
 });
 
-test("starts working only after the recipe batch succeeds", async () => {
+test("starts milk with a single publish batch", async () => {
   const calls: string[] = [];
   const recipe = buildCryAssistMilkRecipe(
     createCryAssistMilkDraft({
@@ -120,34 +120,20 @@ test("starts working only after the recipe batch succeeds", async () => {
     })
   );
 
-  const success = await executeMilkStart(
-    recipe,
-    async () => {
-      calls.push("recipe");
-      return true;
-    },
-    async () => {
-      calls.push("working");
-      return true;
-    }
-  );
+  const success = await executeMilkStart(recipe, async () => {
+    calls.push("start");
+    return true;
+  });
   assert.equal(success, true);
-  assert.deepEqual(calls, ["recipe", "working"]);
+  assert.deepEqual(calls, ["start"]);
 
   calls.length = 0;
-  const failed = await executeMilkStart(
-    recipe,
-    async () => {
-      calls.push("recipe");
-      return false;
-    },
-    async () => {
-      calls.push("working");
-      return true;
-    }
-  );
+  const failed = await executeMilkStart(recipe, async () => {
+    calls.push("start");
+    return false;
+  });
   assert.equal(failed, false);
-  assert.deepEqual(calls, ["recipe"]);
+  assert.deepEqual(calls, ["start"]);
 });
 
 test("only treats the milk start as confirmed after matching device feedback", () => {

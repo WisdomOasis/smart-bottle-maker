@@ -4,6 +4,6 @@ export default {
   navigationBarTextStyle: "black",
   navigationBarTitleText: "",
   navigationStyle: "custom",
-  hideMenuButton: false,
+  hideMenuButton: true,
   disableScroll: true,
 };

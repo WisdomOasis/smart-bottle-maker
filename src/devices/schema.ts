@@ -60,7 +60,7 @@ export const defaultSchema = [
     id: 107,
     mode: "rw",
     name: "temp",
-    property: { type: "value", min: 20, max: 40, step: 5, scale: 0, unit: "C" },
+    property: { type: "value", min: 20, max: 45, step: 5, scale: 0, unit: "C" },
     type: "obj",
   },
   {

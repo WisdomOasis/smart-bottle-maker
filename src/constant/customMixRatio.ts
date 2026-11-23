@@ -1,8 +1,9 @@
 export const CUSTOM_BRAND_ID = "custom";
 
 export const CUSTOM_MIX_WATER_MIN = 0;
-export const CUSTOM_MIX_POWDER_MIN = 0;
-export const CUSTOM_MIX_POWDER_MAX = 50;
+/** 与 DP112 / PRD 每勺粉量一致：2.5–35.0g、0.1g */
+export const CUSTOM_MIX_POWDER_MIN = 2.5;
+export const CUSTOM_MIX_POWDER_MAX = 35;
 
 export const CUSTOM_MIX_RATIO_DRAFT_KEY = "smart_bottle_custom_mix_ratio_draft";
 
@@ -61,11 +62,13 @@ export const writeCustomMixRatioDraft = (draft: CustomMixRatioDraft): void => {
 export const clampCustomWaterMl = (n: number) =>
   Math.max(CUSTOM_MIX_WATER_MIN, Math.round(n));
 
-export const clampCustomPowderG = (n: number) =>
-  Math.min(
+export const clampCustomPowderG = (n: number) => {
+  const rounded = Math.round(Number(n) * 10) / 10;
+  return Math.min(
     CUSTOM_MIX_POWDER_MAX,
-    Math.max(CUSTOM_MIX_POWDER_MIN, Math.round(n))
+    Math.max(CUSTOM_MIX_POWDER_MIN, rounded)
   );
+};
 
 export const isCustomMixRatioComplete = (
   waterMl: number | null,

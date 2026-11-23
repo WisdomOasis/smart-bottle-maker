@@ -116,6 +116,52 @@
   justify-content: space-between;
 }
 
+.waterHeaderEnd {
+  margin-left: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.unitToggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(77, 114, 148, 0.12);
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.unitOption {
+  min-width: 40px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.unitOptionActive {
+  background: #4d7294;
+}
+
+.unitOptionText {
+  font-family: "Noto Sans", "Noto Sans JP", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4d7294;
+}
+
+.unitOptionTextActive {
+  color: #ffffff;
+}
+
 .settingHeader {
   display: flex;
   flex-direction: row;
@@ -153,7 +199,6 @@
 
 .settingValue {
   flex-shrink: 0;
-  margin-left: auto;
   font-family: "Noto Sans", "Noto Sans JP", sans-serif;
   font-weight: 500;
   font-style: normal;
@@ -162,6 +207,10 @@
   letter-spacing: 0;
   text-align: right;
   color: var(--color-black, #2d365f);
+}
+
+.settingHeader > .settingValue {
+  margin-left: auto;
 }
 
 .sliderWrap {

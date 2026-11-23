@@ -4,31 +4,50 @@ import clsx from "clsx";
 import { View, Text, Image } from "@ray-js/ray";
 import Strings from "@/i18n";
 import CustomModeSlider from "@/components/CustomModeSlider";
-import { ML_MIN, ML_MAX, ML_STEP } from "@/constant/presets";
 import {
-  calcPowderGrams,
+  ML_MIN,
+  ML_MAX,
+  ML_STEP,
+  OZ_MIN,
+  OZ_MAX,
+  OZ_STEP,
+} from "@/constant/presets";
+import {
+  brewPowderGramsToFormulaRatio,
+  calcBrewPowderGrams,
   clampMl,
+  clampOz,
   FORMULA_RATIO_MAX,
   FORMULA_RATIO_MIN,
-  powderGramsToFormulaRatio,
+  getBrewPowderBounds,
+  mlToOz,
+  ozToMl,
   parseTemp,
+  parseUnit,
+  roundToTenth,
+  SCOOP_POWDER_STEP_G,
   TEMP_MAX,
   TEMP_MIN,
   TEMP_SET_OPTIONS,
   type TempSet,
+  type UnitSet,
 } from "@/utils/bottleMaker";
 import { CUSTOM_MODE_ICONS } from "./icons";
 import styles from "./index.module.less";
 
 export interface CustomModeDraft {
   ml: number;
+  unit: UnitSet;
   formulaRatio: number;
   temp: TempSet;
 }
 
 interface Props {
   ml: number;
+  unit: UnitSet;
   formulaRatio: number;
+  /** 每勺水量 formula_water，用于 PRD 单次粉量换算 */
+  formulaWater: number;
   temp: TempSet;
   onSave: (draft: CustomModeDraft) => void;
   onClose: () => void;
@@ -36,9 +55,16 @@ interface Props {
   saveDisabled?: boolean;
 }
 
+const formatPowderLabel = (grams: number): string => {
+  const rounded = roundToTenth(grams);
+  return Number.isInteger(rounded) ? `${rounded}g` : `${rounded.toFixed(1)}g`;
+};
+
 const CustomModeSettingsPanel: React.FC<Props> = ({
   ml,
+  unit,
   formulaRatio,
+  formulaWater,
   temp,
   onSave,
   onClose,
@@ -48,36 +74,57 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
     Strings.getLang(key);
 
   const [draftMl, setDraftMl] = useState(ml);
+  const [draftUnit, setDraftUnit] = useState<UnitSet>(unit);
   const [draftRatio, setDraftRatio] = useState(formulaRatio);
   const [draftTemp, setDraftTemp] = useState<TempSet>(temp);
 
   useEffect(() => {
     setDraftMl(clampMl(ml));
+    setDraftUnit(parseUnit(unit));
     setDraftRatio(
       Math.min(FORMULA_RATIO_MAX, Math.max(FORMULA_RATIO_MIN, formulaRatio))
     );
     setDraftTemp(parseTemp(temp));
-  }, [ml, formulaRatio, temp]);
+  }, [ml, unit, formulaRatio, temp]);
 
+  const isOz = draftUnit === "oz";
+  const displayVolume = isOz ? clampOz(mlToOz(draftMl)) : draftMl;
+  const volumeMin = isOz ? OZ_MIN : ML_MIN;
+  const volumeMax = isOz ? OZ_MAX : ML_MAX;
+  const volumeStep = isOz ? OZ_STEP : ML_STEP;
+
+  // 水量变时保持每勺粉量（draftRatio）不变 → 单次粉量同比例变化
   const draftPowderG = useMemo(
-    () => calcPowderGrams(draftMl, draftRatio),
-    [draftMl, draftRatio]
+    () => calcBrewPowderGrams(draftMl, formulaWater, draftRatio),
+    [draftMl, draftRatio, formulaWater]
   );
 
-  const powderBounds = useMemo(() => {
-    const safeMl = Math.max(ML_MIN, draftMl || ML_MIN);
-    const min = calcPowderGrams(safeMl, FORMULA_RATIO_MIN);
-    const max = calcPowderGrams(safeMl, FORMULA_RATIO_MAX);
-    return { min, max: Math.max(min + 1, max) };
-  }, [draftMl]);
+  const powderBounds = useMemo(
+    () => getBrewPowderBounds(draftMl, formulaWater),
+    [draftMl, formulaWater]
+  );
+
+  const handleVolumeChange = (raw: number) => {
+    if (isOz) {
+      setDraftMl(clampMl(ozToMl(clampOz(raw))));
+      return;
+    }
+    setDraftMl(clampMl(raw));
+  };
+
+  const handleUnitChange = (next: UnitSet) => {
+    if (next === draftUnit) return;
+    setDraftUnit(next);
+  };
 
   const handlePowderChange = (grams: number) => {
-    setDraftRatio(powderGramsToFormulaRatio(draftMl, grams));
+    setDraftRatio(brewPowderGramsToFormulaRatio(draftMl, formulaWater, grams));
   };
 
   const handleSave = () => {
     onSave({
       ml: clampMl(draftMl),
+      unit: draftUnit,
       formulaRatio: Math.min(
         FORMULA_RATIO_MAX,
         Math.max(FORMULA_RATIO_MIN, draftRatio)
@@ -99,6 +146,9 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
             </View>
           </View>
           <Text className={styles.note}>{t("custom_mode_note")}</Text>
+          <Text className={styles.note}>
+            {t("custom_mode_unit_conversion")}
+          </Text>
         </View>
 
         <View className={styles.cards}>
@@ -113,15 +163,53 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_water")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>{draftMl}ML</Text>
+              <View className={styles.waterHeaderEnd}>
+                <Text className={styles.settingValue}>
+                  {isOz ? `${displayVolume} oz` : `${displayVolume}ML`}
+                </Text>
+                <View className={styles.unitToggle}>
+                  <View
+                    className={clsx(
+                      styles.unitOption,
+                      !isOz && styles.unitOptionActive
+                    )}
+                    onClick={() => handleUnitChange("mL")}
+                  >
+                    <Text
+                      className={clsx(
+                        styles.unitOptionText,
+                        !isOz && styles.unitOptionTextActive
+                      )}
+                    >
+                      {t("unit_ml")}
+                    </Text>
+                  </View>
+                  <View
+                    className={clsx(
+                      styles.unitOption,
+                      isOz && styles.unitOptionActive
+                    )}
+                    onClick={() => handleUnitChange("oz")}
+                  >
+                    <Text
+                      className={clsx(
+                        styles.unitOptionText,
+                        isOz && styles.unitOptionTextActive
+                      )}
+                    >
+                      {t("unit_oz")}
+                    </Text>
+                  </View>
+                </View>
+              </View>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
-                min={ML_MIN}
-                max={ML_MAX}
-                step={ML_STEP}
-                value={draftMl}
-                onChange={setDraftMl}
+                min={volumeMin}
+                max={volumeMax}
+                step={volumeStep}
+                value={displayVolume}
+                onChange={handleVolumeChange}
               />
             </View>
           </View>
@@ -137,13 +225,15 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
                   {t("custom_mode_powder")}
                 </Text>
               </View>
-              <Text className={styles.settingValue}>{draftPowderG}g</Text>
+              <Text className={styles.settingValue}>
+                {formatPowderLabel(draftPowderG)}
+              </Text>
             </View>
             <View className={styles.sliderWrap}>
               <CustomModeSlider
                 min={powderBounds.min}
                 max={powderBounds.max}
-                step={1}
+                step={SCOOP_POWDER_STEP_G}
                 value={draftPowderG}
                 onChange={handlePowderChange}
               />
@@ -167,7 +257,7 @@ const CustomModeSettingsPanel: React.FC<Props> = ({
               <CustomModeSlider
                 min={TEMP_MIN}
                 max={TEMP_MAX}
-                step={1}
+                step={5}
                 value={draftTemp}
                 snapTo={TEMP_SET_OPTIONS}
                 onChange={(v) => setDraftTemp(v as TempSet)}

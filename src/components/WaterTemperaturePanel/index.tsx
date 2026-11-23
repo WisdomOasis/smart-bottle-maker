@@ -50,7 +50,7 @@ const WaterTemperaturePanel: React.FC<Props> = ({
         <CustomModeSlider
           min={sliderMin}
           max={sliderMax}
-          step={1}
+          step={fixedTemp ? 1 : 5}
           value={displayTemp}
           snapTo={sliderSnap}
           disabled={disabled}

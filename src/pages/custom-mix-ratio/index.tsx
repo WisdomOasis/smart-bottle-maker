@@ -212,6 +212,7 @@ const CustomMixRatioPage: React.FC = () => {
             active={activeField === "powder"}
             min={CUSTOM_MIX_POWDER_MIN}
             max={CUSTOM_MIX_POWDER_MAX}
+            step={0.1}
             onActivate={() => setActiveField("powder")}
             onDeactivate={() => scheduleDeactivate("powder", setActiveField)}
             onChange={setPowderG}

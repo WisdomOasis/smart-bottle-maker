@@ -41,8 +41,8 @@ const CryAssistFeedRequestModal: React.FC<Props> = ({
     Strings.getLang(key);
   const [draft, setDraft] = useState(initialDraft);
   const powderBounds = useMemo(
-    () => getCryAssistPowderBounds(draft.volumeMl),
-    [draft.volumeMl]
+    () => getCryAssistPowderBounds(draft.volumeMl, draft.sourceFormulaWater),
+    [draft.sourceFormulaWater, draft.volumeMl]
   );
 
   return (

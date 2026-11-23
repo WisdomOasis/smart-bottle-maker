@@ -15,6 +15,8 @@ type LaunchOptions = {
 };
 
 const SCAN_LOCK_SAFETY_MS = 8000;
+/** Hold cover before showing not-found after a failed scan (QA: failure felt too fast) */
+const SCAN_NOT_FOUND_DELAY_MS = 1000;
 
 export const goToBarcodeResultPage = (
   returnRoute: BarcodeResultReturnRoute = "/formula"
@@ -30,6 +32,16 @@ export const useBarcodeScanLauncher = () => {
   const pendingResultNavRef = useRef(false);
   const launchOptionsRef = useRef<LaunchOptions | undefined>();
   const safetyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const notFoundDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  const clearNotFoundDelay = useCallback(() => {
+    if (notFoundDelayTimerRef.current) {
+      clearTimeout(notFoundDelayTimerRef.current);
+      notFoundDelayTimerRef.current = null;
+    }
+  }, []);
 
   const clearScanLock = useCallback(() => {
     scanningRef.current = false;
@@ -76,6 +88,7 @@ export const useBarcodeScanLauncher = () => {
           clearScanLock();
           const match = lookupBarcodeFormula(raw);
           if (match) {
+            clearNotFoundDelay();
             const onMatch = launchOptionsRef.current?.onMatch;
             if (onMatch) {
               hideScanCover();
@@ -88,42 +101,52 @@ export const useBarcodeScanLauncher = () => {
             }
             return;
           }
-          hideScanCover();
-          setNotFoundVisible(true);
+          clearNotFoundDelay();
+          setScanCoverVisible(true);
+          notFoundDelayTimerRef.current = setTimeout(() => {
+            notFoundDelayTimerRef.current = null;
+            hideScanCover();
+            setNotFoundVisible(true);
+          }, SCAN_NOT_FOUND_DELAY_MS);
         },
         onDismiss: () => {
+          clearNotFoundDelay();
           clearScanLock();
           hideScanCover();
         },
         onComplete: () => {
           clearScanLock();
-          if (!pendingResultNavRef.current) {
+          if (!pendingResultNavRef.current && !notFoundDelayTimerRef.current) {
             hideScanCover();
           }
         },
         onUnavailable: () => {
+          clearNotFoundDelay();
           clearScanLock();
           hideScanCover();
           router.push("/enter-barcode");
         },
       });
+      clearNotFoundDelay();
       setNotFoundVisible(false);
     },
-    [armScanLock, clearScanLock, hideScanCover]
+    [armScanLock, clearNotFoundDelay, clearScanLock, hideScanCover]
   );
 
   const scanAgain = useCallback(
     (options?: LaunchOptions) => {
+      clearNotFoundDelay();
       setNotFoundVisible(false);
       clearScanLock();
       launchScan(options);
     },
-    [clearScanLock, launchScan]
+    [clearNotFoundDelay, clearScanLock, launchScan]
   );
 
   const dismissNotFound = useCallback(() => {
+    clearNotFoundDelay();
     setNotFoundVisible(false);
-  }, []);
+  }, [clearNotFoundDelay]);
 
   return {
     notFoundVisible,

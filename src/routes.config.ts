@@ -42,11 +42,6 @@ export const routes: Routes = [
     name: "CustomizeFormulaRatio",
   },
   {
-    route: "/powder-brand-settings",
-    path: "/pages/powder-brand-settings/index",
-    name: "PowderBrandSettings",
-  },
-  {
     route: "/powder-brand-batch-delete",
     path: "/pages/powder-brand-batch-delete/index",
     name: "PowderBrandBatchDelete",

@@ -2,7 +2,7 @@
 import React from "react";
 import { View, Image, exitMiniProgram, router } from "@ray-js/ray";
 import { IC_BACK_URI } from "@/res/icBackUri";
-import { IC_SETTINGS_URI } from "@/res/icSettingsUri";
+import { IC_PANEL_HELP_URI } from "@/res/icPanelHelpUri";
 import { IC_FEEDING_RECORD_URI } from "@/res/icFeedingRecordUri";
 import maxiCosiLogoBlue from "@/res/maxi_cosi_logo_blue.png";
 import { openDeviceSettings } from "@/utils/openDeviceSettings";
@@ -82,8 +82,9 @@ const PanelNavBar: React.FC<Props> = ({
         ) : null}
         <View className={styles.sideBtn} onClick={handleSettings}>
           <Image
-            src={IC_SETTINGS_URI}
+            src={IC_PANEL_HELP_URI}
             className={styles.sideIcon}
+            mode="aspectFit"
             style={{ pointerEvents: "none" }}
           />
         </View>

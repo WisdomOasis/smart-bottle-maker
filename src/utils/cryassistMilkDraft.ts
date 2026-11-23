@@ -1,4 +1,21 @@
-export type CryAssistTemp = 20 | 25 | 30 | 35 | 40;
+import {
+  brewPowderGramsToFormulaRatio,
+  calcBrewPowderGrams,
+  clampFormulaWater,
+  clampMl,
+  clampOz,
+  FORMULA_RATIO_MAX,
+  FORMULA_RATIO_MIN,
+  getBrewPowderBounds,
+  mlToOz,
+  parseTemp,
+  roundToTenth,
+  SCOOP_POWDER_STEP_G,
+  type TempSet,
+  type UnitSet,
+} from "@/utils/bottleMaker";
+
+export type CryAssistTemp = TempSet;
 
 export interface CryAssistMilkDraft {
   volumeMl: number;
@@ -11,10 +28,11 @@ export interface CryAssistMilkDraft {
 
 export interface CryAssistMilkRecipe {
   volumeMl: number;
+  volumeOz: number;
   temp: CryAssistTemp;
   formulaWater: number;
   formulaRatio: number;
-  unitSet: "mL";
+  unitSet: UnitSet;
 }
 
 interface CreateDraftInput {
@@ -27,68 +45,52 @@ interface CreateDraftInput {
 export const CRYASSIST_ML_MIN = 60;
 export const CRYASSIST_ML_MAX = 300;
 export const CRYASSIST_ML_STEP = 10;
-export const CRYASSIST_TEMP_OPTIONS: CryAssistTemp[] = [20, 25, 30, 35, 40];
+export const CRYASSIST_TEMP_OPTIONS: CryAssistTemp[] = [20, 25, 30, 35, 40, 45];
+export const CRYASSIST_POWDER_STEP = SCOOP_POWDER_STEP_G;
 
-const FORMULA_WATER_MIN = 30;
-const FORMULA_WATER_MAX = 300;
-const FORMULA_RATIO_MIN = 25;
-const FORMULA_RATIO_MAX = 350;
+const normalizeVolume = (value: number): number => clampMl(value);
 
-const clamp = (value: number, min: number, max: number): number =>
-  Math.min(max, Math.max(min, value));
+const normalizeTemp = (value: number): CryAssistTemp => parseTemp(value);
 
-const roundToTenth = (value: number): number => Math.round(value * 10) / 10;
-
-const normalizeVolume = (value: number): number =>
-  clamp(
-    Math.round(value / CRYASSIST_ML_STEP) * CRYASSIST_ML_STEP,
-    CRYASSIST_ML_MIN,
-    CRYASSIST_ML_MAX
-  );
-
-const normalizeTemp = (value: number): CryAssistTemp => {
-  const numeric = Number(value);
-  return CRYASSIST_TEMP_OPTIONS.reduce((closest, option) =>
-    Math.abs(option - numeric) < Math.abs(closest - numeric) ? option : closest
-  );
-};
-
-const normalizeFormulaWater = (value: number): number => {
-  const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 100;
-  return clamp(Math.round(numeric), FORMULA_WATER_MIN, FORMULA_WATER_MAX);
-};
+const normalizeFormulaWater = (value: number): number =>
+  clampFormulaWater(Number.isFinite(Number(value)) ? Number(value) : 100);
 
 const normalizeFormulaRatio = (value: number): number => {
   const numeric = Number(value);
-  if (!Number.isFinite(numeric)) return 130;
-  return clamp(Math.round(numeric), FORMULA_RATIO_MIN, FORMULA_RATIO_MAX);
+  if (!Number.isFinite(numeric)) return 90;
+  return Math.min(
+    FORMULA_RATIO_MAX,
+    Math.max(FORMULA_RATIO_MIN, Math.round(numeric))
+  );
 };
 
 export const calculateCryAssistPowderGrams = (
   volumeMl: number,
   formulaWater: number,
   formulaRatio: number
-): number => {
-  const safeWater = normalizeFormulaWater(formulaWater);
-  const safeRatio = normalizeFormulaRatio(formulaRatio);
-  return roundToTenth(
-    (normalizeVolume(volumeMl) * safeRatio) / (safeWater * 10)
+): number =>
+  calcBrewPowderGrams(
+    normalizeVolume(volumeMl),
+    normalizeFormulaWater(formulaWater),
+    normalizeFormulaRatio(formulaRatio)
   );
-};
 
 export const getCryAssistPowderBounds = (
-  volumeMl: number
-): { min: number; max: number } => {
-  const safeVolume = normalizeVolume(volumeMl);
-  const min = Math.ceil((safeVolume * FORMULA_RATIO_MIN) / 100) / 10;
-  const max = Math.floor((safeVolume * FORMULA_RATIO_MAX) / 100) / 10;
-  return { min, max: Math.max(min + 0.1, max) };
-};
+  volumeMl: number,
+  formulaWater = 100
+): { min: number; max: number } =>
+  getBrewPowderBounds(
+    normalizeVolume(volumeMl),
+    normalizeFormulaWater(formulaWater)
+  );
 
-const clampPowder = (volumeMl: number, powderGrams: number): number => {
-  const bounds = getCryAssistPowderBounds(volumeMl);
-  return roundToTenth(clamp(powderGrams, bounds.min, bounds.max));
+const clampPowder = (
+  volumeMl: number,
+  formulaWater: number,
+  powderGrams: number
+): number => {
+  const bounds = getCryAssistPowderBounds(volumeMl, formulaWater);
+  return roundToTenth(Math.min(bounds.max, Math.max(bounds.min, powderGrams)));
 };
 
 export const createCryAssistMilkDraft = (
@@ -120,8 +122,9 @@ export const updateCryAssistVolume = (
   return {
     ...draft,
     volumeMl: nextVolume,
+    // 未手动改粉时：水量变 → 同比例更新粉量（保持每勺配方）
     powderGrams: draft.powderOverridden
-      ? clampPowder(nextVolume, draft.powderGrams)
+      ? clampPowder(nextVolume, draft.sourceFormulaWater, draft.powderGrams)
       : calculateCryAssistPowderGrams(
           nextVolume,
           draft.sourceFormulaWater,
@@ -135,7 +138,11 @@ export const overrideCryAssistPowder = (
   powderGrams: number
 ): CryAssistMilkDraft => ({
   ...draft,
-  powderGrams: clampPowder(draft.volumeMl, powderGrams),
+  powderGrams: clampPowder(
+    draft.volumeMl,
+    draft.sourceFormulaWater,
+    powderGrams
+  ),
   powderOverridden: true,
 });
 
@@ -145,26 +152,33 @@ export const updateCryAssistTemp = (
 ): CryAssistMilkDraft => ({ ...draft, temp: normalizeTemp(temp) });
 
 export const buildCryAssistMilkRecipe = (
-  draft: CryAssistMilkDraft
+  draft: CryAssistMilkDraft,
+  unitSet: UnitSet = "mL"
 ): CryAssistMilkRecipe => {
+  const { volumeMl } = draft;
+  const volumeOz = clampOz(mlToOz(volumeMl));
   if (!draft.powderOverridden) {
     return {
-      volumeMl: draft.volumeMl,
+      volumeMl,
+      volumeOz,
       temp: draft.temp,
       formulaWater: draft.sourceFormulaWater,
       formulaRatio: draft.sourceFormulaRatio,
-      unitSet: "mL",
+      unitSet,
     };
   }
 
   return {
-    volumeMl: draft.volumeMl,
+    volumeMl,
+    volumeOz,
     temp: draft.temp,
-    formulaWater: 100,
-    formulaRatio: normalizeFormulaRatio(
-      (draft.powderGrams * 1000) / draft.volumeMl
+    formulaWater: draft.sourceFormulaWater,
+    formulaRatio: brewPowderGramsToFormulaRatio(
+      draft.volumeMl,
+      draft.sourceFormulaWater,
+      draft.powderGrams
     ),
-    unitSet: "mL",
+    unitSet,
   };
 };
 

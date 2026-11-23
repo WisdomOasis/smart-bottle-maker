@@ -1,7 +1,11 @@
 import { authorize, scanCode, showToast } from "@ray-js/ray";
 import Strings from "@/i18n";
 import type { I18nKey } from "@/i18n/strings";
-import { pausePanelChromeHide, resumePanelChromeHide } from "./panelChrome";
+import {
+  hidePanelFloatingButtons,
+  pausePanelChromeHide,
+  resumePanelChromeHide,
+} from "./panelChrome";
 
 const t = (key: I18nKey) => Strings.getLang(key);
 
@@ -64,6 +68,10 @@ export const runBarcodeScan = (handlers: {
     if (!chromePaused) return;
     chromePaused = false;
     resumePanelChromeHide();
+    /* 掃碼結束後宿主常把 …/x 拉回；立刻再藏 */
+    hidePanelFloatingButtons();
+    setTimeout(() => hidePanelFloatingButtons(), 300);
+    setTimeout(() => hidePanelFloatingButtons(), 1200);
   };
 
   const dismissOnce = () => {

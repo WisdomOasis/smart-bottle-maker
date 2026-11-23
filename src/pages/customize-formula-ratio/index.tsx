@@ -378,6 +378,7 @@ const CustomizeFormulaRatioPage: React.FC = () => {
             active={activeField === "powder"}
             min={CUSTOM_MIX_POWDER_MIN}
             max={CUSTOM_MIX_POWDER_MAX}
+            step={0.1}
             onActivate={() => setActiveField("powder")}
             onDeactivate={() => scheduleDeactivate("powder", setActiveField)}
             onChange={setPowderG}
@@ -389,6 +390,7 @@ const CustomizeFormulaRatioPage: React.FC = () => {
             placeholder={t("common_empty_placeholder")}
             active={activeField === "water"}
             min={CUSTOM_MIX_WATER_MIN}
+            step={1}
             onActivate={() => setActiveField("water")}
             onDeactivate={() => scheduleDeactivate("water", setActiveField)}
             onChange={setWaterMl}

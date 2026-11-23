@@ -7,6 +7,7 @@ import {
 } from "@ray-js/ray";
 import dpCodes from "@/constant/dpCodes";
 import { parseSwitchOn, resolveDeviceOnline } from "@/utils/deviceStatus";
+import { syncAssemblyStatus } from "@/utils/syncAssemblyStatus";
 
 type DevInfoLike = {
   devId?: string;
@@ -45,6 +46,14 @@ const useDeviceConnectivity = () => {
     }
   }, [devInfo?.isOnline]);
 
+  const refreshAssemblyStatus = useCallback(
+    (force = false) => {
+      if (!devId) return;
+      syncAssemblyStatus(devId, { force });
+    },
+    [devId]
+  );
+
   useEffect(() => {
     if (!devId) return undefined;
 
@@ -68,12 +77,19 @@ const useDeviceConnectivity = () => {
     };
   }, [devId, handleOnlineUpdate]);
 
+  /* 進頁／上線後立刻同步組裝感測器，避免 banner 吃到過期快取 */
+  useEffect(() => {
+    if (!devId || !isOnline) return;
+    syncAssemblyStatus(devId, { force: true });
+  }, [devId, isOnline]);
+
   return {
     devInfo,
     dpState,
     switchOn,
     isOnline,
     panelDisabled: !switchOn,
+    refreshAssemblyStatus,
   };
 };
 
